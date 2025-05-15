@@ -63,12 +63,12 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     setError(null);
     
     try {
-      const response = await axios.post('/api/analyze/compare', {
+      const comparisonData = await compareWithCompetitor({
         mainDomain: mainAnalysis.domain,
         competitorDomain: data.competitorDomain
       });
       
-      setComparison(response.data);
+      setComparison(comparisonData);
       
       toast({
         title: 'Analysis Complete',
