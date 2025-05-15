@@ -104,6 +104,56 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         status: 'in-progress',
         domain,
         pagesFound: totalPages,
+
+/**
+ * Measure page load time and basic performance metrics
+ * @param url Page URL to analyze
+ * @param signal AbortSignal for cancellation
+ */
+async function measurePageSpeed(url: string, signal: AbortSignal): Promise<any> {
+  try {
+    const startTime = Date.now();
+    
+    // Make HTTP request to the page
+    const response = await axios.get(url, { 
+      signal,
+      headers: {
+        'User-Agent': 'SEO-Optimizer-Bot/1.0 (+https://seooptimizer.com/bot)',
+      },
+      timeout: 15000  // 15-second timeout
+    });
+    
+    const endTime = Date.now();
+    const loadTime = endTime - startTime;
+    
+    const html = response.data;
+    
+    // Calculate basic performance metrics
+    const htmlSize = Buffer.from(html).length;
+    const contentLength = parseInt(response.headers['content-length'] || '0') || htmlSize;
+    
+    // Count resources
+    const $ = cheerio.load(html);
+    const scripts = $('script').length;
+    const styles = $('link[rel="stylesheet"]').length;
+    const images = $('img').length;
+    
+    return {
+      loadTime,
+      contentSize: contentLength,
+      resources: {
+        scripts,
+        styles,
+        images,
+        total: scripts + styles + images
+      }
+    };
+  } catch (error) {
+    console.error(`Error measuring page speed for ${url}:`, error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}
+
         pagesAnalyzed: i,
         currentPageUrl: pageUrl,
         analyzedPages: analyzedPages.map(p => p.url),
@@ -190,6 +240,12 @@ export function cancelAnalysis(domain: string): boolean {
  */
 async function analyzePage(url: string, settings: any, signal: AbortSignal) {
   try {
+    // Measure page speed if enabled
+    let speedMetrics = null;
+    if (settings.analyzePageSpeed) {
+      speedMetrics = await measurePageSpeed(url, signal);
+    }
+    
     // Make HTTP request to the page
     const response = await axios.get(url, { 
       signal,
@@ -231,6 +287,88 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
           height: parseInt($(element).attr('height') || '0') || undefined
         });
       });
+
+    // Mobile compatibility issues
+    const viewportMeta = $('meta[name="viewport"]').attr('content');
+    if (!viewportMeta) {
+      issues.push({
+        category: 'mobile',
+
+    // Structured data analysis
+    const structuredData = [];
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const jsonContent = $(el).html();
+        if (jsonContent) {
+          const parsedData = JSON.parse(jsonContent);
+          structuredData.push(parsedData);
+        }
+      } catch (error) {
+        console.error('Error parsing structured data:', error);
+        issues.push({
+          category: 'structured-data',
+          severity: 'warning',
+          title: 'Invalid Structured Data',
+          description: 'Page contains invalid JSON-LD structured data that could not be parsed.'
+        });
+      }
+    });
+    
+    if (structuredData.length === 0) {
+      issues.push({
+        category: 'structured-data',
+        severity: 'warning',
+        title: 'Missing Structured Data',
+        description: 'Page does not contain any JSON-LD structured data. Structured data helps search engines understand your content.'
+      });
+    } else {
+      // Check for common schema types
+      const hasCommonTypes = structuredData.some(data => {
+        const type = data['@type'] || '';
+        return ['Product', 'Article', 'LocalBusiness', 'FAQPage', 'Event', 'Recipe', 'Review'].includes(type);
+      });
+      
+      if (!hasCommonTypes) {
+        issues.push({
+          category: 'structured-data',
+          severity: 'info',
+          title: 'Consider Adding Common Schema Types',
+          description: 'Consider adding relevant schema types like Product, Article, LocalBusiness, FAQPage, etc. to improve search results.'
+        });
+      }
+    }
+
+        severity: 'critical',
+        title: 'Missing Viewport Meta Tag',
+        description: 'Page is missing the viewport meta tag. This is required for responsive design and mobile optimization.'
+      });
+    } else if (!viewportMeta.includes('width=device-width')) {
+      issues.push({
+        category: 'mobile',
+        severity: 'warning',
+        title: 'Improper Viewport Configuration',
+        description: 'Viewport meta tag should include width=device-width for proper mobile rendering.'
+      });
+    }
+    
+    // Check for tap targets that are too small (simplified check)
+    const smallLinks = $('a').filter((_, el) => {
+      const styles = $(el).css(['width', 'height', 'padding']);
+      // Very simplified check - in reality would need computed styles
+      return ($(el).attr('style') && 
+             (styles.width && parseInt(styles.width) < 40 || 
+              styles.height && parseInt(styles.height) < 40));
+    }).length;
+    
+    if (smallLinks > 0) {
+      issues.push({
+        category: 'mobile',
+        severity: 'warning',
+        title: 'Small Tap Targets',
+        description: `Detected ${smallLinks} potentially small tap targets. Mobile touch elements should be at least 48px in height and width with adequate spacing.`
+      });
+    }
+
     }
     
     // Identify the page name from URL or title
@@ -478,7 +616,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
       canonical,
       robotsMeta,
       issues,
-      suggestions
+      suggestions,
+      speedMetrics
     };
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

@@ -40,6 +40,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     followExternalLinks: z.boolean().default(false),
     analyzeImages: z.boolean().default(true),
     analyzeLinkStructure: z.boolean().default(true),
+    analyzePageSpeed: z.boolean().default(true),
+    analyzeStructuredData: z.boolean().default(true),
+    analyzeMobileCompatibility: z.boolean().default(true),
     useAI: z.boolean().default(true),
   });
 
@@ -213,6 +216,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
       
+
+  // Export analysis as PDF
+  app.get("/api/analysis/:id/export/pdf", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+      
+      const analysis = await storage.getAnalysisById(id);
+      
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+      
+      // Generate PDF content
+      // This would normally use a library like PDFKit, but for simplicity we're using HTML to PDF approach
+      
+      // Create simple HTML template for the PDF
+      const pdfHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>SEO Analysis Report - ${analysis.domain}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            h1 { color: #333; }
+            h2 { color: #444; margin-top: 30px; }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .issue { margin-bottom: 10px; padding: 10px; background-color: #f9f9f9; }
+            .critical { border-left: 4px solid #e74c3c; }
+            .warning { border-left: 4px solid #f39c12; }
+            .metrics { display: flex; margin-bottom: 20px; }
+            .metric-box { padding: 15px; margin-right: 15px; border-radius: 4px; }
+            .good { background-color: #e6ffe6; }
+            .warning-box { background-color: #fff8e6; }
+            .critical-box { background-color: #ffe6e6; }
+          </style>
+        </head>
+        <body>
+          <h1>SEO Analysis Report</h1>
+          <p>
+            <strong>Domain:</strong> ${analysis.domain}<br>
+            <strong>Analysis Date:</strong> ${new Date(analysis.date).toLocaleDateString()}<br>
+            <strong>Pages Analyzed:</strong> ${analysis.pagesCount}
+          </p>
+          
+          <h2>Overall Metrics</h2>
+          <div class="metrics">
+            <div class="metric-box good">
+              <h3>Good Practices</h3>
+              <p>${analysis.metrics.goodPractices}</p>
+            </div>
+            <div class="metric-box warning-box">
+              <h3>Warnings</h3>
+              <p>${analysis.metrics.warnings}</p>
+            </div>
+            <div class="metric-box critical-box">
+
+  // Compare with competitor
+  app.post("/api/analyze/compare", apiLimiter, async (req, res) => {
+    try {
+      const { mainDomain, competitorDomain } = req.body;
+      if (!mainDomain || !competitorDomain) {
+        return res.status(400).json({ error: "Both domains are required" });
+      }
+      
+      // Get the most recent analysis for the main domain
+      const mainAnalysis = await storage.getLatestAnalysisByDomain(mainDomain);
+      if (!mainAnalysis) {
+        return res.status(404).json({ error: "No analysis found for main domain" });
+      }
+      
+      // Analyze the competitor domain
+      // For simplicity, we'll reuse the existing analysis flow
+      const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents);
+      
+      // Get the competitor analysis results
+      const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);
+      if (!competitorAnalysis) {
+        return res.status(404).json({ error: "Competitor analysis failed" });
+      }
+      
+      // Compare the analyses
+      const comparison = {
+        mainDomain,
+        competitorDomain,
+        metrics: {
+          titleOptimization: {
+            main: mainAnalysis.metrics.titleOptimization,
+            competitor: competitorAnalysis.metrics.titleOptimization,
+            difference: mainAnalysis.metrics.titleOptimization - competitorAnalysis.metrics.titleOptimization
+          },
+          descriptionOptimization: {
+            main: mainAnalysis.metrics.descriptionOptimization,
+            competitor: competitorAnalysis.metrics.descriptionOptimization,
+            difference: mainAnalysis.metrics.descriptionOptimization - competitorAnalysis.metrics.descriptionOptimization
+          },
+          headingsOptimization: {
+            main: mainAnalysis.metrics.headingsOptimization,
+            competitor: competitorAnalysis.metrics.headingsOptimization,
+            difference: mainAnalysis.metrics.headingsOptimization - competitorAnalysis.metrics.headingsOptimization
+          },
+          imagesOptimization: {
+            main: mainAnalysis.metrics.imagesOptimization,
+            competitor: competitorAnalysis.metrics.imagesOptimization,
+            difference: mainAnalysis.metrics.imagesOptimization - competitorAnalysis.metrics.imagesOptimization
+          },
+          criticalIssues: {
+            main: mainAnalysis.metrics.criticalIssues,
+            competitor: competitorAnalysis.metrics.criticalIssues,
+            difference: competitorAnalysis.metrics.criticalIssues - mainAnalysis.metrics.criticalIssues
+          }
+        },
+        recommendations: []
+      };
+      
+      // Generate recommendations based on the comparison
+      if (comparison.metrics.titleOptimization.difference < 0) {
+        comparison.recommendations.push("Your competitor has better optimized page titles. Consider reviewing and improving your title tags.");
+      }
+      
+      if (comparison.metrics.descriptionOptimization.difference < 0) {
+        comparison.recommendations.push("Your competitor has better optimized meta descriptions. Focus on writing more compelling and keyword-rich descriptions.");
+      }
+      
+      if (comparison.metrics.headingsOptimization.difference < 0) {
+        comparison.recommendations.push("Your competitor has better heading structure. Ensure you use a logical heading hierarchy with relevant keywords.");
+      }
+      
+      if (comparison.metrics.imagesOptimization.difference < 0) {
+        comparison.recommendations.push("Your competitor has better optimized images. Make sure all your images have descriptive alt text.");
+      }
+      
+      if (comparison.metrics.criticalIssues.difference < 0) {
+        comparison.recommendations.push("You have more critical issues than your competitor. Prioritize fixing these issues to improve your SEO performance.");
+      }
+      
+      res.json(comparison);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to compare with competitor" });
+    }
+  });
+
+              <h3>Critical Issues</h3>
+              <p>${analysis.metrics.criticalIssues}</p>
+            </div>
+          </div>
+          
+          <h2>Page Analysis</h2>
+          ${analysis.pages.map(page => `
+            <div class="page-analysis">
+              <h3>${page.pageName} - ${page.url}</h3>
+              <p><strong>Title:</strong> ${page.title || 'None'}</p>
+              <p><strong>Meta Description:</strong> ${page.metaDescription || 'None'}</p>
+              
+              ${page.issues.length > 0 ? `
+                <h4>Issues (${page.issues.length})</h4>
+                ${page.issues.map(issue => `
+                  <div class="issue ${issue.severity}">
+                    <strong>${issue.title}</strong>: ${issue.description}
+                  </div>
+                `).join('')}
+              ` : '<p>No issues found</p>'}
+              
+              ${page.suggestions.length > 0 ? `
+                <h4>Suggestions</h4>
+                <ul>
+                  ${page.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </body>
+        </html>
+      `;
+      
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.html`);
+      res.send(pdfHtml);
+      
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export analysis as PDF" });
+    }
+  });
+
       const success = await storage.deleteAnalysis(id);
       
       if (!success) {

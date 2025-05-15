@@ -106,6 +106,7 @@ export async function crawlWebsite(
   
   const discoveredUrls = new Set<string>([normalizedStartUrl]);
   const crawledUrls = new Set<string>();
+  const processingSeoData = new Map<string, any>();
   
   // Use a priority queue for better crawling order
   interface QueueItem {
@@ -117,21 +118,18 @@ export async function crawlWebsite(
   const priorityQueue: QueueItem[] = [
     { url: normalizedStartUrl, priority: 20 }
   ];
-
-  while (priorityQueue.length > 0 && crawledUrls.size < maxPages) {
-    if (signal?.aborted) {
-      throw new Error('Crawling cancelled');
-    }
+  
+  // Function to crawl a single URL
+  const crawlUrl = async (item: QueueItem): Promise<void> => {
+    const currentUrl = item.url;
     
-    // Sort queue by priority (descending) and get the highest priority URL
-    priorityQueue.sort((a, b) => b.priority - a.priority);
-    const currentItem = priorityQueue.shift()!;
-    const currentUrl = currentItem.url;
-    
-    // Skip if already crawled
+    // Skip if already crawled or being processed
     if (crawledUrls.has(currentUrl)) {
-      continue;
+      return;
     }
+    
+    // Mark as being processed
+    crawledUrls.add(currentUrl);
     
     try {
       // Fetch the page
@@ -147,8 +145,7 @@ export async function crawlWebsite(
       // Only process HTML content
       const contentType = response.headers['content-type'] || '';
       if (!contentType.includes('text/html')) {
-        crawledUrls.add(currentUrl);
-        continue;
+        return;
       }
       
       // Extract links from the page
@@ -208,7 +205,11 @@ export async function crawlWebsite(
           // Add to discovered URLs and priority queue
           discoveredUrls.add(normalizedLink);
           const priority = calculateUrlPriority(normalizedLink, baseDomain);
-          priorityQueue.push({ url: normalizedLink, priority });
+          
+          // Add to queue for processing if we're under the limit
+          if (priorityQueue.length + crawledUrls.size < maxPages) {
+            priorityQueue.push({ url: normalizedLink, priority });
+          }
         } catch (error) {
           // Skip invalid URLs
           continue;
@@ -231,25 +232,47 @@ export async function crawlWebsite(
         hasStructuredData: $('script[type="application/ld+json"]').length > 0
       };
       
-      // Mark as crawled with the SEO data
-      crawledUrls.add(currentUrl);
+      // Store SEO data
+      processingSeoData.set(currentUrl, seoData);
       
-      // Call progress callback if provided
-      if (progressCallback) {
-        progressCallback(Array.from(discoveredUrls), seoData);
-      }
-      
-      // Delay before next request
-      if (priorityQueue.length > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
     } catch (error) {
-      // Mark as crawled even on error to avoid retrying
-      crawledUrls.add(currentUrl);
       console.error(`Error crawling ${currentUrl}:`, error instanceof Error ? error.message : String(error));
-      
-      // Continue with next URL
-      continue;
+    }
+  };
+  
+  // Main crawling loop with concurrency control
+  const concurrencyLimit = 3; // Process 3 pages concurrently
+  
+  while (priorityQueue.length > 0 && crawledUrls.size < maxPages) {
+    if (signal?.aborted) {
+      throw new Error('Crawling cancelled');
+    }
+    
+    // Sort queue by priority (descending)
+    priorityQueue.sort((a, b) => b.priority - a.priority);
+    
+    // Take a batch of URLs to process
+    const batchSize = Math.min(concurrencyLimit, priorityQueue.length);
+    const batch = priorityQueue.splice(0, batchSize);
+    
+    // Process them concurrently
+    await Promise.all(
+      batch.map(async (item) => {
+        await crawlUrl(item);
+        
+        // Call progress callback
+        if (progressCallback) {
+          progressCallback(
+            Array.from(discoveredUrls),
+            processingSeoData.get(item.url)
+          );
+        }
+      })
+    );
+    
+    // Add delay between batches to avoid rate limiting
+    if (priorityQueue.length > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   

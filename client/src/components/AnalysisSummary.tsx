@@ -22,6 +22,47 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       alert('Analysis ID is missing. Unable to export CSV.');
       return;
     }
+
+  const exportPDF = async () => {
+    try {
+      const response = await fetch(`/api/analysis/${analysis.id}/export/pdf`);
+      if (!response.ok) {
+        throw new Error('Failed to export PDF');
+      }
+      
+      // Create a blob from the response
+      const blob = await response.blob();
+      
+      // Create a link to download the blob
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `seo-analysis-${analysis.domain}.html`;
+      
+      // Append the link to the body
+      document.body.appendChild(a);
+      
+      // Click the link
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "PDF Export",
+        description: "Analysis exported as PDF successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export PDF",
+        variant: "destructive"
+      });
+    }
+  };
+
     
     try {
       // Use the api helper to get the CSV blob
@@ -84,6 +125,13 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
               >
                 <Download className="h-5 w-5 mr-2" />
                 Export CSV
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={exportPDF}
+              >
+                <FileText className="h-5 w-5 mr-2" />
+                Export PDF
               </Button>
               <Button 
                 variant="outline" 

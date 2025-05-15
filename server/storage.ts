@@ -118,3 +118,22 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
+
+
+  /**
+   * Get the latest analysis for a specific domain
+   * @param domain Domain to search for
+   * @returns Most recent analysis for the domain, or null if not found
+   */
+  async getLatestAnalysisByDomain(domain: string): Promise<any> {
+    const analysisHistory = await this.getAnalysisHistory();
+    
+    // Find all analyses for this domain
+    const domainAnalyses = analysisHistory.filter(analysis => analysis.domain === domain);
+    
+    // Sort by date (newest first)
+    domainAnalyses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // Return the most recent, or null if none found
+    return domainAnalyses.length > 0 ? domainAnalyses[0] : null;
+  }
