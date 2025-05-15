@@ -13,6 +13,7 @@ export interface Image {
   alt: string | null;
   width?: number;
   height?: number;
+  suggestedAlt?: string;
 }
 
 export interface SeoIssue {

@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { parseSitemap } from './sitemap';
 import { crawlWebsite } from './crawler';
-import { generateSeoSuggestions } from './openai';
+import { generateSeoSuggestions, generateBatchImageAltText } from './openai';
 import { storage } from './storage';
 import { EventEmitter } from 'events';
 import { Heading, Image, SeoIssue } from '../client/src/lib/types';
