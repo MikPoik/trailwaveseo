@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { BadgeCheck, AlertTriangle, AlertCircle, Download, RefreshCw } from "lucide-react";
 import PageAnalysisCard from "./PageAnalysisCard";
 import { format } from "date-fns";
+import { exportAnalysisCSV } from "@/lib/api";
 
 interface AnalysisSummaryProps {
   analysis: WebsiteAnalysis;
@@ -15,37 +16,35 @@ interface AnalysisSummaryProps {
 const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
   
-  const exportCSV = () => {
-    const allPages = analysis.pages;
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    // CSV Headers
-    csvContent += "URL,Title,Title Length,Meta Description,Description Length,Headings,Issues,Suggestions\n";
-    
-    // Add data for each page
-    allPages.forEach(page => {
-      const row = [
-        `"${page.url}"`,
-        `"${page.title || ''}"`,
-        page.title?.length || 0,
-        `"${page.metaDescription || ''}"`,
-        page.metaDescription?.length || 0,
-        `"${page.headings.map(h => `${h.level}: ${h.text}`).join('; ')}"`,
-        page.issues.length,
-        `"${page.suggestions.join('; ')}"`
-      ];
+  const exportCSV = async () => {
+    try {
+      // Use the server API to get the CSV data
+      const response = await fetch(`/api/analysis/${analysis.id}/export/csv`);
       
-      csvContent += row.join(',') + '\n';
-    });
-    
-    // Create download link
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `seo-analysis-${analysis.domain}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (!response.ok) {
+        throw new Error('Failed to export CSV');
+      }
+      
+      // Get the CSV data as a blob
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `seo-analysis-${analysis.domain}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('Failed to export CSV. Please try again later.');
+    }
   };
   
   const loadMorePages = () => {
