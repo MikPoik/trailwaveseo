@@ -158,7 +158,7 @@ const Settings = () => {
                         <div className="space-y-0.5">
                           <FormLabel>Analyze Images</FormLabel>
                           <FormDescription>
-                            Check for alt text and image optimization
+                            Check for alt text and image optimization. When AI is enabled, also generates suggested alt text for images missing it.
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -200,7 +200,7 @@ const Settings = () => {
                         <div className="space-y-0.5">
                           <FormLabel>Use AI for Suggestions</FormLabel>
                           <FormDescription>
-                            Generate AI-powered improvement suggestions (uses OpenAI)
+                            Generate AI-powered SEO improvement suggestions and missing alt text for images (uses OpenAI)
                           </FormDescription>
                         </div>
                         <FormControl>

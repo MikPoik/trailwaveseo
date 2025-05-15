@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PageAnalysis, IssueType } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PageAnalysisCardProps {
@@ -187,6 +187,53 @@ const PageAnalysisCard = ({ page }: PageAnalysisCardProps) => {
             </div>
             
             <div className="p-4">
+              {/* Images with missing alt text section */}
+              {page.images.filter(img => !img.alt && img.suggestedAlt).length > 0 && (
+                <div className="mb-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
+                  <div className="flex items-center mb-3">
+                    <Image className="h-5 w-5 text-blue-600 mr-2" />
+                    <h5 className="text-sm font-medium text-blue-900">Images With AI-Suggested Alt Text</h5>
+                  </div>
+                  <div className="space-y-3">
+                    {page.images
+                      .filter(img => !img.alt && img.suggestedAlt)
+                      .slice(0, 5) // Show only first 5 to avoid overwhelming the UI
+                      .map((img, idx) => {
+                        // Simplify image path for display
+                        const imgSrc = img.src.split('/').pop() || img.src;
+                        return (
+                          <div key={idx} className="flex flex-col space-y-1 border-t border-blue-200 pt-3 first:border-t-0 first:pt-0">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded flex items-center justify-center mr-2">
+                                <Image className="h-4 w-4 text-gray-500" />
+                              </div>
+                              <a 
+                                href={img.src} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline truncate max-w-xs"
+                              >
+                                {imgSrc}
+                              </a>
+                            </div>
+                            <div className="pl-10">
+                              <div className="text-xs text-gray-500 mb-1">Suggested Alt Text:</div>
+                              <div className="text-sm text-gray-800 bg-white p-2 rounded border border-gray-200">
+                                {img.suggestedAlt}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    {page.images.filter(img => !img.alt && img.suggestedAlt).length > 5 && (
+                      <div className="text-xs text-blue-600">
+                        +{page.images.filter(img => !img.alt && img.suggestedAlt).length - 5} more images with suggested alt text
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <h5 className="text-sm font-medium text-gray-900 mb-3">AI Optimization Suggestions</h5>
               <div className="space-y-3">
                 {page.suggestions.length > 0 ? (

@@ -326,6 +326,54 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
           title: 'Missing Alt Text',
           description: `${missingAlt} out of ${images.length} images are missing alt text. Alt text is important for accessibility and SEO.`
         });
+        
+        // Generate alt text for images with missing alt text if AI is enabled
+        if (settings.useAI && process.env.OPENAI_API_KEY) {
+          try {
+            // Find nearby text for each image to provide context
+            const imagesToProcess = images
+              .filter(img => !img.alt)
+              .map(img => {
+                // Find the image element
+                const imgElement = $(`img[src="${img.src}"]`);
+                // Try to get nearby text (parent element text, sibling text, etc.)
+                const parentText = imgElement.parent().text().trim();
+                const nearbyHeading = imgElement.closest('div,section').find('h1,h2,h3,h4,h5,h6').first().text().trim();
+                const siblingText = imgElement.prev().text().trim() || imgElement.next().text().trim();
+                const nearbyText = nearbyHeading || parentText || siblingText || '';
+                
+                return {
+                  src: img.src,
+                  context: {
+                    url,
+                    title,
+                    nearbyText: nearbyText.substring(0, 200) // Limit context length
+                  }
+                };
+              });
+              
+            if (imagesToProcess.length > 0) {
+              // Process in batches to avoid API rate limits
+              const altTextSuggestions = await generateBatchImageAltText(imagesToProcess);
+              
+              // Map the suggested alt text back to the images
+              if (altTextSuggestions.length > 0) {
+                for (const image of images) {
+                  if (!image.alt) {
+                    // Find corresponding suggestion
+                    const suggestion = altTextSuggestions.find(s => s.src === image.src);
+                    if (suggestion && suggestion.suggestedAlt) {
+                      image.suggestedAlt = suggestion.suggestedAlt;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error generating alt text with OpenAI:', error instanceof Error ? error.message : String(error));
+            // Continue with analysis even if alt text generation fails
+          }
+        }
       }
     }
     
@@ -338,8 +386,42 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
           title,
           metaDescription,
           headings,
+          images,
           issues
         });
+        
+        // Add specific alt text suggestions for images with missing alt text
+        const imagesWithSuggestedAlt = images.filter(img => !img.alt && img.suggestedAlt);
+        if (imagesWithSuggestedAlt.length > 0) {
+          // Add general alt text suggestion if not already included
+          const hasAltTextSuggestion = suggestions.some(suggestion => 
+            suggestion.toLowerCase().includes('alt text') || 
+            suggestion.toLowerCase().includes('alternative text')
+          );
+          
+          if (!hasAltTextSuggestion) {
+            suggestions.push(
+              'Add descriptive alt text to all images to improve accessibility and SEO.'
+            );
+          }
+          
+          // Add specific suggestions for up to 3 images to avoid overwhelming the user
+          const imagesToSuggest = imagesWithSuggestedAlt.slice(0, 3);
+          for (const image of imagesToSuggest) {
+            // Create a simplified version of the image source for display
+            const imgSrc = image.src.split('/').pop() || image.src;
+            suggestions.push(
+              `For image "${imgSrc}", consider using this alt text: "${image.suggestedAlt}"`
+            );
+          }
+          
+          // Add a note if there are more images with suggestions
+          if (imagesWithSuggestedAlt.length > 3) {
+            suggestions.push(
+              `${imagesWithSuggestedAlt.length - 3} more images have AI-generated alt text suggestions available in the detailed analysis.`
+            );
+          }
+        }
       } catch (error) {
         console.error('Error generating AI suggestions:', error instanceof Error ? error.message : String(error));
         // Fallback to basic suggestions if AI fails
@@ -361,7 +443,13 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
                 : 'Ensure your page has exactly one H1 heading and uses other headings (H2-H6) in a logical hierarchical structure.';
               
             case 'images':
-              return 'Add descriptive alt text to all images to improve accessibility and SEO.';
+              // Include alt text suggestions if available
+              const imagesWithSuggestedAlt = images.filter(img => !img.alt && img.suggestedAlt);
+              if (imagesWithSuggestedAlt.length > 0) {
+                return `Add descriptive alt text to all images. ${imagesWithSuggestedAlt.length} AI-generated alt text suggestions are available in the detailed analysis.`;
+              } else {
+                return 'Add descriptive alt text to all images to improve accessibility and SEO.';
+              }
               
             default:
               return issue.description;
