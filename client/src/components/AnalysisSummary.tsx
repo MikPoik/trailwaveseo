@@ -17,8 +17,14 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
   
   const exportCSV = async () => {
+    if (!analysis.id) {
+      console.error('Analysis ID is undefined');
+      alert('Analysis ID is missing. Unable to export CSV.');
+      return;
+    }
+    
     try {
-      // Instead of using fetch directly, use the api helper
+      // Use the api helper to get the CSV blob
       const blob = await exportAnalysisCSV(analysis.id);
       
       // Create a download link
@@ -27,24 +33,18 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       link.href = url;
       link.setAttribute("download", `seo-analysis-${analysis.domain}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
       
-      // Ensure link is visible and clickable for better browser compatibility
+      // Append to document and make it invisible
       link.style.display = 'none';
-      
-      // Trigger the download
       document.body.appendChild(link);
       
-      // Use setTimeout to ensure the browser has time to process
-      setTimeout(() => {
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 100);
-      }, 0);
+      // Trigger the download
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error exporting CSV:', error);
+      console.error('Error exporting CSV:', error instanceof Error ? error.message : String(error));
       alert('Failed to export CSV. Please try again later.');
     }
   };
