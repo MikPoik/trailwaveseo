@@ -40,3 +40,14 @@ export async function exportAnalysisJSON(id: number): Promise<Blob> {
   const response = await apiRequest('GET', `/api/analysis/${id}/export/json`);
   return await response.blob();
 }
+
+// Competitor analysis
+export interface CompetitorAnalysisRequest {
+  mainDomain: string;
+  competitorDomain: string;
+}
+
+export async function compareWithCompetitor(data: CompetitorAnalysisRequest): Promise<any> {
+  const response = await apiRequest('POST', '/api/analyze/compare', data);
+  return await response.json();
+}

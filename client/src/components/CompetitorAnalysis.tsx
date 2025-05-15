@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { WebsiteAnalysis } from '@/lib/types';
-import { apiRequest } from '@/lib/queryClient';
+import { compareWithCompetitor } from '@/lib/api';
 import { InfoIcon, AlertTriangle, AlertCircle, Check, ChevronRight } from 'lucide-react';
 
 // Schema for competitor analysis form
@@ -63,16 +63,12 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     setError(null);
     
     try {
-      const response = await apiRequest('/api/analyze/compare', {
-        method: 'POST',
-        body: JSON.stringify({
-          mainDomain: mainAnalysis.domain,
-          competitorDomain: data.competitorDomain
-        })
+      const response = await axios.post('/api/analyze/compare', {
+        mainDomain: mainAnalysis.domain,
+        competitorDomain: data.competitorDomain
       });
       
-      const comparisonData = await response.json();
-      setComparison(comparisonData);
+      setComparison(response.data);
       
       toast({
         title: 'Analysis Complete',
