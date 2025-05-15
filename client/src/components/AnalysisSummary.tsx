@@ -18,15 +18,8 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   
   const exportCSV = async () => {
     try {
-      // Use the server API to get the CSV data
-      const response = await fetch(`/api/analysis/${analysis.id}/export/csv`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to export CSV');
-      }
-      
-      // Get the CSV data as a blob
-      const blob = await response.blob();
+      // Instead of using fetch directly, use the api helper
+      const blob = await exportAnalysisCSV(analysis.id);
       
       // Create a download link
       const url = window.URL.createObjectURL(blob);
@@ -34,13 +27,22 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       link.href = url;
       link.setAttribute("download", `seo-analysis-${analysis.domain}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
       
+      // Ensure link is visible and clickable for better browser compatibility
+      link.style.display = 'none';
+      
       // Trigger the download
       document.body.appendChild(link);
-      link.click();
       
-      // Clean up
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Use setTimeout to ensure the browser has time to process
+      setTimeout(() => {
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      }, 0);
     } catch (error) {
       console.error('Error exporting CSV:', error);
       alert('Failed to export CSV. Please try again later.');
