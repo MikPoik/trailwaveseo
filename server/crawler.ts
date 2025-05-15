@@ -3,14 +3,91 @@ import * as cheerio from 'cheerio';
 import { URL } from 'url';
 
 /**
- * Crawl a website to discover pages
+ * Parse a robots.txt file to get disallowed paths
+ * @param domain Domain to fetch robots.txt from
+ * @returns Set of disallowed paths
+ */
+async function parseRobotsTxt(domain: string): Promise<Set<string>> {
+  const disallowedPaths = new Set<string>();
+  
+  try {
+    const response = await axios.get(`https://${domain}/robots.txt`, {
+      timeout: 5000
+    });
+    
+    const lines = response.data.split('\n');
+    let userAgentApplies = false;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Check if this section applies to our user agent
+      if (trimmedLine.toLowerCase().startsWith('user-agent:')) {
+        const agent = trimmedLine.substring(11).trim();
+        // Apply rules for our bot or all bots (*)
+        userAgentApplies = agent === '*' || agent.includes('SEO-Optimizer-Bot');
+        continue;
+      }
+      
+      // If in applicable section, parse disallow rules
+      if (userAgentApplies && trimmedLine.toLowerCase().startsWith('disallow:')) {
+        const path = trimmedLine.substring(9).trim();
+        if (path.length > 0) {
+          disallowedPaths.add(path);
+        }
+      }
+    }
+    
+    return disallowedPaths;
+  } catch (error) {
+    console.log(`No robots.txt found at ${domain} or error parsing it:`, error);
+    return new Set<string>();
+  }
+}
+
+/**
+ * Check if a URL is allowed to be crawled based on robots.txt rules
+ * @param url URL to check
+ * @param disallowedPaths Set of disallowed paths from robots.txt
+ * @returns Boolean indicating if URL can be crawled
+ */
+function isUrlAllowed(url: string, disallowedPaths: Set<string>): boolean {
+  const urlObj = new URL(url);
+  const path = urlObj.pathname;
+  
+  for (const disallowedPath of disallowedPaths) {
+    // Simple wildcard matching logic
+    if (disallowedPath.endsWith('*')) {
+      const prefix = disallowedPath.slice(0, -1);
+      if (path.startsWith(prefix)) {
+        return false;
+      }
+    } else if (path === disallowedPath || path.startsWith(`${disallowedPath}/`)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Crawl a website to discover pages and extract basic SEO data
+ * 
+ * Features:
+ * - Respects robots.txt directives
+ * - Detects meta robots noindex/nofollow tags
+ * - Prioritizes important pages (home, about, etc.)
+ * - Normalizes URLs to avoid duplicates
+ * - Filters tracking parameters
+ * - Extracts basic SEO data during crawling
+ * 
  * @param startUrl URL to start crawling from
  * @param maxPages Maximum number of pages to crawl
  * @param delay Delay between requests in milliseconds
  * @param followExternalLinks Whether to follow links to other domains
  * @param signal AbortSignal for cancellation
- * @param progressCallback Optional callback to report crawling progress
- * @returns Array of discovered page URLs
+ * @param progressCallback Optional callback to report crawling progress and SEO data
+ * @returns Array of discovered page URLs that can be indexed (respecting robots directives)
  */
 export async function crawlWebsite(
   startUrl: string, 
@@ -18,22 +95,38 @@ export async function crawlWebsite(
   delay: number = 500,
   followExternalLinks: boolean = false,
   signal?: AbortSignal,
-  progressCallback?: (urls: string[]) => void
+  progressCallback?: (urls: string[], seoData?: any) => void
 ): Promise<string[]> {
   const normalizedStartUrl = normalizeUrl(startUrl);
   const baseUrlObj = new URL(normalizedStartUrl);
   const baseDomain = baseUrlObj.hostname;
   
+  // Parse robots.txt to respect crawling rules
+  const disallowedPaths = await parseRobotsTxt(baseDomain);
+  
   const discoveredUrls = new Set<string>([normalizedStartUrl]);
   const crawledUrls = new Set<string>();
-  const queue = [normalizedStartUrl];
+  
+  // Use a priority queue for better crawling order
+  interface QueueItem {
+    url: string;
+    priority: number;
+  }
+  
+  // Start with the initial URL at high priority
+  const priorityQueue: QueueItem[] = [
+    { url: normalizedStartUrl, priority: 20 }
+  ];
 
-  while (queue.length > 0 && crawledUrls.size < maxPages) {
+  while (priorityQueue.length > 0 && crawledUrls.size < maxPages) {
     if (signal?.aborted) {
       throw new Error('Crawling cancelled');
     }
     
-    const currentUrl = queue.shift()!;
+    // Sort queue by priority (descending) and get the highest priority URL
+    priorityQueue.sort((a, b) => b.priority - a.priority);
+    const currentItem = priorityQueue.shift()!;
+    const currentUrl = currentItem.url;
     
     // Skip if already crawled
     if (crawledUrls.has(currentUrl)) {
@@ -60,7 +153,19 @@ export async function crawlWebsite(
       
       // Extract links from the page
       const $ = cheerio.load(response.data);
-      const links = $('a[href]')
+      
+      // Check for noindex or nofollow in meta robots
+      const metaRobots = $('meta[name="robots"], meta[name="googlebot"]').attr('content');
+      const hasNoindex = metaRobots && metaRobots.toLowerCase().includes('noindex');
+      const hasNofollow = metaRobots && metaRobots.toLowerCase().includes('nofollow');
+      
+      // If the page has noindex, we crawl it but don't add to discoveredUrls (output)
+      if (hasNoindex) {
+        console.log(`Page has noindex directive: ${currentUrl}`);
+      }
+      
+      // If the page has nofollow, we don't follow its links
+      const links = hasNofollow ? [] : $('a[href]')
         .map((_, el) => $(el).attr('href'))
         .get();
       
@@ -95,25 +200,47 @@ export async function crawlWebsite(
             continue;
           }
           
-          // Add to discovered URLs and queue
+          // Check against robots.txt rules if on the same domain
+          if (urlObj.hostname === baseDomain && !isUrlAllowed(normalizedLink, disallowedPaths)) {
+            continue;
+          }
+          
+          // Add to discovered URLs and priority queue
           discoveredUrls.add(normalizedLink);
-          queue.push(normalizedLink);
+          const priority = calculateUrlPriority(normalizedLink, baseDomain);
+          priorityQueue.push({ url: normalizedLink, priority });
         } catch (error) {
           // Skip invalid URLs
           continue;
         }
       }
       
-      // Mark as crawled
+      // Extract basic SEO data while we're already parsing the page
+      const seoData = {
+        url: currentUrl,
+        title: $('title').text() || null,
+        metaDescription: $('meta[name="description"]').attr('content') || null,
+        h1: $('h1').first().text() || null,
+        headingCount: {
+          h1: $('h1').length,
+          h2: $('h2').length,
+          h3: $('h3').length
+        },
+        wordCount: $('body').text().trim().split(/\s+/).length,
+        hasCanonical: $('link[rel="canonical"]').length > 0,
+        hasStructuredData: $('script[type="application/ld+json"]').length > 0
+      };
+      
+      // Mark as crawled with the SEO data
       crawledUrls.add(currentUrl);
       
       // Call progress callback if provided
       if (progressCallback) {
-        progressCallback(Array.from(discoveredUrls));
+        progressCallback(Array.from(discoveredUrls), seoData);
       }
       
       // Delay before next request
-      if (queue.length > 0) {
+      if (priorityQueue.length > 0) {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     } catch (error) {
@@ -147,8 +274,63 @@ function normalizeUrl(url: string): string {
       urlObj.port = '';
     }
     
+    // Remove common tracking parameters that create duplicate content
+    const commonTrackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 
+      'utm_term', 'utm_content', 'fbclid', 'gclid', '_ga'];
+    
+    const searchParams = urlObj.searchParams;
+    const paramsToRemove = [];
+    
+    for (const [key] of searchParams.entries()) {
+      if (commonTrackingParams.includes(key)) {
+        paramsToRemove.push(key);
+      }
+    }
+    
+    // Remove identified tracking parameters
+    paramsToRemove.forEach(param => {
+      searchParams.delete(param);
+    });
+    
     return urlObj.href;
   } catch (error) {
     return url;
+  }
+}
+
+/**
+ * Calculate URL priority for crawling
+ * @param url URL to evaluate
+ * @param baseDomain Base domain of the crawl
+ * @returns Priority score (higher = more important)
+ */
+function calculateUrlPriority(url: string, baseDomain: string): number {
+  try {
+    const urlObj = new URL(url);
+    
+    // Base priority
+    let priority = 10;
+    
+    // Top-level pages get higher priority
+    const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+    priority -= pathSegments.length * 2; // Reduce priority for deeper pages
+    
+    // Home page gets highest priority
+    if (urlObj.pathname === '/' || urlObj.pathname === '') {
+      priority += 10;
+    }
+    
+    // Common important pages
+    if (urlObj.pathname.match(/\/(about|contact|services|products|blog|faq)($|\/)/i)) {
+      priority += 5;
+    }
+    
+    // Pages with many query parameters are less important (likely search results/filters)
+    priority -= urlObj.searchParams.size;
+    
+    // Cap priority range
+    return Math.max(1, Math.min(20, priority));
+  } catch (error) {
+    return 1; // Lowest priority for invalid URLs
   }
 }

@@ -52,14 +52,22 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     
     if (!useSitemap || pages.length === 0) {
       // Crawl the website to find pages
+      // Collect basic SEO data during crawling to improve user experience
+      const basicSeoData = new Map();
+      
       pages = await crawlWebsite(
         `https://${domain}`, 
         settings.maxPages, 
         settings.crawlDelay, 
         settings.followExternalLinks,
         controller.signal,
-        (crawledPages) => {
-          // Emit progress update during crawling
+        (crawledPages, seoData) => {
+          // Store SEO data for each page
+          if (seoData) {
+            basicSeoData.set(seoData.url, seoData);
+          }
+          
+          // Emit progress update during crawling with basic SEO data
           events.emit(domain, {
             status: 'in-progress',
             domain,
@@ -67,6 +75,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             pagesAnalyzed: 0,
             currentPageUrl: crawledPages[crawledPages.length - 1] || '',
             analyzedPages: [],
+            basicSeoData: Array.from(basicSeoData.values()),
             percentage: 0
           });
         }
