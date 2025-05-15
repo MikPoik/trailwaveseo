@@ -16,7 +16,7 @@ const Sidebar = () => {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   
-  const { data: recentSites } = useQuery({
+  const { data: recentSites = [] } = useQuery<{id: number, domain: string}[]>({
     queryKey: ['/api/analysis/recent'],
   });
 
@@ -69,9 +69,9 @@ const Sidebar = () => {
       <nav className={cn("p-4 space-y-1", isOpen ? "block" : "hidden md:block")}>
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
-            <a
+            <div
               className={cn(
-                "flex items-center px-4 py-2 text-sm font-medium rounded-md",
+                "flex items-center px-4 py-2 text-sm font-medium rounded-md cursor-pointer",
                 item.active
                   ? "text-primary-700 bg-primary-50"
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -79,7 +79,7 @@ const Sidebar = () => {
             >
               {item.icon}
               {item.label}
-            </a>
+            </div>
           </Link>
         ))}
         
@@ -91,9 +91,9 @@ const Sidebar = () => {
             <div className="mt-2 space-y-1">
               {recentSites.map((site: { domain: string, id: number }) => (
                 <Link key={site.id} href={`/analysis/${site.id}`}>
-                  <a className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                  <div className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer">
                     {site.domain}
-                  </a>
+                  </div>
                 </Link>
               ))}
             </div>

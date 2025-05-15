@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.set('trust proxy', 1); // Trust the first proxy in a chain to fix rate limiting when using X-Forwarded-For
 
 app.use((req, res, next) => {
   const start = Date.now();

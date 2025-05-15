@@ -55,7 +55,7 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
         ? result.urlset.url 
         : [result.urlset.url];
       
-      return urls.map(url => url.loc);
+      return urls.map((url: { loc: string }) => url.loc);
     }
     
     // Fallback for unexpected format
