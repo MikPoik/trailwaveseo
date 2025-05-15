@@ -11,6 +11,7 @@ export interface IStorage {
   getAnalysisById(id: number): Promise<Analysis | undefined>;
   getAnalysisHistory(): Promise<Analysis[]>;
   getRecentAnalyses(limit: number): Promise<{id: number, domain: string}[]>;
+  getLatestAnalysisByDomain(domain: string): Promise<Analysis | null>;
   saveAnalysis(analysis: any): Promise<Analysis>;
   deleteAnalysis(id: number): Promise<boolean>;
   
@@ -83,6 +84,24 @@ export class MemStorage implements IStorage {
       }));
   }
   
+  /**
+   * Get the latest analysis for a specific domain
+   * @param domain Domain to search for
+   * @returns Most recent analysis for the domain, or null if not found
+   */
+  async getLatestAnalysisByDomain(domain: string): Promise<Analysis | null> {
+    const analysisHistory = await this.getAnalysisHistory();
+    
+    // Find all analyses for this domain
+    const domainAnalyses = analysisHistory.filter(analysis => analysis.domain === domain);
+    
+    // Sort by date (newest first)
+    domainAnalyses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // Return the most recent, or null if none found
+    return domainAnalyses.length > 0 ? domainAnalyses[0] : null;
+  }
+  
   async saveAnalysis(analysis: any): Promise<Analysis> {
     const id = this.analysisIdCounter++;
     const newAnalysis: Analysis = {
@@ -118,22 +137,3 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
-
-
-  /**
-   * Get the latest analysis for a specific domain
-   * @param domain Domain to search for
-   * @returns Most recent analysis for the domain, or null if not found
-   */
-  async getLatestAnalysisByDomain(domain: string): Promise<any> {
-    const analysisHistory = await this.getAnalysisHistory();
-    
-    // Find all analyses for this domain
-    const domainAnalyses = analysisHistory.filter(analysis => analysis.domain === domain);
-    
-    // Sort by date (newest first)
-    domainAnalyses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    // Return the most recent, or null if none found
-    return domainAnalyses.length > 0 ? domainAnalyses[0] : null;
-  }

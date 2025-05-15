@@ -5,7 +5,7 @@ import { crawlWebsite } from './crawler';
 import { generateSeoSuggestions, generateBatchImageAltText } from './openai';
 import { storage } from './storage';
 import { EventEmitter } from 'events';
-import { Heading, Image, SeoIssue } from '../client/src/lib/types';
+import { Heading, Image, SeoIssue, SeoCategory } from '../client/src/lib/types';
 
 // Store ongoing analyses to allow cancellation
 const ongoingAnalyses = new Map();
@@ -42,7 +42,6 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           analyzedPages: [],
           percentage: 0
         });
-        
       } catch (error) {
         console.log(`No sitemap found or error parsing sitemap for ${domain}, falling back to crawling`);
         // Fallback to crawling
@@ -104,56 +103,6 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         status: 'in-progress',
         domain,
         pagesFound: totalPages,
-
-/**
- * Measure page load time and basic performance metrics
- * @param url Page URL to analyze
- * @param signal AbortSignal for cancellation
- */
-async function measurePageSpeed(url: string, signal: AbortSignal): Promise<any> {
-  try {
-    const startTime = Date.now();
-    
-    // Make HTTP request to the page
-    const response = await axios.get(url, { 
-      signal,
-      headers: {
-        'User-Agent': 'SEO-Optimizer-Bot/1.0 (+https://seooptimizer.com/bot)',
-      },
-      timeout: 15000  // 15-second timeout
-    });
-    
-    const endTime = Date.now();
-    const loadTime = endTime - startTime;
-    
-    const html = response.data;
-    
-    // Calculate basic performance metrics
-    const htmlSize = Buffer.from(html).length;
-    const contentLength = parseInt(response.headers['content-length'] || '0') || htmlSize;
-    
-    // Count resources
-    const $ = cheerio.load(html);
-    const scripts = $('script').length;
-    const styles = $('link[rel="stylesheet"]').length;
-    const images = $('img').length;
-    
-    return {
-      loadTime,
-      contentSize: contentLength,
-      resources: {
-        scripts,
-        styles,
-        images,
-        total: scripts + styles + images
-      }
-    };
-  } catch (error) {
-    console.error(`Error measuring page speed for ${url}:`, error instanceof Error ? error.message : String(error));
-    return null;
-  }
-}
-
         pagesAnalyzed: i,
         currentPageUrl: pageUrl,
         analyzedPages: analyzedPages.map(p => p.url),
@@ -164,22 +113,15 @@ async function measurePageSpeed(url: string, signal: AbortSignal): Promise<any> 
         // Analyze the page
         const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal);
         analyzedPages.push(pageAnalysis);
-        
-        // Add a delay between requests to avoid rate limiting
-        if (i < totalPages - 1) {
-          await new Promise(resolve => setTimeout(resolve, settings.crawlDelay));
-        }
       } catch (error) {
         console.error(`Error analyzing page ${pageUrl}:`, error);
-        // Continue with next page on error
-        continue;
       }
     }
     
-    // Calculate analysis metrics
+    // Calculate overall metrics
     const metrics = calculateMetrics(analyzedPages);
     
-    // Create full analysis object
+    // Save analysis to storage
     const analysis = {
       domain,
       date: new Date().toISOString(),
@@ -188,10 +130,9 @@ async function measurePageSpeed(url: string, signal: AbortSignal): Promise<any> 
       pages: analyzedPages
     };
     
-    // Save the analysis to the database
     const savedAnalysis = await storage.saveAnalysis(analysis);
     
-    // Emit completed event with the analysis
+    // Emit completed event with analysis results
     events.emit(domain, {
       status: 'completed',
       domain,
@@ -206,30 +147,27 @@ async function measurePageSpeed(url: string, signal: AbortSignal): Promise<any> 
     // Clean up
     ongoingAnalyses.delete(domain);
     
-    return savedAnalysis;
+    return savedAnalysis.id;
   } catch (error) {
+    console.error(`Analysis error for ${domain}:`, error);
+    
     // Clean up
     ongoingAnalyses.delete(domain);
     
-    // Propagate the error
+    // Emit error event
+    events.emit(domain, {
+      status: 'error',
+      domain,
+      error: error.message,
+      pagesFound: 0,
+      pagesAnalyzed: 0,
+      currentPageUrl: '',
+      analyzedPages: [],
+      percentage: 0
+    });
+    
     throw error;
   }
-}
-
-/**
- * Cancel an ongoing analysis
- * @param domain Domain name of the analysis to cancel
- */
-export function cancelAnalysis(domain: string): boolean {
-  const controller = ongoingAnalyses.get(domain);
-  
-  if (controller) {
-    controller.abort();
-    ongoingAnalyses.delete(domain);
-    return true;
-  }
-  
-  return false;
 }
 
 /**
@@ -240,393 +178,197 @@ export function cancelAnalysis(domain: string): boolean {
  */
 async function analyzePage(url: string, settings: any, signal: AbortSignal) {
   try {
-    // Measure page speed if enabled
-    let speedMetrics = null;
-    if (settings.analyzePageSpeed) {
-      speedMetrics = await measurePageSpeed(url, signal);
-    }
-    
-    // Make HTTP request to the page
-    const response = await axios.get(url, { 
+    // Fetch page content
+    const response = await axios.get(url, {
       signal,
       headers: {
         'User-Agent': 'SEO-Optimizer-Bot/1.0 (+https://seooptimizer.com/bot)',
       },
-      timeout: 10000  // 10-second timeout
+      timeout: 15000 // 15-second timeout
     });
-    
+
     const html = response.data;
     const $ = cheerio.load(html);
-    
-    // Extract basic page information
-    const title = $('title').text() || null;
+
+    // Extract basic SEO elements
+    const title = $('title').text().trim();
     const metaDescription = $('meta[name="description"]').attr('content') || null;
-    const metaKeywords = $('meta[name="keywords"]').attr('content')?.split(',').map(k => k.trim()) || null;
+    const metaKeywords = $('meta[name="keywords"]').attr('content') || null;
+    const metaKeywordsArray = metaKeywords ? metaKeywords.split(',').map(k => k.trim()) : null;
     const canonical = $('link[rel="canonical"]').attr('href') || null;
     const robotsMeta = $('meta[name="robots"]').attr('content') || null;
-    
+
     // Extract headings
     const headings: Heading[] = [];
     for (let i = 1; i <= 6; i++) {
-      $(`h${i}`).each((idx, element) => {
+      $(`h${i}`).each((_, el) => {
         headings.push({
           level: i,
-          text: $(element).text().trim()
+          text: $(el).text().trim()
         });
       });
     }
-    
-    // Extract images if enabled in settings
+
+    // Extract images
     const images: Image[] = [];
-    if (settings.analyzeImages) {
-      $('img').each((idx, element) => {
+    $('img').each((_, el) => {
+      const src = $(el).attr('src');
+      if (src) {
         images.push({
-          src: $(element).attr('src') || '',
-          alt: $(element).attr('alt') || null,
-          width: parseInt($(element).attr('width') || '0') || undefined,
-          height: parseInt($(element).attr('height') || '0') || undefined
-        });
-      });
-
-    // Mobile compatibility issues
-    const viewportMeta = $('meta[name="viewport"]').attr('content');
-    if (!viewportMeta) {
-      issues.push({
-        category: 'mobile',
-
-    // Structured data analysis
-    const structuredData = [];
-    $('script[type="application/ld+json"]').each((_, el) => {
-      try {
-        const jsonContent = $(el).html();
-        if (jsonContent) {
-          const parsedData = JSON.parse(jsonContent);
-          structuredData.push(parsedData);
-        }
-      } catch (error) {
-        console.error('Error parsing structured data:', error);
-        issues.push({
-          category: 'structured-data',
-          severity: 'warning',
-          title: 'Invalid Structured Data',
-          description: 'Page contains invalid JSON-LD structured data that could not be parsed.'
+          src: src.startsWith('http') ? src : new URL(src, url).toString(),
+          alt: $(el).attr('alt') || null,
+          width: parseInt($(el).attr('width') || '0') || undefined,
+          height: parseInt($(el).attr('height') || '0') || undefined
         });
       }
     });
-    
-    if (structuredData.length === 0) {
-      issues.push({
-        category: 'structured-data',
-        severity: 'warning',
-        title: 'Missing Structured Data',
-        description: 'Page does not contain any JSON-LD structured data. Structured data helps search engines understand your content.'
-      });
-    } else {
-      // Check for common schema types
-      const hasCommonTypes = structuredData.some(data => {
-        const type = data['@type'] || '';
-        return ['Product', 'Article', 'LocalBusiness', 'FAQPage', 'Event', 'Recipe', 'Review'].includes(type);
-      });
-      
-      if (!hasCommonTypes) {
-        issues.push({
-          category: 'structured-data',
-          severity: 'info',
-          title: 'Consider Adding Common Schema Types',
-          description: 'Consider adding relevant schema types like Product, Article, LocalBusiness, FAQPage, etc. to improve search results.'
-        });
-      }
-    }
 
-        severity: 'critical',
-        title: 'Missing Viewport Meta Tag',
-        description: 'Page is missing the viewport meta tag. This is required for responsive design and mobile optimization.'
-      });
-    } else if (!viewportMeta.includes('width=device-width')) {
-      issues.push({
-        category: 'mobile',
-        severity: 'warning',
-        title: 'Improper Viewport Configuration',
-        description: 'Viewport meta tag should include width=device-width for proper mobile rendering.'
-      });
-    }
-    
-    // Check for tap targets that are too small (simplified check)
-    const smallLinks = $('a').filter((_, el) => {
-      const styles = $(el).css(['width', 'height', 'padding']);
-      // Very simplified check - in reality would need computed styles
-      return ($(el).attr('style') && 
-             (styles.width && parseInt(styles.width) < 40 || 
-              styles.height && parseInt(styles.height) < 40));
-    }).length;
-    
-    if (smallLinks > 0) {
-      issues.push({
-        category: 'mobile',
-        severity: 'warning',
-        title: 'Small Tap Targets',
-        description: `Detected ${smallLinks} potentially small tap targets. Mobile touch elements should be at least 48px in height and width with adequate spacing.`
-      });
-    }
-
-    }
-    
-    // Identify the page name from URL or title
-    const urlObj = new URL(url);
-    let pageName = urlObj.pathname === '/' ? 'Homepage' : 
-                   urlObj.pathname.split('/').filter(Boolean).pop() || 
-                   urlObj.hostname;
-    
-    // Capitalize and clean up page name
-    pageName = pageName
-                .replace(/-/g, ' ')
-                .replace(/\.(html|php|asp|jsp)$/, '')
-                .replace(/^\w/, c => c.toUpperCase());
-    
-    // Analyze for common SEO issues
+    // Collect SEO issues
     const issues: SeoIssue[] = [];
-    
+
+    // Check for SEO issues
     // Title issues
     if (!title) {
       issues.push({
         category: 'title',
         severity: 'critical',
-        title: 'Missing Title',
-        description: 'Page has no title tag. Title tags are crucial for SEO.'
+        title: 'Missing Page Title',
+        description: 'The page does not have a title tag, which is essential for SEO.'
       });
-    } else if (title.length < 20) {
+    } else if (title.length < 10) {
       issues.push({
         category: 'title',
         severity: 'warning',
         title: 'Title Too Short',
-        description: `Title is only ${title.length} characters. Recommended length is 50-60 characters.`
+        description: `The page title is only ${title.length} characters. Consider using a longer, more descriptive title.`
       });
     } else if (title.length > 60) {
       issues.push({
         category: 'title',
         severity: 'warning',
         title: 'Title Too Long',
-        description: `Title is ${title.length} characters. Recommended length is 50-60 characters.`
+        description: `The page title is ${title.length} characters, which exceeds the recommended 60 characters.`
       });
     }
-    
+
     // Meta description issues
     if (!metaDescription) {
       issues.push({
         category: 'meta-description',
         severity: 'critical',
         title: 'Missing Meta Description',
-        description: 'Page has no meta description. Meta descriptions are important for SEO and click-through rates.'
+        description: 'The page does not have a meta description, which is important for search engines.'
       });
-    } else if (metaDescription.length < 70) {
+    } else if (metaDescription.length < 50) {
       issues.push({
         category: 'meta-description',
         severity: 'warning',
         title: 'Meta Description Too Short',
-        description: `Meta description is only ${metaDescription.length} characters. Recommended length is 120-160 characters.`
+        description: `The meta description is only ${metaDescription.length} characters. Consider using a longer description.`
       });
     } else if (metaDescription.length > 160) {
       issues.push({
         category: 'meta-description',
         severity: 'warning',
         title: 'Meta Description Too Long',
-        description: `Meta description is ${metaDescription.length} characters. Recommended length is 120-160 characters.`
+        description: `The meta description is ${metaDescription.length} characters, which exceeds the recommended 160 characters.`
       });
     }
-    
-    // Heading issues
+
+    // Headings issues
     if (headings.length === 0) {
       issues.push({
         category: 'headings',
-        severity: 'critical',
-        title: 'No Headings',
-        description: 'Page has no heading tags (h1-h6). Headings are important for page structure and SEO.'
+        severity: 'warning',
+        title: 'No Headings Found',
+        description: 'The page does not have any heading tags (h1-h6), which are important for SEO and content structure.'
       });
-    } else {
-      const h1Count = headings.filter(h => h.level === 1).length;
-      
-      if (h1Count === 0) {
-        issues.push({
-          category: 'headings',
-          severity: 'critical',
-          title: 'Missing H1 Heading',
-          description: 'Page has no H1 heading. Each page should have exactly one H1 heading.'
-        });
-      } else if (h1Count > 1) {
-        issues.push({
-          category: 'headings',
-          severity: 'warning',
-          title: 'Multiple H1 Headings',
-          description: `Page has ${h1Count} H1 headings. Each page should have exactly one H1 heading.`
-        });
-      }
+    } else if (!headings.some(h => h.level === 1)) {
+      issues.push({
+        category: 'headings',
+        severity: 'warning',
+        title: 'Missing H1 Heading',
+        description: 'The page does not have an H1 heading, which is important for SEO and accessibility.'
+      });
     }
-    
+
     // Image issues
-    if (settings.analyzeImages && images.length > 0) {
-      const missingAlt = images.filter(img => !img.alt).length;
-      
-      if (missingAlt > 0) {
+    if (images.length > 0) {
+      const imagesWithoutAlt = images.filter(img => !img.alt);
+      if (imagesWithoutAlt.length > 0) {
         issues.push({
           category: 'images',
-          severity: missingAlt === images.length ? 'critical' : 'warning',
-          title: 'Missing Alt Text',
-          description: `${missingAlt} out of ${images.length} images are missing alt text. Alt text is important for accessibility and SEO.`
+          severity: imagesWithoutAlt.length === images.length ? 'critical' : 'warning',
+          title: 'Images Missing Alt Text',
+          description: `${imagesWithoutAlt.length} of ${images.length} images are missing alt text, which is important for SEO and accessibility.`
         });
-        
-        // Generate alt text for images with missing alt text if AI is enabled
-        if (settings.useAI && process.env.OPENAI_API_KEY) {
-          try {
-            // Find nearby text for each image to provide context
-            const imagesToProcess = images
-              .filter(img => !img.alt)
-              .map(img => {
-                // Find the image element
-                const imgElement = $(`img[src="${img.src}"]`);
-                // Try to get nearby text (parent element text, sibling text, etc.)
-                const parentText = imgElement.parent().text().trim();
-                const nearbyHeading = imgElement.closest('div,section').find('h1,h2,h3,h4,h5,h6').first().text().trim();
-                const siblingText = imgElement.prev().text().trim() || imgElement.next().text().trim();
-                const nearbyText = nearbyHeading || parentText || siblingText || '';
-                
-                return {
-                  src: img.src,
-                  context: {
-                    url,
-                    title,
-                    nearbyText: nearbyText.substring(0, 200) // Limit context length
-                  }
-                };
-              });
-              
-            if (imagesToProcess.length > 0) {
-              // Process in batches to avoid API rate limits
-              const altTextSuggestions = await generateBatchImageAltText(imagesToProcess);
-              
-              // Map the suggested alt text back to the images
-              if (altTextSuggestions.length > 0) {
-                for (const image of images) {
-                  if (!image.alt) {
-                    // Find corresponding suggestion
-                    const suggestion = altTextSuggestions.find(s => s.src === image.src);
-                    if (suggestion && suggestion.suggestedAlt) {
-                      image.suggestedAlt = suggestion.suggestedAlt;
-                    }
-                  }
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error generating alt text with OpenAI:', error instanceof Error ? error.message : String(error));
-            // Continue with analysis even if alt text generation fails
-          }
-        }
       }
     }
-    
-    // Generate AI-powered suggestions if enabled
+
+    // Canonical issues
+    if (!canonical) {
+      issues.push({
+        category: 'canonical',
+        severity: 'warning',
+        title: 'Missing Canonical Tag',
+        description: 'The page does not have a canonical tag, which helps prevent duplicate content issues.'
+      });
+    }
+
+    // Get page name from URL for display
+    const urlObj = new URL(url);
+    const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+    const pageName = pathSegments.length === 0 ? 'Home Page' : 
+                     pathSegments[pathSegments.length - 1].replace(/-/g, ' ')
+                                                          .replace(/\.(html|php|asp|jsp)$/, '')
+                                                          .split(' ')
+                                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                                          .join(' ');
+
+    // Generate suggestions if AI is enabled
     let suggestions: string[] = [];
-    
-    if (settings.useAI && issues.length > 0) {
+    if (settings.useAI) {
       try {
-        suggestions = await generateSeoSuggestions(url, {
+        // Prepare page data for the AI
+        const pageData = {
+          url,
           title,
           metaDescription,
           headings,
-          images,
-          issues
-        });
-        
-        // Add specific alt text suggestions for images with missing alt text
-        const imagesWithSuggestedAlt = images.filter(img => !img.alt && img.suggestedAlt);
-        if (imagesWithSuggestedAlt.length > 0) {
-          // Add general alt text suggestion if not already included
-          const hasAltTextSuggestion = suggestions.some(suggestion => 
-            suggestion.toLowerCase().includes('alt text') || 
-            suggestion.toLowerCase().includes('alternative text')
-          );
-          
-          if (!hasAltTextSuggestion) {
-            suggestions.push(
-              'Add descriptive alt text to all images to improve accessibility and SEO.'
-            );
-          }
-          
-          // Add specific suggestions for up to 3 images to avoid overwhelming the user
-          const imagesToSuggest = imagesWithSuggestedAlt.slice(0, 3);
-          for (const image of imagesToSuggest) {
-            // Create a simplified version of the image source for display
-            const imgSrc = image.src.split('/').pop() || image.src;
-            suggestions.push(
-              `For image "${imgSrc}", consider using this alt text: "${image.suggestedAlt}"`
-            );
-          }
-          
-          // Add a note if there are more images with suggestions
-          if (imagesWithSuggestedAlt.length > 3) {
-            suggestions.push(
-              `${imagesWithSuggestedAlt.length - 3} more images have AI-generated alt text suggestions available in the detailed analysis.`
-            );
-          }
-        }
+          images: images.map(img => ({
+            src: img.src,
+            alt: img.alt
+          })),
+          issues: issues.map(issue => ({
+            category: issue.category,
+            severity: issue.severity,
+            title: issue.title
+          }))
+        };
+
+        suggestions = await generateSeoSuggestions(url, pageData);
       } catch (error) {
-        console.error('Error generating AI suggestions:', error instanceof Error ? error.message : String(error));
-        // Fallback to basic suggestions if AI fails
-        suggestions = issues.map(issue => {
-          switch (issue.category) {
-            case 'title':
-              return issue.severity === 'critical'
-                ? 'Add a descriptive title tag between 50-60 characters.'
-                : 'Optimize your title length to be between 50-60 characters for better visibility in search results.';
-              
-            case 'meta-description':
-              return issue.severity === 'critical'
-                ? 'Add a compelling meta description between 120-160 characters.'
-                : 'Adjust your meta description length to be between 120-160 characters for optimal display in search results.';
-              
-            case 'headings':
-              return issue.severity === 'critical' && issue.title === 'Missing H1 Heading'
-                ? 'Add an H1 heading that clearly describes the page content.'
-                : 'Ensure your page has exactly one H1 heading and uses other headings (H2-H6) in a logical hierarchical structure.';
-              
-            case 'images':
-              // Include alt text suggestions if available
-              const imagesWithSuggestedAlt = images.filter(img => !img.alt && img.suggestedAlt);
-              if (imagesWithSuggestedAlt.length > 0) {
-                return `Add descriptive alt text to all images. ${imagesWithSuggestedAlt.length} AI-generated alt text suggestions are available in the detailed analysis.`;
-              } else {
-                return 'Add descriptive alt text to all images to improve accessibility and SEO.';
-              }
-              
-            default:
-              return issue.description;
-          }
-        });
+        console.error(`Error generating suggestions for ${url}:`, error);
+        suggestions = [];
       }
     }
-    
+
     return {
       url,
       pageName,
       title,
       metaDescription,
-      metaKeywords,
+      metaKeywords: metaKeywordsArray,
       headings,
       images,
       canonical,
       robotsMeta,
       issues,
-      suggestions,
-      speedMetrics
+      suggestions
     };
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(`Failed to fetch page (HTTP ${error.response.status})`);
-    } else if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Analysis cancelled');
-    } else {
-      throw new Error(`Failed to analyze page: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    console.error(`Error analyzing page ${url}:`, error);
+    throw error;
   }
 }
 
@@ -639,40 +381,68 @@ function calculateMetrics(pages: any[]) {
   let warnings = 0;
   let criticalIssues = 0;
   
-  // Count issues by severity
+  let titleOptimization = 0;
+  let descriptionOptimization = 0;
+  let headingsOptimization = 0;
+  let imagesOptimization = 0;
+  
+  // Analyze all pages
   pages.forEach(page => {
-    page.issues.forEach((issue: any) => {
+    // Count issues by severity
+    page.issues.forEach((issue: SeoIssue) => {
       if (issue.severity === 'critical') {
         criticalIssues++;
       } else if (issue.severity === 'warning') {
         warnings++;
+      } else if (issue.severity === 'info') {
+        goodPractices++;
+      }
+      
+      // Optimize category-specific metrics
+      switch (issue.category) {
+        case 'title':
+          titleOptimization -= (issue.severity === 'critical' ? 25 : 10);
+          break;
+        case 'meta-description':
+          descriptionOptimization -= (issue.severity === 'critical' ? 25 : 10);
+          break;
+        case 'headings':
+          headingsOptimization -= (issue.severity === 'critical' ? 25 : 10);
+          break;
+        case 'images':
+          imagesOptimization -= (issue.severity === 'critical' ? 25 : 10);
+          break;
       }
     });
     
-    // If the page has no issues, count it as a good practice
-    if (page.issues.length === 0) {
+    // Award points for good practices
+    if (page.title && page.title.length >= 10 && page.title.length <= 60) {
+      titleOptimization += 20;
+      goodPractices++;
+    }
+    
+    if (page.metaDescription && page.metaDescription.length >= 50 && page.metaDescription.length <= 160) {
+      descriptionOptimization += 20;
+      goodPractices++;
+    }
+    
+    if (page.headings.length > 0 && page.headings.some(h => h.level === 1)) {
+      headingsOptimization += 20;
+      goodPractices++;
+    }
+    
+    if (page.images.length > 0 && page.images.every(img => img.alt)) {
+      imagesOptimization += 20;
       goodPractices++;
     }
   });
   
-  // Calculate optimizations by category
-  const totalPages = pages.length;
-  
-  const titleOptimization = Math.round(
-    ((totalPages - pages.filter(p => p.issues.some((i: any) => i.category === 'title')).length) / totalPages) * 100
-  );
-  
-  const descriptionOptimization = Math.round(
-    ((totalPages - pages.filter(p => p.issues.some((i: any) => i.category === 'meta-description')).length) / totalPages) * 100
-  );
-  
-  const headingsOptimization = Math.round(
-    ((totalPages - pages.filter(p => p.issues.some((i: any) => i.category === 'headings')).length) / totalPages) * 100
-  );
-  
-  const imagesOptimization = Math.round(
-    ((totalPages - pages.filter(p => p.issues.some((i: any) => i.category === 'images')).length) / totalPages) * 100
-  );
+  // Normalize metrics to 0-100 scale
+  const pageCount = Math.max(1, pages.length);
+  titleOptimization = Math.max(0, Math.min(100, 50 + (titleOptimization / pageCount)));
+  descriptionOptimization = Math.max(0, Math.min(100, 50 + (descriptionOptimization / pageCount)));
+  headingsOptimization = Math.max(0, Math.min(100, 50 + (headingsOptimization / pageCount)));
+  imagesOptimization = Math.max(0, Math.min(100, 50 + (imagesOptimization / pageCount)));
   
   return {
     goodPractices,
@@ -683,4 +453,18 @@ function calculateMetrics(pages: any[]) {
     headingsOptimization,
     imagesOptimization
   };
+}
+
+/**
+ * Cancel an ongoing analysis
+ * @param domain Domain name of the analysis to cancel
+ */
+export function cancelAnalysis(domain: string): boolean {
+  const controller = ongoingAnalyses.get(domain);
+  if (controller) {
+    controller.abort();
+    ongoingAnalyses.delete(domain);
+    return true;
+  }
+  return false;
 }
