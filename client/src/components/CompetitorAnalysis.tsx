@@ -63,20 +63,30 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     setError(null);
     
     try {
+      // Log the request details
+      console.log('Starting competitor analysis for:', {
+        mainDomain: mainAnalysis.domain,
+        competitorDomain: data.competitorDomain
+      });
+      
       const comparisonData = await compareWithCompetitor({
         mainDomain: mainAnalysis.domain,
         competitorDomain: data.competitorDomain
       });
       
+      console.log('Competitor analysis response:', comparisonData);
       setComparison(comparisonData);
       
       toast({
         title: 'Analysis Complete',
         description: `Successfully compared ${mainAnalysis.domain} with ${data.competitorDomain}`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      // More detailed error logging
       console.error('Competitor analysis error:', error);
-      setError('Failed to compare with competitor. Please try again.');
+      const errorMessage = error.message || 'Failed to compare with competitor. Please try again.';
+      
+      setError(errorMessage);
       toast({
         title: 'Analysis Failed',
         description: 'Could not compare with competitor domain. Please try again.',
