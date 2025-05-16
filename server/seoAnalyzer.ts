@@ -7,6 +7,11 @@ import { storage } from './storage';
 import { EventEmitter } from 'events';
 import { Heading, Image, SeoIssue, SeoCategory } from '../client/src/lib/types';
 
+// Extend the Image interface to include suggestedAlt
+interface AnalysisImage extends Image {
+  suggestedAlt?: string;
+}
+
 // Store ongoing analyses to allow cancellation
 const ongoingAnalyses = new Map();
 
@@ -210,7 +215,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
     }
 
     // Extract images
-    const images: Image[] = [];
+    const images: AnalysisImage[] = [];
     $('img').each((_, el) => {
       const src = $(el).attr('src');
       if (src) {
@@ -218,7 +223,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
           src: src.startsWith('http') ? src : new URL(src, url).toString(),
           alt: $(el).attr('alt') || null,
           width: parseInt($(el).attr('width') || '0') || undefined,
-          height: parseInt($(el).attr('height') || '0') || undefined
+          height: parseInt($(el).attr('height') || '0') || undefined,
+          suggestedAlt: undefined
         });
       }
     });
@@ -347,6 +353,35 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
         };
 
         suggestions = await generateSeoSuggestions(url, pageData);
+        
+        // Generate alt text for images without alt text
+        if (settings.analyzeImages !== false && images.length > 0) {
+          const imagesWithoutAlt = images.filter(img => !img.alt);
+          
+          if (imagesWithoutAlt.length > 0) {
+            console.log(`Generating alt text for ${imagesWithoutAlt.length} images on ${url}`);
+            
+            const imagesToProcess = imagesWithoutAlt.map(img => ({
+              src: img.src,
+              context: {
+                url,
+                title,
+                // Try to find text near the image by checking headings
+                nearbyText: headings.length > 0 ? headings[0].text : undefined
+              }
+            }));
+            
+            const altTextResults = await generateBatchImageAltText(imagesToProcess);
+            
+            // Add suggestedAlt to the images array
+            for (const result of altTextResults) {
+              const imageIndex = images.findIndex(img => img.src === result.src);
+              if (imageIndex !== -1) {
+                images[imageIndex].suggestedAlt = result.suggestedAlt;
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error(`Error generating suggestions for ${url}:`, error);
         suggestions = [];
