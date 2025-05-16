@@ -292,73 +292,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "No analysis found for main domain" });
       }
       
-      // Analyze the competitor domain
-      // For simplicity, we'll reuse the existing analysis flow
-      const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents);
+      try {
+        // Analyze the competitor domain
+        // For simplicity, we'll reuse the existing analysis flow
+        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents);
+        
+        // Get the competitor analysis results
+        const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);
+        if (!competitorAnalysis) {
+          return res.status(404).json({ error: "Competitor analysis failed" });
+        }
       
-      // Get the competitor analysis results
-      const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);
-      if (!competitorAnalysis) {
-        return res.status(404).json({ error: "Competitor analysis failed" });
-      }
-      
-      // Compare the analyses
-      const comparison = {
-        mainDomain,
-        competitorDomain,
-        metrics: {
-          titleOptimization: {
-            main: mainAnalysis.metrics.titleOptimization,
-            competitor: competitorAnalysis.metrics.titleOptimization,
-            difference: mainAnalysis.metrics.titleOptimization - competitorAnalysis.metrics.titleOptimization
+        // Compare the analyses
+        const comparison = {
+          mainDomain,
+          competitorDomain,
+          metrics: {
+            titleOptimization: {
+              main: mainAnalysis.metrics.titleOptimization,
+              competitor: competitorAnalysis.metrics.titleOptimization,
+              difference: mainAnalysis.metrics.titleOptimization - competitorAnalysis.metrics.titleOptimization
+            },
+            descriptionOptimization: {
+              main: mainAnalysis.metrics.descriptionOptimization,
+              competitor: competitorAnalysis.metrics.descriptionOptimization,
+              difference: mainAnalysis.metrics.descriptionOptimization - competitorAnalysis.metrics.descriptionOptimization
+            },
+            headingsOptimization: {
+              main: mainAnalysis.metrics.headingsOptimization,
+              competitor: competitorAnalysis.metrics.headingsOptimization,
+              difference: mainAnalysis.metrics.headingsOptimization - competitorAnalysis.metrics.headingsOptimization
+            },
+            imagesOptimization: {
+              main: mainAnalysis.metrics.imagesOptimization,
+              competitor: competitorAnalysis.metrics.imagesOptimization,
+              difference: mainAnalysis.metrics.imagesOptimization - competitorAnalysis.metrics.imagesOptimization
+            },
+            criticalIssues: {
+              main: mainAnalysis.metrics.criticalIssues,
+              competitor: competitorAnalysis.metrics.criticalIssues,
+              difference: competitorAnalysis.metrics.criticalIssues - mainAnalysis.metrics.criticalIssues
+            }
           },
-          descriptionOptimization: {
-            main: mainAnalysis.metrics.descriptionOptimization,
-            competitor: competitorAnalysis.metrics.descriptionOptimization,
-            difference: mainAnalysis.metrics.descriptionOptimization - competitorAnalysis.metrics.descriptionOptimization
-          },
-          headingsOptimization: {
-            main: mainAnalysis.metrics.headingsOptimization,
-            competitor: competitorAnalysis.metrics.headingsOptimization,
-            difference: mainAnalysis.metrics.headingsOptimization - competitorAnalysis.metrics.headingsOptimization
-          },
-          imagesOptimization: {
-            main: mainAnalysis.metrics.imagesOptimization,
-            competitor: competitorAnalysis.metrics.imagesOptimization,
-            difference: mainAnalysis.metrics.imagesOptimization - competitorAnalysis.metrics.imagesOptimization
-          },
-          criticalIssues: {
-            main: mainAnalysis.metrics.criticalIssues,
-            competitor: competitorAnalysis.metrics.criticalIssues,
-            difference: competitorAnalysis.metrics.criticalIssues - mainAnalysis.metrics.criticalIssues
-          }
-        },
-        recommendations: []
-      };
-      
-      // Generate recommendations based on the comparison
-      if (comparison.metrics.titleOptimization.difference < 0) {
-        comparison.recommendations.push("Your competitor has better optimized page titles. Consider reviewing and improving your title tags.");
+          recommendations: []
+        };
+        
+        // Generate recommendations based on the comparison
+        if (comparison.metrics.titleOptimization.difference < 0) {
+          comparison.recommendations.push("Your competitor has better optimized page titles. Consider reviewing and improving your title tags.");
+        }
+        
+        if (comparison.metrics.descriptionOptimization.difference < 0) {
+          comparison.recommendations.push("Your competitor has better optimized meta descriptions. Focus on writing more compelling and keyword-rich descriptions.");
+        }
+        
+        if (comparison.metrics.headingsOptimization.difference < 0) {
+          comparison.recommendations.push("Your competitor has better heading structure. Ensure you use a logical heading hierarchy with relevant keywords.");
+        }
+        
+        if (comparison.metrics.imagesOptimization.difference < 0) {
+          comparison.recommendations.push("Your competitor has better optimized images. Make sure all your images have descriptive alt text.");
+        }
+        
+        if (comparison.metrics.criticalIssues.difference < 0) {
+          comparison.recommendations.push("You have more critical issues than your competitor. Prioritize fixing these issues to improve your SEO performance.");
+        }
+        
+        res.json(comparison);
+      } catch (error) {
+        console.error("Error analyzing competitor domain:", error);
+        res.status(500).json({ error: "Failed to analyze competitor domain" });
       }
-      
-      if (comparison.metrics.descriptionOptimization.difference < 0) {
-        comparison.recommendations.push("Your competitor has better optimized meta descriptions. Focus on writing more compelling and keyword-rich descriptions.");
-      }
-      
-      if (comparison.metrics.headingsOptimization.difference < 0) {
-        comparison.recommendations.push("Your competitor has better heading structure. Ensure you use a logical heading hierarchy with relevant keywords.");
-      }
-      
-      if (comparison.metrics.imagesOptimization.difference < 0) {
-        comparison.recommendations.push("Your competitor has better optimized images. Make sure all your images have descriptive alt text.");
-      }
-      
-      if (comparison.metrics.criticalIssues.difference < 0) {
-        comparison.recommendations.push("You have more critical issues than your competitor. Prioritize fixing these issues to improve your SEO performance.");
-      }
-      
-      res.json(comparison);
     } catch (error) {
+      console.error("Error in competitor comparison:", error);
       res.status(500).json({ error: "Failed to compare with competitor" });
     }
   });
