@@ -91,36 +91,65 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       pages = pages.slice(0, settings.maxPages);
     }
     
-    // Analyze each page
+    // Analyze pages in parallel with a concurrency limit
     const analyzedPages = [];
     const totalPages = pages.length;
+    const concurrencyLimit = 3; // Process 3 pages concurrently
     
-    for (let i = 0; i < totalPages; i++) {
-      // Check if analysis was cancelled
+    // Function to analyze a single page and update progress
+    const analyzeSinglePage = async (pageUrl: string, pageIndex: number) => {
       if (controller.signal.aborted) {
         throw new Error('Analysis cancelled');
       }
-      
-      const pageUrl = pages[i];
       
       // Emit progress update for current page
       events.emit(domain, {
         status: 'in-progress',
         domain,
         pagesFound: totalPages,
-        pagesAnalyzed: i,
+        pagesAnalyzed: analyzedPages.length,
         currentPageUrl: pageUrl,
         analyzedPages: analyzedPages.map(p => p.url),
-        percentage: Math.floor((i / totalPages) * 100)
+        percentage: Math.floor((analyzedPages.length / totalPages) * 100)
       });
       
       try {
         // Analyze the page
         const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal);
         analyzedPages.push(pageAnalysis);
+        
+        // Re-emit progress to update the count
+        events.emit(domain, {
+          status: 'in-progress',
+          domain,
+          pagesFound: totalPages,
+          pagesAnalyzed: analyzedPages.length,
+          currentPageUrl: pageUrl,
+          analyzedPages: analyzedPages.map(p => p.url),
+          percentage: Math.floor((analyzedPages.length / totalPages) * 100)
+        });
+        
+        return pageAnalysis;
       } catch (error) {
         console.error(`Error analyzing page ${pageUrl}:`, error);
+        return null;
       }
+    };
+    
+    // Process pages in batches with the concurrency limit
+    for (let i = 0; i < totalPages; i += concurrencyLimit) {
+      // Check if analysis was cancelled
+      if (controller.signal.aborted) {
+        throw new Error('Analysis cancelled');
+      }
+      
+      const batch = pages.slice(i, i + concurrencyLimit);
+      const batchPromises = batch.map((pageUrl, index) => 
+        analyzeSinglePage(pageUrl, i + index)
+      );
+      
+      // Wait for all pages in this batch to complete
+      await Promise.all(batchPromises);
     }
     
     // Calculate overall metrics
