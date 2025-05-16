@@ -41,13 +41,13 @@ export async function generateSeoSuggestions(url: string, pageData: any): Promis
       
       Format your response as a JSON array of strings. Example:
       ["Add a unique and descriptive title tag between 50-60 characters.", "Include primary keywords in your H1 heading."]
-      Respond with same language as the website's language is.
+      Respond with the same language as the website's Meta Description and H1 heading is.
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
-        { role: "system", content: "You are an SEO expert assistant. Provide concise, actionable SEO improvement suggestions. Respond with same language as the website's language is." },
+        { role: "system", content: "You are an SEO expert assistant. Provide concise, actionable SEO improvement suggestions. Respond with the same language as the website's Meta Description and H1 heading is." },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
@@ -149,11 +149,11 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
       "Focus on the main subject of the image and its purpose in the context of the page. " +
       "Include relevant keywords that match the page content when appropriate. " +
       "Don't start with phrases like 'Image of' or 'Picture showing'." +
-      "Respond with same language as the website's language is.";
+      "Respond with same language as the website's language is (Heading, Title, Keywords).";
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         { 
           role: "system", 
@@ -179,7 +179,8 @@ The alt text should:
 - Be concise but descriptive (under 125 characters)
 - Not use phrases like "Image of" or "Picture showing"
 
-Respond with ONLY the suggested alt text - nothing else.`
+Respond with ONLY the suggested alt text - nothing else.
+Respond with the same language as the website's Heading, Title, Keywords is.`
             },
             {
               type: "image_url",

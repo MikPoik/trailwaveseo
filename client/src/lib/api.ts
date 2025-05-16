@@ -48,6 +48,11 @@ export interface CompetitorAnalysisRequest {
 }
 
 export async function compareWithCompetitor(data: CompetitorAnalysisRequest): Promise<any> {
-  const response = await apiRequest('POST', '/api/analyze/compare', data);
-  return await response.json();
+  try {
+    const response = await apiRequest('POST', '/api/analyze/compare', data);
+    return await response.json();
+  } catch (error) {
+    console.error("Error in competitor analysis API request:", error);
+    throw error;
+  }
 }
