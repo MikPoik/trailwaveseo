@@ -44,6 +44,23 @@ interface ComparisonResult {
     criticalIssues: ComparisonMetric;
   };
   recommendations: string[];
+  // For detailed comparison
+  details?: {
+    main: {
+      titles: string[];
+      descriptions: string[];
+      headings: string[];
+      images: number;
+      pages: number;
+    };
+    competitor: {
+      titles: string[];
+      descriptions: string[];
+      headings: string[];
+      images: number;
+      pages: number;
+    };
+  };
 }
 
 const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
@@ -80,8 +97,38 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     onSuccess: (comparisonData, variables) => {
       console.log('Competitor analysis response:', comparisonData);
       
-      // Update the cache with new comparison data
-      queryClient.setQueryData(cacheKey, comparisonData);
+      // Extract details from main analysis
+      const mainDetails = {
+        titles: mainAnalysis.pages.slice(0, 5).map(page => page.title || '').filter(title => title),
+        descriptions: mainAnalysis.pages.slice(0, 5).map(page => page.metaDescription || '').filter(desc => desc),
+        headings: mainAnalysis.pages.slice(0, 5).flatMap(page => 
+          page.headings.slice(0, 3).map(h => `${h.level}: ${h.text}`)),
+        images: mainAnalysis.pages.reduce((total, page) => total + page.images.length, 0),
+        pages: mainAnalysis.pages.length
+      };
+      
+      // Extract details from competitor analysis response
+      const competitorPages = comparisonData.analysis?.pages || [];
+      const competitorDetails = {
+        titles: competitorPages.slice(0, 5).map((page: any) => page.title || '').filter((title: string) => title),
+        descriptions: competitorPages.slice(0, 5).map((page: any) => page.metaDescription || '').filter((desc: string) => desc),
+        headings: competitorPages.slice(0, 5).flatMap((page: any) => 
+          page.headings?.slice(0, 3).map((h: any) => `${h.level}: ${h.text}`) || []),
+        images: competitorPages.reduce((total: number, page: any) => total + (page.images?.length || 0), 0),
+        pages: competitorPages.length
+      };
+      
+      // Add details to the comparison data
+      const enhancedComparisonData = {
+        ...comparisonData,
+        details: {
+          main: mainDetails,
+          competitor: competitorDetails
+        }
+      };
+      
+      // Update the cache with enhanced comparison data
+      queryClient.setQueryData(cacheKey, enhancedComparisonData);
       
       toast({
         title: 'Analysis Complete',
@@ -109,6 +156,18 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       mainDomain: mainAnalysis.domain,
       competitorDomain: data.competitorDomain
     });
+    
+    // Extract details from the main analysis for detailed comparison
+    const extractDetailsFromMainAnalysis = () => {
+      return {
+        titles: mainAnalysis.pages.slice(0, 5).map(page => page.title || '').filter(title => title),
+        descriptions: mainAnalysis.pages.slice(0, 5).map(page => page.metaDescription || '').filter(desc => desc),
+        headings: mainAnalysis.pages.slice(0, 5).flatMap(page => 
+          page.headings.slice(0, 3).map(h => `${h.level}: ${h.text}`)),
+        images: mainAnalysis.pages.reduce((total, page) => total + page.images.length, 0),
+        pages: mainAnalysis.pages.length
+      };
+    };
     
     competitorMutation.mutate(data);
   };
@@ -225,6 +284,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
           <Tabs defaultValue="metrics">
             <TabsList className="mb-4">
               <TabsTrigger value="metrics">Metrics Comparison</TabsTrigger>
+              <TabsTrigger value="detailed">Detailed Comparison</TabsTrigger>
               <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
             </TabsList>
             
@@ -240,6 +300,147 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               {renderMetricComparison('Heading Structure', (comparison as ComparisonResult).metrics.headingsOptimization)}
               {renderMetricComparison('Image Optimization', (comparison as ComparisonResult).metrics.imagesOptimization)}
               {renderMetricComparison('Critical Issues', (comparison as ComparisonResult).metrics.criticalIssues, getCriticalIssuesStatus)}
+              
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
+                Compare with Another Competitor
+              </Button>
+            </TabsContent>
+            
+            <TabsContent value="detailed" className="space-y-4">
+              <div className="flex justify-between items-center mb-6">
+                <div className="font-bold">{(comparison as ComparisonResult).mainDomain}</div>
+                <div className="text-sm text-muted-foreground">vs</div>
+                <div className="font-bold">{(comparison as ComparisonResult).competitorDomain}</div>
+              </div>
+              
+              {(comparison as ComparisonResult).details ? (
+                <div className="space-y-6">
+                  {/* Page Count Comparison */}
+                  <div className="border rounded-lg p-4 bg-card">
+                    <h3 className="text-lg font-semibold mb-2">Page Count</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.main?.pages || 0}</span>
+                        <p className="text-sm text-muted-foreground mt-1">Your Site</p>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.competitor?.pages || 0}</span>
+                        <p className="text-sm text-muted-foreground mt-1">Competitor Site</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Titles Comparison */}
+                  <div className="border rounded-lg p-4 bg-card">
+                    <h3 className="text-lg font-semibold mb-2">Page Titles (Sample)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Your Titles:</h4>
+                        <ul className="space-y-2 text-sm">
+                          {(comparison as ComparisonResult).details?.main?.titles?.length ? 
+                            (comparison as ComparisonResult).details?.main?.titles.map((title: string, i: number) => (
+                              <li key={`main-title-${i}`} className="border-b pb-1">{title}</li>
+                            )) : 
+                            <li className="text-muted-foreground">No titles available</li>
+                          }
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Competitor Titles:</h4>
+                        <ul className="space-y-2 text-sm">
+                          {(comparison as ComparisonResult).details?.competitor?.titles?.length ? 
+                            (comparison as ComparisonResult).details?.competitor?.titles.map((title: string, i: number) => (
+                              <li key={`comp-title-${i}`} className="border-b pb-1">{title}</li>
+                            )) : 
+                            <li className="text-muted-foreground">No titles available</li>
+                          }
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Meta Descriptions Comparison */}
+                  <div className="border rounded-lg p-4 bg-card">
+                    <h3 className="text-lg font-semibold mb-2">Meta Descriptions (Sample)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Your Descriptions:</h4>
+                        <ul className="space-y-2 text-sm">
+                          {(comparison as ComparisonResult).details?.main?.descriptions?.length ? 
+                            (comparison as ComparisonResult).details?.main?.descriptions.map((desc: string, i: number) => (
+                              <li key={`main-desc-${i}`} className="border-b pb-1">{desc}</li>
+                            )) : 
+                            <li className="text-muted-foreground">No descriptions available</li>
+                          }
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Competitor Descriptions:</h4>
+                        <ul className="space-y-2 text-sm">
+                          {(comparison as ComparisonResult).details?.competitor?.descriptions?.length ? 
+                            (comparison as ComparisonResult).details?.competitor?.descriptions.map((desc: string, i: number) => (
+                              <li key={`comp-desc-${i}`} className="border-b pb-1">{desc}</li>
+                            )) : 
+                            <li className="text-muted-foreground">No descriptions available</li>
+                          }
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Headings Comparison */}
+                  <div className="border rounded-lg p-4 bg-card">
+                    <h3 className="text-lg font-semibold mb-2">Heading Structure (Sample)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Your Headings:</h4>
+                        <ul className="space-y-2 text-sm">
+                          {(comparison as ComparisonResult).details?.main?.headings?.length ? 
+                            (comparison as ComparisonResult).details?.main?.headings.map((heading: string, i: number) => (
+                              <li key={`main-heading-${i}`} className="border-b pb-1">{heading}</li>
+                            )) : 
+                            <li className="text-muted-foreground">No headings available</li>
+                          }
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Competitor Headings:</h4>
+                        <ul className="space-y-2 text-sm">
+                          {(comparison as ComparisonResult).details?.competitor?.headings?.length ? 
+                            (comparison as ComparisonResult).details?.competitor?.headings.map((heading: string, i: number) => (
+                              <li key={`comp-heading-${i}`} className="border-b pb-1">{heading}</li>
+                            )) : 
+                            <li className="text-muted-foreground">No headings available</li>
+                          }
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Images Count Comparison */}
+                  <div className="border rounded-lg p-4 bg-card">
+                    <h3 className="text-lg font-semibold mb-2">Image Count</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.main?.images || 0}</span>
+                        <p className="text-sm text-muted-foreground mt-1">Your Site</p>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.competitor?.images || 0}</span>
+                        <p className="text-sm text-muted-foreground mt-1">Competitor Site</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                  <h3 className="font-medium text-lg">Detailed data not available</h3>
+                  <p className="text-muted-foreground">
+                    Cannot retrieve detailed comparison data.
+                  </p>
+                </div>
+              )}
               
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
