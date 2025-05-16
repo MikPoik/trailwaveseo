@@ -41,12 +41,13 @@ export async function generateSeoSuggestions(url: string, pageData: any): Promis
       
       Format your response as a JSON array of strings. Example:
       ["Add a unique and descriptive title tag between 50-60 characters.", "Include primary keywords in your H1 heading."]
+      Respond with same language as the website's language is.
     `;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "You are an SEO expert assistant. Provide concise, actionable SEO improvement suggestions." },
+        { role: "system", content: "You are an SEO expert assistant. Provide concise, actionable SEO improvement suggestions. Respond with same language as the website's language is." },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
@@ -143,7 +144,8 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
     const systemPrompt = "You are an accessibility expert who writes concise, descriptive alt text for images. " +
       "Create alt text that is informative, descriptive, and under 125 characters. " +
       "Focus on the main subject of the image and its purpose in the context of the page. " +
-      "Don't start with phrases like 'Image of' or 'Picture showing'.";
+      "Don't start with phrases like 'Image of' or 'Picture showing'." +
+      "Respond with same language as the website's language is.";
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
