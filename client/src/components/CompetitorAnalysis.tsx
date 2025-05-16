@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { WebsiteAnalysis } from '@/lib/types';
 import { compareWithCompetitor } from '@/lib/api';
 import { InfoIcon, AlertTriangle, AlertCircle, Check, ChevronRight } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Schema for competitor analysis form
 const competitorSchema = z.object({
@@ -46,10 +47,20 @@ interface ComparisonResult {
 }
 
 const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Create a unique query key for this analysis
+  const cacheKey = [`competitor-analysis-${mainAnalysis.id || mainAnalysis.domain}`];
+  
+  // Fetch cached comparison data if it exists
+  const { data: comparison, isLoading: isQueryLoading } = useQuery<ComparisonResult>({
+    queryKey: cacheKey,
+    // Don't actually fetch data, just use the query for caching
+    enabled: false,
+    staleTime: Infinity,
+  });
 
   const form = useForm<CompetitorFormValues>({
     resolver: zodResolver(competitorSchema),
@@ -57,32 +68,27 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       competitorDomain: ''
     }
   });
-
-  const onSubmit = async (data: CompetitorFormValues) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Log the request details
-      console.log('Starting competitor analysis for:', {
+  
+  // Use mutation for the competitor analysis request
+  const competitorMutation = useMutation({
+    mutationFn: (formData: CompetitorFormValues) => {
+      return compareWithCompetitor({
         mainDomain: mainAnalysis.domain,
-        competitorDomain: data.competitorDomain
+        competitorDomain: formData.competitorDomain
       });
-      
-      const comparisonData = await compareWithCompetitor({
-        mainDomain: mainAnalysis.domain,
-        competitorDomain: data.competitorDomain
-      });
-      
+    },
+    onSuccess: (comparisonData, variables) => {
       console.log('Competitor analysis response:', comparisonData);
-      setComparison(comparisonData);
+      
+      // Update the cache with new comparison data
+      queryClient.setQueryData(cacheKey, comparisonData);
       
       toast({
         title: 'Analysis Complete',
-        description: `Successfully compared ${mainAnalysis.domain} with ${data.competitorDomain}`,
+        description: `Successfully compared ${mainAnalysis.domain} with ${variables.competitorDomain}`,
       });
-    } catch (error: any) {
-      // More detailed error logging
+    },
+    onError: (error: any) => {
       console.error('Competitor analysis error:', error);
       const errorMessage = error.message || 'Failed to compare with competitor. Please try again.';
       
@@ -92,9 +98,19 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
         description: 'Could not compare with competitor domain. Please try again.',
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
+  });
+
+  const onSubmit = (data: CompetitorFormValues) => {
+    setError(null);
+    
+    // Log the request details
+    console.log('Starting competitor analysis for:', {
+      mainDomain: mainAnalysis.domain,
+      competitorDomain: data.competitorDomain
+    });
+    
+    competitorMutation.mutate(data);
   };
 
   // Helper function to determine if a metric is better or worse than competitor
@@ -157,6 +173,15 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     );
   };
 
+  // Function to reset the comparison and start a new one
+  const resetComparison = () => {
+    queryClient.removeQueries({ queryKey: cacheKey });
+    form.reset();
+  };
+
+  // Check if either the query is loading or the mutation is pending
+  const isLoading = isQueryLoading || competitorMutation.isPending;
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -205,18 +230,18 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             
             <TabsContent value="metrics" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
-                <div className="font-bold">{comparison.mainDomain}</div>
+                <div className="font-bold">{(comparison as ComparisonResult).mainDomain}</div>
                 <div className="text-sm text-muted-foreground">vs</div>
-                <div className="font-bold">{comparison.competitorDomain}</div>
+                <div className="font-bold">{(comparison as ComparisonResult).competitorDomain}</div>
               </div>
               
-              {renderMetricComparison('Title Optimization', comparison.metrics.titleOptimization)}
-              {renderMetricComparison('Meta Description', comparison.metrics.descriptionOptimization)}
-              {renderMetricComparison('Heading Structure', comparison.metrics.headingsOptimization)}
-              {renderMetricComparison('Image Optimization', comparison.metrics.imagesOptimization)}
-              {renderMetricComparison('Critical Issues', comparison.metrics.criticalIssues, getCriticalIssuesStatus)}
+              {renderMetricComparison('Title Optimization', (comparison as ComparisonResult).metrics.titleOptimization)}
+              {renderMetricComparison('Meta Description', (comparison as ComparisonResult).metrics.descriptionOptimization)}
+              {renderMetricComparison('Heading Structure', (comparison as ComparisonResult).metrics.headingsOptimization)}
+              {renderMetricComparison('Image Optimization', (comparison as ComparisonResult).metrics.imagesOptimization)}
+              {renderMetricComparison('Critical Issues', (comparison as ComparisonResult).metrics.criticalIssues, getCriticalIssuesStatus)}
               
-              <Button variant="outline" onClick={() => setComparison(null)} className="mt-4">
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
@@ -226,13 +251,13 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                 <InfoIcon className="h-4 w-4" />
                 <AlertTitle>SEO Recommendations</AlertTitle>
                 <AlertDescription>
-                  Based on our comparison with {comparison.competitorDomain}, here are some actionable recommendations:
+                  Based on our comparison with {(comparison as ComparisonResult).competitorDomain}, here are some actionable recommendations:
                 </AlertDescription>
               </Alert>
               
-              {comparison.recommendations.length > 0 ? (
+              {(comparison as ComparisonResult).recommendations.length > 0 ? (
                 <ul className="space-y-2 mt-4">
-                  {comparison.recommendations.map((recommendation, index) => (
+                  {(comparison as ComparisonResult).recommendations.map((recommendation: string, index: number) => (
                     <li key={index} className="flex items-start">
                       <ChevronRight className="h-5 w-5 text-primary mr-2 shrink-0 mt-0.5" />
                       <span>{recommendation}</span>
@@ -249,7 +274,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                 </div>
               )}
               
-              <Button variant="outline" onClick={() => setComparison(null)} className="mt-4">
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
