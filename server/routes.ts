@@ -428,6 +428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               difference: competitorAnalysis.metrics.criticalIssues - mainAnalysis.metrics.criticalIssues
             }
           },
+          // Include the full analysis objects for detailed comparison
+          analysis: competitorAnalysis,
           recommendations: []
         };
         
