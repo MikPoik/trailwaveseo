@@ -390,13 +390,26 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
           if (imagesWithoutAlt.length > 0) {
             console.log(`Generating alt text for ${imagesWithoutAlt.length} images on ${url}`);
             
+            // Extract first heading (H1 if available, otherwise first heading)
+            const firstHeading = headings.find(h => h.level === 1)?.text || 
+                                (headings.length > 0 ? headings[0].text : undefined);
+            
+            // Extract site title from domain name
+            const siteTitle = url.split('/')[2]?.split('.')[0] || '';
+            
+            // Build more comprehensive context for alt text generation
             const imagesToProcess = imagesWithoutAlt.map(img => ({
               src: img.src,
               context: {
                 url,
                 title,
                 // Try to find text near the image by checking headings
-                nearbyText: headings.length > 0 ? headings[0].text : undefined
+                nearbyText: headings.length > 0 ? headings[0].text : undefined,
+                // Add additional context
+                siteTitle: siteTitle.charAt(0).toUpperCase() + siteTitle.slice(1), // Capitalize first letter
+                firstHeading: firstHeading,
+                // Include meta keywords if available
+                keywords: metaKeywordsArray ? metaKeywordsArray.join(', ') : undefined
               }
             }));
             

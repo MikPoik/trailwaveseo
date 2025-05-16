@@ -90,6 +90,9 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
   url: string;
   title?: string | null;
   nearbyText?: string;
+  siteTitle?: string;
+  firstHeading?: string;
+  keywords?: string;
 }): Promise<string> {
   try {
     // If no OpenAI API key is set, return empty string
@@ -144,6 +147,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
     const systemPrompt = "You are an accessibility expert who writes concise, descriptive alt text for images. " +
       "Create alt text that is informative, descriptive, and under 125 characters. " +
       "Focus on the main subject of the image and its purpose in the context of the page. " +
+      "Include relevant keywords that match the page content when appropriate. " +
       "Don't start with phrases like 'Image of' or 'Picture showing'." +
       "Respond with same language as the website's language is.";
 
@@ -160,7 +164,22 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
           content: [
             {
               type: "text",
-              text: `Generate a concise, descriptive alt text for this image. The image appears on a page with these details:\n\nPage URL: ${pageContext.url}\nPage Title: ${pageContext.title || 'Unknown'}\nNearby Text: ${pageContext.nearbyText || 'Not available'}\n\nRespond with ONLY the suggested alt text - nothing else.`
+              text: `Generate a concise, descriptive alt text for this image. The image appears on a page with these details:
+
+Page URL: ${pageContext.url}
+Page Title: ${pageContext.title || 'Unknown'}
+Nearby Text: ${pageContext.nearbyText || 'Not available'}
+Site Context: ${pageContext.siteTitle || 'Not available'}
+Page First Heading: ${pageContext.firstHeading || 'Not available'}
+Page Keywords: ${pageContext.keywords || 'Not available'}
+
+The alt text should:
+- Be relevant to the page content and purpose
+- Include appropriate keywords from the page context
+- Be concise but descriptive (under 125 characters)
+- Not use phrases like "Image of" or "Picture showing"
+
+Respond with ONLY the suggested alt text - nothing else.`
             },
             {
               type: "image_url",
