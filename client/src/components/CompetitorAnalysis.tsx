@@ -99,10 +99,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       
       // Extract details from main analysis
       const mainDetails = {
-        titles: mainAnalysis.pages.slice(0, 5).map(page => page.title || '').filter(title => title),
-        descriptions: mainAnalysis.pages.slice(0, 5).map(page => page.metaDescription || '').filter(desc => desc),
-        headings: mainAnalysis.pages.slice(0, 5).flatMap(page => 
-          page.headings.slice(0, 3).map(h => `${h.level}: ${h.text}`)),
+        titles: mainAnalysis.pages.slice(0, 10).map(page => page.title || '').filter(title => title),
+        descriptions: mainAnalysis.pages.slice(0, 10).map(page => page.metaDescription || '').filter(desc => desc),
+        headings: mainAnalysis.pages.slice(0, 10).flatMap(page => 
+          page.headings.slice(0, 5).map(h => `${h.level}: ${h.text}`)),
         images: mainAnalysis.pages.reduce((total, page) => total + page.images.length, 0),
         pages: mainAnalysis.pages.length
       };
@@ -110,10 +110,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       // Extract details from competitor analysis response
       const competitorPages = comparisonData.analysis?.pages || [];
       const competitorDetails = {
-        titles: competitorPages.slice(0, 5).map((page: any) => page.title || '').filter((title: string) => title),
-        descriptions: competitorPages.slice(0, 5).map((page: any) => page.metaDescription || '').filter((desc: string) => desc),
-        headings: competitorPages.slice(0, 5).flatMap((page: any) => 
-          page.headings?.slice(0, 3).map((h: any) => `${h.level}: ${h.text}`) || []),
+        titles: competitorPages.slice(0, 10).map((page: any) => page.title || '').filter((title: string) => title),
+        descriptions: competitorPages.slice(0, 10).map((page: any) => page.metaDescription || '').filter((desc: string) => desc),
+        headings: competitorPages.slice(0, 10).flatMap((page: any) => 
+          page.headings?.slice(0, 5).map((h: any) => `${h.level}: ${h.text}`) || []),
         images: competitorPages.reduce((total: number, page: any) => total + (page.images?.length || 0), 0),
         pages: competitorPages.length
       };
@@ -336,7 +336,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Your Titles:</h4>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.main?.titles?.length ? 
                             (comparison as ComparisonResult).details?.main?.titles.map((title: string, i: number) => (
                               <li key={`main-title-${i}`} className="border-b pb-1">{title}</li>
@@ -347,7 +347,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                       <div>
                         <h4 className="text-sm font-medium mb-2">Competitor Titles:</h4>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.competitor?.titles?.length ? 
                             (comparison as ComparisonResult).details?.competitor?.titles.map((title: string, i: number) => (
                               <li key={`comp-title-${i}`} className="border-b pb-1">{title}</li>
@@ -365,7 +365,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Your Descriptions:</h4>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.main?.descriptions?.length ? 
                             (comparison as ComparisonResult).details?.main?.descriptions.map((desc: string, i: number) => (
                               <li key={`main-desc-${i}`} className="border-b pb-1">{desc}</li>
@@ -376,7 +376,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                       <div>
                         <h4 className="text-sm font-medium mb-2">Competitor Descriptions:</h4>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.competitor?.descriptions?.length ? 
                             (comparison as ComparisonResult).details?.competitor?.descriptions.map((desc: string, i: number) => (
                               <li key={`comp-desc-${i}`} className="border-b pb-1">{desc}</li>
@@ -394,7 +394,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Your Headings:</h4>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.main?.headings?.length ? 
                             (comparison as ComparisonResult).details?.main?.headings.map((heading: string, i: number) => (
                               <li key={`main-heading-${i}`} className="border-b pb-1">{heading}</li>
@@ -405,7 +405,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                       <div>
                         <h4 className="text-sm font-medium mb-2">Competitor Headings:</h4>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.competitor?.headings?.length ? 
                             (comparison as ComparisonResult).details?.competitor?.headings.map((heading: string, i: number) => (
                               <li key={`comp-heading-${i}`} className="border-b pb-1">{heading}</li>
