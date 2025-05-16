@@ -8,6 +8,29 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Cache for storing generated alt text to avoid regenerating for the same images
 const altTextCache = new Map<string, string>();
 
+// Define interface for content duplication analysis results
+export interface ContentDuplicationAnalysis {
+  titleRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  descriptionRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  headingRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  overallRecommendations: string[];
+}
+
 /**
  * Generate SEO improvement suggestions using OpenAI
  * @param url URL of the page being analyzed
@@ -270,4 +293,126 @@ export async function generateBatchImageAltText(images: Array<{
   }
 
   return results;
+}
+
+/**
+ * Analyze content repetition across a website (titles, headings, meta descriptions)
+ * @param pages Array of analyzed pages with their SEO elements
+ * @returns Analysis of content duplication and recommendations
+ */
+export async function analyzeContentRepetition(pages: Array<any>): Promise<ContentDuplicationAnalysis> {
+  try {
+    // If no OpenAI API key is set, return empty analysis
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OpenAI API key not set, skipping content repetition analysis");
+      return {
+        titleRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
+        descriptionRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
+        headingRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
+        overallRecommendations: []
+      };
+    }
+
+    // Extract all titles, descriptions, and h1 headings
+    const titles = pages.map(page => page.title).filter(Boolean);
+    const descriptions = pages.map(page => page.metaDescription).filter(Boolean);
+    const h1Headings = pages.flatMap(page => 
+      page.headings.filter((h: any) => h.level === 1).map((h: any) => h.text)
+    );
+
+    const prompt = `
+      I need an analysis of potential content duplication in a website's SEO elements.
+      
+      Here are all page titles from the website:
+      ${JSON.stringify(titles)}
+      
+      Here are all meta descriptions:
+      ${JSON.stringify(descriptions)}
+      
+      Here are all H1 headings:
+      ${JSON.stringify(h1Headings)}
+      
+      Please analyze these SEO elements and identify:
+      1. How many titles appear to be duplicated or too similar
+      2. How many meta descriptions appear to be duplicated or too similar
+      3. How many H1 headings appear to be duplicated or too similar
+      4. For each category (titles, descriptions, headings), provide specific examples of repetitive content
+      5. For each category, provide actionable recommendations to fix the issues
+      6. Provide overall recommendations for improving content uniqueness across the site
+      
+      Respond with a JSON object in this format:
+      {
+        "titleRepetition": {
+          "repetitiveCount": number,
+          "totalCount": number,
+          "examples": string[],
+          "recommendations": string[]
+        },
+        "descriptionRepetition": {
+          "repetitiveCount": number,
+          "totalCount": number,
+          "examples": string[],
+          "recommendations": string[]
+        },
+        "headingRepetition": {
+          "repetitiveCount": number,
+          "totalCount": number,
+          "examples": string[],
+          "recommendations": string[]
+        },
+        "overallRecommendations": string[]
+      }
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content." },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.5,
+      max_tokens: 1500
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("No content in response");
+    }
+
+    // Parse the JSON response
+    const result = JSON.parse(content);
+    
+    // Return the analysis
+    return {
+      titleRepetition: {
+        repetitiveCount: result.titleRepetition?.repetitiveCount || 0,
+        totalCount: result.titleRepetition?.totalCount || 0,
+        examples: result.titleRepetition?.examples || [],
+        recommendations: result.titleRepetition?.recommendations || []
+      },
+      descriptionRepetition: {
+        repetitiveCount: result.descriptionRepetition?.repetitiveCount || 0,
+        totalCount: result.descriptionRepetition?.totalCount || 0,
+        examples: result.descriptionRepetition?.examples || [],
+        recommendations: result.descriptionRepetition?.recommendations || []
+      },
+      headingRepetition: {
+        repetitiveCount: result.headingRepetition?.repetitiveCount || 0,
+        totalCount: result.headingRepetition?.totalCount || 0,
+        examples: result.headingRepetition?.examples || [], 
+        recommendations: result.headingRepetition?.recommendations || []
+      },
+      overallRecommendations: result.overallRecommendations || []
+    };
+  } catch (error) {
+    console.error("Error analyzing content repetition with OpenAI:", error);
+    // Return empty analysis on error
+    return {
+      titleRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
+      descriptionRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
+      headingRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
+      overallRecommendations: []
+    };
+  }
 }

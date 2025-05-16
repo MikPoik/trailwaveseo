@@ -2,10 +2,10 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { parseSitemap } from './sitemap';
 import { crawlWebsite } from './crawler';
-import { generateSeoSuggestions, generateBatchImageAltText } from './openai';
+import { generateSeoSuggestions, generateBatchImageAltText, analyzeContentRepetition } from './openai';
 import { storage } from './storage';
 import { EventEmitter } from 'events';
-import { Heading, Image, SeoIssue, SeoCategory } from '../client/src/lib/types';
+import { Heading, Image, SeoIssue, SeoCategory, ContentRepetitionAnalysis } from '../client/src/lib/types';
 
 // Extend the Image interface to include suggestedAlt
 interface AnalysisImage extends Image {
@@ -156,13 +156,27 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Calculate overall metrics
     const metrics = calculateMetrics(analyzedPages);
     
+    // Perform content repetition analysis
+    let contentRepetitionAnalysis: ContentRepetitionAnalysis | undefined;
+    if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
+      try {
+        console.log(`Analyzing content repetition for ${domain}...`);
+        contentRepetitionAnalysis = await analyzeContentRepetition(analyzedPages);
+        console.log(`Content repetition analysis completed for ${domain}`);
+      } catch (error) {
+        console.error(`Error analyzing content repetition for ${domain}:`, error);
+        // Continue without content repetition analysis if it fails
+      }
+    }
+    
     // Save analysis to storage
     const analysis = {
       domain,
       date: new Date().toISOString(),
       pagesCount: analyzedPages.length,
       metrics,
-      pages: analyzedPages
+      pages: analyzedPages,
+      contentRepetitionAnalysis
     };
     
     const savedAnalysis = await storage.saveAnalysis(analysis);

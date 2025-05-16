@@ -47,6 +47,28 @@ export interface WebsiteAnalysisMetrics {
   imagesOptimization: number;
 }
 
+export interface ContentRepetitionAnalysis {
+  titleRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  descriptionRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  headingRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  overallRecommendations: string[];
+}
+
 export interface WebsiteAnalysis {
   id?: number;
   domain: string;
@@ -54,6 +76,7 @@ export interface WebsiteAnalysis {
   pagesCount: number;
   metrics: WebsiteAnalysisMetrics;
   pages: PageAnalysis[];
+  contentRepetitionAnalysis?: ContentRepetitionAnalysis;
 }
 
 // API Types
