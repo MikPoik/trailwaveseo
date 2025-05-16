@@ -20,8 +20,9 @@ const ongoingAnalyses = new Map();
  * @param domain Domain name without protocol (e.g., example.com)
  * @param useSitemap Whether to attempt to use sitemap.xml first
  * @param events EventEmitter for sending progress updates
+ * @param isCompetitor Whether this is a competitor analysis (skips alt text generation)
  */
-export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter) {
+export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter, isCompetitor: boolean = false) {
   // Set up cancellation token
   const controller = new AbortController();
   ongoingAnalyses.set(domain, controller);
@@ -115,7 +116,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       
       try {
         // Analyze the page
-        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal);
+        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor);
         analyzedPages.push(pageAnalysis);
         
         // Re-emit progress to update the count
@@ -209,8 +210,9 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
  * @param url Page URL to analyze
  * @param settings Analysis settings
  * @param signal AbortSignal for cancellation
+ * @param isCompetitor Whether this is a competitor analysis (to skip alt text generation)
  */
-async function analyzePage(url: string, settings: any, signal: AbortSignal) {
+async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false) {
   try {
     // Fetch page content
     const response = await axios.get(url, {
@@ -383,8 +385,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal) {
 
         suggestions = await generateSeoSuggestions(url, pageData);
         
-        // Generate alt text for images without alt text
-        if (settings.analyzeImages !== false && images.length > 0) {
+        // Generate alt text for images without alt text (skip for competitor analysis)
+        if (!signal.aborted && settings.analyzeImages !== false && images.length > 0 && !isCompetitor) {
           const imagesWithoutAlt = images.filter(img => !img.alt);
           
           if (imagesWithoutAlt.length > 0) {

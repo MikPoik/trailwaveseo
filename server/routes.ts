@@ -388,8 +388,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Analyze the competitor domain
-        // For simplicity, we'll reuse the existing analysis flow
-        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents);
+        // For simplicity, we'll reuse the existing analysis flow but mark as competitor to skip alt text generation
+        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true);
         
         // Get the competitor analysis results
         const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);
