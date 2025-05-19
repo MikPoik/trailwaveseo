@@ -30,7 +30,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
-  
+
   const exportCSV = async () => {
     if (!analysis.id) {
       console.error('Analysis ID is undefined');
@@ -41,28 +41,28 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       });
       return;
     }
-    
+
     try {
       // Use the api helper to get the CSV blob
       const blob = await exportAnalysisCSV(analysis.id);
-      
+
       // Create a download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `seo-analysis-${analysis.domain}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-      
+
       // Append to document and make it invisible
       link.style.display = 'none';
       document.body.appendChild(link);
-      
+
       // Trigger the download
       link.click();
-      
+
       // Clean up
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast({
         title: "CSV Export",
         description: "Analysis exported as CSV successfully"
@@ -76,7 +76,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       });
     }
   };
-  
+
   const exportPDF = async () => {
     if (!analysis.id) {
       console.error('Analysis ID is undefined');
@@ -87,33 +87,33 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       });
       return;
     }
-    
+
     try {
       const response = await fetch(`/api/analysis/${analysis.id}/export/pdf`);
       if (!response.ok) {
         throw new Error('Failed to export PDF');
       }
-      
+
       // Create a blob from the response
       const blob = await response.blob();
-      
+
       // Create a link to download the blob
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = `seo-analysis-${analysis.domain}.html`;
-      
+
       // Append the link to the body
       document.body.appendChild(a);
-      
+
       // Click the link
       a.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast({
         title: "PDF Export",
         description: "Analysis exported as PDF successfully"
@@ -126,7 +126,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       });
     }
   };
-  
+
   const loadMorePages = () => {
     setDisplayedPages(prev => prev + 5);
   };
@@ -135,9 +135,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
     const allPagesWithIssues = analysis.pages.filter(page => 
       page.issues.some(issue => issue.category === category)
     ).length;
-    
+
     if (allPagesWithIssues === 0) return 100;
-    
+
     const pagesWithCategory = analysis.pages.length;
     return Math.round(((pagesWithCategory - allPagesWithIssues) / pagesWithCategory) * 100);
   };
@@ -150,7 +150,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
           <TabsTrigger value="content-repetition">Content Duplication</TabsTrigger>
           <TabsTrigger value="competitor">Competitor Analysis</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="overview">
           <Card>
             <CardContent className="pt-6">
@@ -204,7 +204,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
@@ -219,7 +219,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
@@ -258,7 +258,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       }}
                     />
                   </div>
-                  
+
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <div className="text-sm font-medium text-gray-700">Meta Descriptions</div>
@@ -276,7 +276,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       }}
                     />
                   </div>
-                  
+
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <div className="text-sm font-medium text-gray-700">Headings Structure</div>
@@ -294,7 +294,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       }}
                     />
                   </div>
-                  
+
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <div className="text-sm font-medium text-gray-700">Image Alt Text</div>
@@ -320,11 +320,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
           {/* Detailed Page Analysis */}
           <div className="mt-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Page-by-Page Analysis</h3>
-            
+
             {analysis.pages.slice(0, displayedPages).map((page, index) => (
               <PageAnalysisCard key={index} page={page} />
             ))}
-            
+
             {displayedPages < analysis.pages.length && (
               <div className="flex justify-center mt-4">
                 <Button 
@@ -337,7 +337,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
             )}
           </div>
         </TabsContent>
-        
+
         <TabsContent value="content-repetition">
           {analysis.contentRepetitionAnalysis ? (
             <Card>
@@ -419,7 +419,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       </span>
                       Title Repetition Analysis
                     </h4>
-                    
+
                     {analysis.contentRepetitionAnalysis.titleRepetition.examples.length > 0 ? (
                       <>
                         <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar titles:</p>
@@ -435,7 +435,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     ) : (
                       <p className="text-sm text-gray-600 mb-3">No examples of duplicate titles found.</p>
                     )}
-                    
+
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                     <ul className="space-y-1">
                       {analysis.contentRepetitionAnalysis.titleRepetition.recommendations.map((rec, index) => (
@@ -457,7 +457,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       </span>
                       Meta Description Repetition Analysis
                     </h4>
-                    
+
                     {analysis.contentRepetitionAnalysis.descriptionRepetition.examples.length > 0 ? (
                       <>
                         <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar meta descriptions:</p>
@@ -473,7 +473,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     ) : (
                       <p className="text-sm text-gray-600 mb-3">No examples of duplicate meta descriptions found.</p>
                     )}
-                    
+
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                     <ul className="space-y-1">
                       {analysis.contentRepetitionAnalysis.descriptionRepetition.recommendations.map((rec, index) => (
@@ -495,7 +495,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       </span>
                       H1 Heading Repetition Analysis
                     </h4>
-                    
+
                     {analysis.contentRepetitionAnalysis.headingRepetition.examples.length > 0 ? (
                       <>
                         <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar H1 headings:</p>
@@ -511,7 +511,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     ) : (
                       <p className="text-sm text-gray-600 mb-3">No examples of duplicate H1 headings found.</p>
                     )}
-                    
+
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                     <ul className="space-y-1">
                       {analysis.contentRepetitionAnalysis.headingRepetition.recommendations.map((rec, index) => (
@@ -533,7 +533,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       </span>
                       Overall Content Recommendations
                     </h4>
-                    
+
                     <ul className="space-y-2">
                       {analysis.contentRepetitionAnalysis.overallRecommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-100 flex items-start">
