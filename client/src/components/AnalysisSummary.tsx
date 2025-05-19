@@ -557,6 +557,14 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   <p className="text-gray-500 max-w-md mb-6">
                     Content duplication analysis is only available when AI analysis is enabled and at least two pages have been analyzed.
                   </p>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
+                    <h4 className="text-sm font-medium text-amber-800 mb-2">Debug Information:</h4>
+                    <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
+                      <li>Pages analyzed: {analysis.pages.length}</li>
+                      <li>AI analysis enabled: {analysis.metrics ? "Unknown (check settings)" : "No"}</li>
+                      <li>OpenAI API key set: {process.env?.OPENAI_API_KEY ? "Yes" : "Unknown (server-side)"}</li>
+                    </ul>
+                  </div>
                   <Button variant="outline" onClick={onNewAnalysis}>
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Run New Analysis with AI Enabled
