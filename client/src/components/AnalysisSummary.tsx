@@ -562,7 +562,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
                       <li>Pages analyzed: {analysis.pages.length}</li>
                       <li>AI analysis enabled: {analysis.metrics ? "Unknown (check settings)" : "No"}</li>
-                      <li>OpenAI API key set: {process.env?.OPENAI_API_KEY ? "Yes" : "Unknown (server-side)"}</li>
+                      <li>OpenAI API key set: Unknown (server-side)</li>
                     </ul>
                   </div>
                   <Button variant="outline" onClick={onNewAnalysis}>
