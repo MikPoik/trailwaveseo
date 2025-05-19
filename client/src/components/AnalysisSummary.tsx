@@ -561,7 +561,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     <h4 className="text-sm font-medium text-amber-800 mb-2">Debug Information:</h4>
                     <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
                       <li>Pages analyzed: {analysis.pages.length}</li>
-                      <li>AI analysis enabled: {analysis.metrics ? "Unknown (check settings)" : "No"}</li>
+                      <li>AI analysis enabled: {analysis.contentRepetitionAnalysis ? "Yes" : "No"}</li>
                       <li>OpenAI API key set: Unknown (server-side)</li>
                     </ul>
                   </div>
