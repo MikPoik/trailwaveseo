@@ -110,7 +110,8 @@ export class MemStorage implements IStorage {
       date: analysis.date || new Date().toISOString(),
       pagesCount: analysis.pagesCount || analysis.pages.length,
       metrics: analysis.metrics,
-      pages: analysis.pages
+      pages: analysis.pages,
+      contentRepetitionAnalysis: analysis.contentRepetitionAnalysis
     };
     
     this.analyses.set(id, newAnalysis);

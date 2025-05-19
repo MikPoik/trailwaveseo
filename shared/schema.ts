@@ -23,6 +23,7 @@ export const analyses = pgTable("analyses", {
   pagesCount: integer("pages_count").notNull(),
   metrics: jsonb("metrics").notNull(),
   pages: jsonb("pages").notNull(),
+  contentRepetitionAnalysis: jsonb("content_repetition_analysis"),
 });
 
 // Insert schema for analyses
@@ -31,6 +32,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   pagesCount: true,
   metrics: true,
   pages: true,
+  contentRepetitionAnalysis: true,
 });
 
 // User settings
