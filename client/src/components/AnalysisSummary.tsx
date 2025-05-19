@@ -339,7 +339,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         </TabsContent>
 
         <TabsContent value="content-repetition">
-          {console.log("Content repetition analysis:", analysis.contentRepetitionAnalysis) || (analysis.contentRepetitionAnalysis && analysis.contentRepetitionAnalysis.overallRecommendations && analysis.contentRepetitionAnalysis.overallRecommendations.length > 0) ? (
+          {analysis.contentRepetitionAnalysis && analysis.contentRepetitionAnalysis.overallRecommendations && analysis.contentRepetitionAnalysis.overallRecommendations.length > 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="mb-6">
