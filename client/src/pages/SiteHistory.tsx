@@ -63,7 +63,43 @@ const SiteHistory = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {/* We don't show mock data as per requirements */}
+                      {analysisHistory?.map((analysis) => (
+                        <tr key={analysis.id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center">
+                              <span className="truncate max-w-xs">{analysis.domain}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center text-sm text-gray-500">
+                              <CalendarIcon className="mr-1 h-4 w-4" />
+                              {new Date(analysis.date).toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            {analysis.pagesCount}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {analysis.metrics.criticalIssues} Critical
+                              </span>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                {analysis.metrics.warnings} Warnings
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <Link href={`/analysis/${analysis.id}`}>
+                                <Button variant="outline" size="sm">
+                                  View Details
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
