@@ -180,7 +180,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       contentRepetitionAnalysis
     };
     
-    const savedAnalysis = await storage.saveAnalysis(analysis);
+    const savedAnalysis = await storage.saveAnalysis(analysis, userId);
     
     // Emit completed event with analysis results
     events.emit(domain, {

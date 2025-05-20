@@ -187,9 +187,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get analysis history
-  app.get("/api/analysis/history", async (req, res) => {
+  app.get("/api/analysis/history", isAuthenticated, async (req: any, res) => {
     try {
-      const history = await storage.getAnalysisHistory();
+      const userId = req.user.claims.sub;
+      const history = await storage.getAnalysisHistory(userId);
       res.json(history);
     } catch (error) {
       res.status(500).json({ error: "Failed to retrieve analysis history" });
@@ -197,9 +198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get recent analyses (for sidebar)
-  app.get("/api/analysis/recent", async (req, res) => {
+  app.get("/api/analysis/recent", async (req: any, res) => {
     try {
-      const recentAnalyses = await storage.getRecentAnalyses(5);
+      // Get user ID if authenticated, or show public analyses
+      const userId = req.isAuthenticated() ? req.user.claims.sub : undefined;
+      const recentAnalyses = await storage.getRecentAnalyses(5, userId);
       res.json(recentAnalyses);
     } catch (error) {
       res.status(500).json({ error: "Failed to retrieve recent analyses" });
@@ -207,8 +210,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific analysis by ID
-  app.get("/api/analysis/:id", async (req, res) => {
+  app.get("/api/analysis/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
@@ -220,6 +224,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Analysis not found" });
       }
       
+      // Check if the analysis belongs to the authenticated user
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to access this analysis" });
+      }
+      
       res.json(analysis);
     } catch (error) {
       res.status(500).json({ error: "Failed to retrieve analysis" });
@@ -227,16 +236,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete analysis by ID
-  app.delete("/api/analysis/:id", async (req, res) => {
+  app.delete("/api/analysis/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
       
+      // Check if the analysis exists and belongs to the user
+      const analysis = await storage.getAnalysisById(id);
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+      
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to delete this analysis" });
+      }
+      
+      const success = await storage.deleteAnalysis(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+      
+      res.json({ message: "Analysis deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete analysis" });
+    }
+  });
 
   // Export analysis as PDF
-  app.get("/api/analysis/:id/export/pdf", async (req, res) => {
+  app.get("/api/analysis/:id/export/pdf", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
