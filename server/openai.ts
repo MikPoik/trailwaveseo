@@ -365,7 +365,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1",
       messages: [
         { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content." },
         { role: "user", content: prompt }

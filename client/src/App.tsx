@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import SiteHistory from "@/pages/SiteHistory";
 import HowItWorks from "@/pages/HowItWorks";
 import Settings from "@/pages/Settings";
+import AnalysisDetails from "@/pages/AnalysisDetails";
 import Sidebar from "@/components/Sidebar";
 
 function Router() {
@@ -18,6 +19,8 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/site-history" component={SiteHistory} />
+          <Route path="/history" component={SiteHistory} />
+          <Route path="/analysis/:id" component={AnalysisDetails} />
           <Route path="/how-it-works" component={HowItWorks} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />

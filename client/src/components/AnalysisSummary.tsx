@@ -564,7 +564,6 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       <li>AI analysis enabled: {analysis.contentRepetitionAnalysis ? (
                         Object.keys(analysis.contentRepetitionAnalysis).length > 0 ? "Yes" : "Yes, but no results"
                       ) : "No"}</li>
-                      <li>OpenAI API key set: Unknown (server-side)</li>
                     </ul>
                   </div>
                   <Button variant="outline" onClick={onNewAnalysis}>
