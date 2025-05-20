@@ -26,9 +26,9 @@ export interface IStorage {
 export type UpsertUser = {
   id: string;
   email?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  profileImageUrl?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  profile_image_url?: string | null;
 };
 
 export class DatabaseStorage implements IStorage {
@@ -44,18 +44,18 @@ export class DatabaseStorage implements IStorage {
       .values({
         id: userData.id,
         email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        profileImageUrl: userData.profileImageUrl,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        profileImageUrl: userData.profile_image_url,
         updatedAt: new Date()
       })
       .onConflictDoUpdate({
         target: users.id,
         set: {
           email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          profileImageUrl: userData.profileImageUrl,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          profileImageUrl: userData.profile_image_url,
           updatedAt: new Date()
         }
       })
