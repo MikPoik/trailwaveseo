@@ -229,10 +229,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recent analyses (for sidebar)
   app.get("/api/analysis/recent", async (req: any, res) => {
     try {
-      // Get user ID if authenticated, or show public analyses
-      const userId = req.isAuthenticated() ? req.user.claims.sub : undefined;
-      const recentAnalyses = await storage.getRecentAnalyses(5, userId);
-      res.json(recentAnalyses);
+      // Only return analyses if user is authenticated
+      if (req.isAuthenticated()) {
+        const userId = req.user.claims.sub;
+        const recentAnalyses = await storage.getRecentAnalyses(5, userId);
+        res.json(recentAnalyses);
+      } else {
+        // Return empty array for anonymous users
+        res.json([]);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to retrieve recent analyses" });
     }
