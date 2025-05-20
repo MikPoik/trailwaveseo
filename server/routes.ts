@@ -82,12 +82,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Updating settings for user:", userId);
       console.log("Settings payload:", JSON.stringify(req.body));
       
-      const parsedSettings = settingsSchema.parse(req.body);
+      // Create a more flexible validation schema that only requires expected fields
+      const flexibleSettingsSchema = z.object({
+        maxPages: z.number().optional(),
+        crawlDelay: z.number().optional(),
+        followExternalLinks: z.boolean().optional(),
+        analyzeImages: z.boolean().optional(),
+        analyzeLinkStructure: z.boolean().optional(),
+        useAI: z.boolean().optional(),
+        // Optional newer fields
+        analyzePageSpeed: z.boolean().optional(),
+        analyzeStructuredData: z.boolean().optional(),
+        analyzeMobileCompatibility: z.boolean().optional(),
+      });
+      
+      // Validate and parse the settings
+      const parsedSettings = flexibleSettingsSchema.parse(req.body);
       console.log("Parsed settings:", JSON.stringify(parsedSettings));
       
+      // Update settings
       const updatedSettings = await storage.updateSettings(parsedSettings, userId);
       res.json(updatedSettings);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Settings update failed:", error);
       
       if (error instanceof z.ZodError) {
@@ -95,7 +111,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Invalid settings format", details: error.errors });
       } else {
         console.error("Server error updating settings:", error);
-        res.status(500).json({ error: "Failed to update settings: " + error.message });
+        res.status(500).json({ 
+          error: "Failed to update settings", 
+          message: error.message || "Unknown error",
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
       }
     }
   });

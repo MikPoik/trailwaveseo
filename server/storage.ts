@@ -166,22 +166,79 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateSettings(newSettings: Partial<Settings>, userId?: string): Promise<Settings> {
-    // First, ensure settings exist
-    await this.getSettings(userId);
-    
-    let updateQuery = db.update(settings);
-    
-    if (userId) {
-      updateQuery = updateQuery.where(eq(settings.userId, userId));
-    } else {
-      updateQuery = updateQuery.where(sql`${settings.userId} IS NULL`);
+    try {
+      // First, get current settings or create if they don't exist
+      const currentSettings = await this.getSettings(userId);
+      
+      console.log("Current settings:", currentSettings);
+      console.log("New settings to apply:", newSettings);
+      
+      // Directly use the imported pool from db.ts
+      const query = `
+        UPDATE settings 
+        SET 
+          max_pages = $1,
+          crawl_delay = $2,
+          follow_external_links = $3,
+          analyze_images = $4,
+          analyze_link_structure = $5,
+          use_ai = $6,
+          analyze_page_speed = $7,
+          analyze_structured_data = $8,
+          analyze_mobile_compatibility = $9
+        WHERE 
+          ${userId ? "user_id = $10" : "user_id IS NULL"}
+        RETURNING *
+      `;
+      
+      const values = [
+        newSettings.maxPages ?? currentSettings.maxPages,
+        newSettings.crawlDelay ?? currentSettings.crawlDelay,
+        newSettings.followExternalLinks ?? currentSettings.followExternalLinks,
+        newSettings.analyzeImages ?? currentSettings.analyzeImages,
+        newSettings.analyzeLinkStructure ?? currentSettings.analyzeLinkStructure,
+        newSettings.useAI ?? currentSettings.useAI,
+        newSettings.analyzePageSpeed ?? currentSettings.analyzePageSpeed ?? true,
+        newSettings.analyzeStructuredData ?? currentSettings.analyzeStructuredData ?? true,
+        newSettings.analyzeMobileCompatibility ?? currentSettings.analyzeMobileCompatibility ?? true
+      ];
+      
+      // Add userId as the last parameter if it exists
+      if (userId) {
+        values.push(userId);
+      }
+      
+      // Import the pool directly from db.ts file
+      const { pool } = await import('./db');
+      const result = await pool.query(query, values);
+      
+      console.log("Settings update result rows:", result.rows?.length);
+      
+      // If no rows updated, something went wrong
+      if (!result.rows || result.rows.length === 0) {
+        throw new Error("No settings were updated");
+      }
+      
+      // Convert snake_case column names to camelCase for response
+      const updatedSettings = {
+        id: result.rows[0].id,
+        userId: result.rows[0].user_id,
+        maxPages: result.rows[0].max_pages,
+        crawlDelay: result.rows[0].crawl_delay,
+        followExternalLinks: result.rows[0].follow_external_links,
+        analyzeImages: result.rows[0].analyze_images,
+        analyzeLinkStructure: result.rows[0].analyze_link_structure,
+        analyzePageSpeed: result.rows[0].analyze_page_speed,
+        analyzeStructuredData: result.rows[0].analyze_structured_data,
+        analyzeMobileCompatibility: result.rows[0].analyze_mobile_compatibility,
+        useAI: result.rows[0].use_ai
+      };
+      
+      return updatedSettings as Settings;
+    } catch (error) {
+      console.error("Error in updateSettings:", error);
+      throw error;
     }
-    
-    const [updatedSettings] = await updateQuery
-      .set(newSettings)
-      .returning();
-    
-    return updatedSettings;
   }
 }
 
