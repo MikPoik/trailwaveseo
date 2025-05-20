@@ -25,13 +25,20 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
 
   const { mutate: deleteAnalysis } = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/analysis/${id}`);
-      if (!response.ok) {
-        // Get error message from response
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete analysis");
+      try {
+        const response = await apiRequest("DELETE", `/api/analysis/${id}`);
+        
+        // Check if the response status is in the error range
+        if (response.status >= 400) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete analysis");
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Error in delete mutation:", error);
+        throw error;
       }
-      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
@@ -43,6 +50,18 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
     },
     onError: (error: any) => {
       console.error("Delete analysis error:", error);
+      
+      // If the analysis doesn't exist anymore, treat as success
+      if (error.message?.includes("not found")) {
+        queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
+        toast({
+          title: "Analysis deleted",
+          description: "The analysis has been removed from your history",
+        });
+        return;
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to delete analysis",
