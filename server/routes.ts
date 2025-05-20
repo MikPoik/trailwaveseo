@@ -31,12 +31,12 @@ const crawlLimiter = rateLimit({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up Replit Auth
   await setupAuth(app);
-  
+
   // User endpoint - protected by auth
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = await await storage.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -81,31 +81,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       console.log("Updating settings for user:", userId);
       console.log("Settings payload:", JSON.stringify(req.body));
-      
+
       // Create a more flexible validation schema that only requires expected fields
       const flexibleSettingsSchema = z.object({
         maxPages: z.number().optional(),
         crawlDelay: z.number().optional(),
         followExternalLinks: z.boolean().optional(),
-        analyzeImages: z.boolean().optional(),
-        analyzeLinkStructure: z.boolean().optional(),
+        analyzeImages: z.number().optional(),
+        analyzeLinkStructure: z.number().optional(),
         useAI: z.boolean().optional(),
         // Optional newer fields
         analyzePageSpeed: z.boolean().optional(),
         analyzeStructuredData: z.boolean().optional(),
         analyzeMobileCompatibility: z.boolean().optional(),
       });
-      
+
       // Validate and parse the settings
       const parsedSettings = flexibleSettingsSchema.parse(req.body);
       console.log("Parsed settings:", JSON.stringify(parsedSettings));
-      
+
       // Update settings
       const updatedSettings = await storage.updateSettings(parsedSettings, userId);
       res.json(updatedSettings);
     } catch (error: any) {
       console.error("Settings update failed:", error);
-      
+
       if (error instanceof z.ZodError) {
         console.error("Validation error:", JSON.stringify(error.errors));
         res.status(400).json({ error: "Invalid settings format", details: error.errors });
@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!domain) {
         return res.status(400).json({ error: "Domain is required" });
       }
-      
+
       cancelAnalysis(domain);
       res.json({ message: "Analysis cancelled" });
     } catch (error) {
@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get analysis progress with Server-Sent Events
   app.get("/api/analyze/progress", (req, res) => {
     const domain = req.query.domain as string;
-    
+
     if (!domain) {
       return res.status(400).json({ error: "Domain parameter is required" });
     }
@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Event handler for this specific domain
     const progressHandler = (data: any) => {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
-      
+
       // If analysis is completed or errored, end the connection
       if (data.status === 'completed' || data.status === 'error') {
         analysisEvents.removeListener(domain, progressHandler);
@@ -251,18 +251,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
-      
+
       const analysis = await storage.getAnalysisById(id);
-      
+
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       // Check if the analysis belongs to the authenticated user
       if (analysis.userId && analysis.userId !== userId) {
         return res.status(403).json({ error: "You don't have permission to access this analysis" });
       }
-      
+
       res.json(analysis);
     } catch (error) {
       res.status(500).json({ error: "Failed to retrieve analysis" });
@@ -277,25 +277,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
-      
+
       // Check if the analysis exists and belongs to the user
       const analysis = await storage.getAnalysisById(id);
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       if (analysis.userId && analysis.userId !== userId) {
         return res.status(403).json({ error: "You don't have permission to delete this analysis" });
       }
-      
+
       const success = await storage.deleteAnalysis(id);
-      
+
       if (!success) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       res.json({ message: "Analysis deleted successfully" });
     } catch (error) {
+      console.error("Error deleting analysis:", error);
       res.status(500).json({ error: "Failed to delete analysis" });
     }
   });
@@ -307,16 +308,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
-      
+
       const analysis = await storage.getAnalysisById(id);
-      
+
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       // Generate PDF content
       // This would normally use a library like PDFKit, but for simplicity we're using HTML to PDF approach
-      
+
       // Create simple HTML template for the PDF
       const pdfHtml = `
         <!DOCTYPE html>
@@ -348,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <strong>Analysis Date:</strong> ${new Date(analysis.date).toLocaleDateString()}<br>
             <strong>Pages Analyzed:</strong> ${analysis.pagesCount}
           </p>
-          
+
           <h2>Overall Metrics</h2>
           <div class="metrics">
             <div class="metric-box good">
@@ -364,14 +365,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <p>${analysis.metrics.criticalIssues}</p>
             </div>
           </div>
-          
+
           <h2>Page Analysis</h2>
           ${analysis.pages.map(page => `
             <div class="page-analysis">
               <h3>${page.pageName} - ${page.url}</h3>
               <p><strong>Title:</strong> ${page.title || 'None'}</p>
               <p><strong>Meta Description:</strong> ${page.metaDescription || 'None'}</p>
-              
+
               ${page.issues.length > 0 ? `
                 <h4>Issues (${page.issues.length})</h4>
                 ${page.issues.map(issue => `
@@ -380,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   </div>
                 `).join('')}
               ` : '<p>No issues found</p>'}
-              
+
               ${page.suggestions.length > 0 ? `
                 <h4>Suggestions</h4>
                 <ul>
@@ -392,34 +393,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </body>
         </html>
       `;
-      
+
       // Set response headers for PDF download
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.html`);
       res.send(pdfHtml);
-      
+
     } catch (error) {
       res.status(500).json({ error: "Failed to export analysis as PDF" });
-    }
-  });
-
-  // Delete an analysis
-  app.delete("/api/analysis/:id", isAuthenticated, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid analysis ID" });
-      }
-      
-      const success = await storage.deleteAnalysis(id);
-      
-      if (!success) {
-        return res.status(404).json({ error: "Analysis not found" });
-      }
-      
-      res.json({ message: "Analysis deleted successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete analysis" });
     }
   });
 
@@ -430,16 +411,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
-      
+
       const analysis = await storage.getAnalysisById(id);
-      
+
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       // Generate CSV content
       let csv = "URL,Title,Title Length,Meta Description,Description Length,Headings,Issues,Suggestions\n";
-      
+
       analysis.pages.forEach(page => {
         const row = [
           `"${page.url}"`,
@@ -451,10 +432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           page.issues.length,
           `"${page.suggestions.join('; ')}"`
         ];
-        
+
         csv += row.join(',') + '\n';
       });
-      
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.csv`);
       res.send(csv);
@@ -470,24 +451,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!mainDomain || !competitorDomain) {
         return res.status(400).json({ error: "Both domains are required" });
       }
-      
+
       // Get the most recent analysis for the main domain
       const mainAnalysis = await storage.getLatestAnalysisByDomain(mainDomain);
       if (!mainAnalysis) {
         return res.status(404).json({ error: "No analysis found for main domain" });
       }
-      
+
       try {
         // Analyze the competitor domain
         // For simplicity, we'll reuse the existing analysis flow but mark as competitor to skip alt text generation
         const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true);
-        
+
         // Get the competitor analysis results
         const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);
         if (!competitorAnalysis) {
           return res.status(404).json({ error: "Competitor analysis failed" });
         }
-      
+
         // Compare the analyses
         const comparison = {
           mainDomain,
@@ -523,28 +504,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           analysis: competitorAnalysis,
           recommendations: []
         };
-        
+
         // Generate recommendations based on the comparison
         if (comparison.metrics.titleOptimization.difference < 0) {
           comparison.recommendations.push("Your competitor has better optimized page titles. Consider reviewing and improving your title tags.");
         }
-        
+
         if (comparison.metrics.descriptionOptimization.difference < 0) {
           comparison.recommendations.push("Your competitor has better optimized meta descriptions. Focus on writing more compelling and keyword-rich descriptions.");
         }
-        
+
         if (comparison.metrics.headingsOptimization.difference < 0) {
           comparison.recommendations.push("Your competitor has better heading structure. Ensure you use a logical heading hierarchy with relevant keywords.");
         }
-        
+
         if (comparison.metrics.imagesOptimization.difference < 0) {
           comparison.recommendations.push("Your competitor has better optimized images. Make sure all your images have descriptive alt text.");
         }
-        
+
         if (comparison.metrics.criticalIssues.difference < 0) {
           comparison.recommendations.push("You have more critical issues than your competitor. Prioritize fixing these issues to improve your SEO performance.");
         }
-        
+
         res.json(comparison);
       } catch (error) {
         console.error("Error analyzing competitor domain:", error);
@@ -555,23 +536,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to compare with competitor" });
     }
   });
-  
+
   // Save competitor analysis to an existing analysis
   app.post("/api/analysis/:id/save-competitor", async (req, res) => {
     try {
       const analysisId = parseInt(req.params.id);
       const competitorData = req.body;
-      
+
       if (!competitorData) {
         return res.status(400).json({ error: "Competitor analysis data is required" });
       }
-      
+
       const updatedAnalysis = await storage.updateCompetitorAnalysis(analysisId, competitorData);
-      
+
       if (!updatedAnalysis) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       res.json(updatedAnalysis);
     } catch (error) {
       console.error("Error saving competitor analysis:", error);
@@ -586,13 +567,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
       }
-      
+
       const analysis = await storage.getAnalysisById(id);
-      
+
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
       }
-      
+
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.json`);
       res.json(analysis);
