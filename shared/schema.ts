@@ -40,6 +40,7 @@ export const analyses = pgTable("analyses", {
   metrics: jsonb("metrics").notNull(),
   pages: jsonb("pages").notNull(),
   contentRepetitionAnalysis: jsonb("content_repetition_analysis"),
+  competitorAnalysis: jsonb("competitor_analysis"),
 });
 
 // Insert schema for analyses
@@ -50,6 +51,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   metrics: true,
   pages: true,
   contentRepetitionAnalysis: true,
+  competitorAnalysis: true,
 });
 
 // User settings

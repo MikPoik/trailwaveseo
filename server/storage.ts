@@ -15,6 +15,7 @@ export interface IStorage {
   getRecentAnalyses(limit: number, userId?: string): Promise<{id: number, domain: string}[]>;
   getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null>;
   saveAnalysis(analysis: any, userId?: string): Promise<Analysis>;
+  updateCompetitorAnalysis(id: number, competitorData: any): Promise<Analysis | undefined>;
   deleteAnalysis(id: number): Promise<boolean>;
   
   // Settings operations
@@ -118,6 +119,25 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return newAnalysis;
+  }
+  
+  async updateCompetitorAnalysis(id: number, competitorData: any): Promise<Analysis | undefined> {
+    // First check if the analysis exists
+    const analysis = await this.getAnalysisById(id);
+    if (!analysis) {
+      return undefined;
+    }
+    
+    // Update the analysis with competitor data
+    const [updatedAnalysis] = await db
+      .update(analyses)
+      .set({
+        competitorAnalysis: competitorData
+      })
+      .where(eq(analyses.id, id))
+      .returning();
+    
+    return updatedAnalysis;
   }
   
   async deleteAnalysis(id: number): Promise<boolean> {
