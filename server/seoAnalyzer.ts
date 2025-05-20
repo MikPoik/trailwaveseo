@@ -29,8 +29,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
   ongoingAnalyses.set(domain, controller);
 
   try {
-    // Get settings
-    const settings = await storage.getSettings();
+    // Get settings for this user
+    const settings = await storage.getSettings(userId);
 
     // Get pages to analyze (either from sitemap or by crawling)
     let pages: string[] = [];
