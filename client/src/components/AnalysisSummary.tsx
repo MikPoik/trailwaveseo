@@ -158,9 +158,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">SEO Analysis Results</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Website: <span>{analysis.domain}</span> • 
-                    Analyzed <span>{analysis.pages?.length || 0}</span> pages • 
-                    <span>{format(new Date(analysis.date), 'MMMM d, yyyy')}</span>
+                    Website: <span>{analysis?.domain || 'Unknown'}</span> • 
+                    Analyzed <span>{analysis?.pages?.length || 0}</span> pages • 
+                    <span>{analysis?.date ? format(new Date(analysis.date), 'MMMM d, yyyy') : 'Unknown date'}</span>
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">

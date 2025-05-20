@@ -14,10 +14,23 @@ const AnalysisDetails = () => {
   
   const { data: analysis, isLoading, error } = useQuery({
     queryKey: ['/api/analysis', id],
-    queryFn: () => fetch(`/api/analysis/${id}`).then(res => {
-      if (!res.ok) throw new Error('Analysis not found');
-      return res.json();
-    }),
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/analysis/${id}`);
+        if (!res.ok) throw new Error('Analysis not found');
+        const data = await res.json();
+        
+        // Validate essential data structure
+        if (!data || !data.pages) {
+          throw new Error('Incomplete analysis data received');
+        }
+        
+        return data;
+      } catch (err) {
+        console.error('Error loading analysis:', err);
+        throw err;
+      }
+    },
   });
 
   useEffect(() => {
