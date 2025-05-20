@@ -12,6 +12,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AnalysisState, WebsiteAnalysis } from "@/lib/types";
+import { useAuth } from "../hooks/useAuth";
 
 interface URLInputFormProps {
   onAnalyzeStart: (domain: string, useSitemap: boolean) => void;
@@ -37,6 +38,7 @@ const URLInputForm = ({
   analysisState
 }: URLInputFormProps) => {
   const { toast } = useToast();
+  const { isAuthenticated, login } = useAuth();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const form = useForm<FormValues>({
@@ -102,6 +104,18 @@ const URLInputForm = ({
   });
 
   const onSubmit = (data: FormValues) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to analyze websites and save your results.",
+        action: (
+          <Button variant="outline" onClick={() => login()}>
+            Log in
+          </Button>
+        ),
+      });
+      return;
+    }
     analyzeWebsite(data);
   };
 

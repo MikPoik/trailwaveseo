@@ -369,6 +369,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete an analysis
+  app.delete("/api/analysis/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+      
       const success = await storage.deleteAnalysis(id);
       
       if (!success) {
