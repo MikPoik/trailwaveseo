@@ -47,6 +47,12 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
   const { mutate: fetchAnalysis, isPending: isLoadingAnalysis } = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("GET", `/api/analysis/${id}`);
+      
+      // Ensure we have all required properties
+      if (!response || !response.pages) {
+        throw new Error("Invalid analysis data received");
+      }
+      
       return response as unknown as WebsiteAnalysis;
     },
     onSuccess: (data) => {

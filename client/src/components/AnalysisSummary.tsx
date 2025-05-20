@@ -159,7 +159,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   <h3 className="text-lg font-medium text-gray-900">SEO Analysis Results</h3>
                   <p className="mt-1 text-sm text-gray-500">
                     Website: <span>{analysis.domain}</span> • 
-                    Analyzed <span>{analysis.pages.length}</span> pages • 
+                    Analyzed <span>{analysis.pages?.length || 0}</span> pages • 
                     <span>{format(new Date(analysis.date), 'MMMM d, yyyy')}</span>
                   </p>
                 </div>
