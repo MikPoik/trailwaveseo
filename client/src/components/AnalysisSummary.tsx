@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WebsiteAnalysis, PageAnalysis, ContentRepetitionAnalysis } from "@/lib/types";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -30,6 +31,18 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // If analysis has competitor data stored in the database, initialize it in the cache
+  useEffect(() => {
+    if (analysis.id && analysis.competitorAnalysis) {
+      console.log('Found existing competitor analysis data:', analysis.competitorAnalysis);
+      
+      // Set the competitor analysis data in the query cache
+      const cacheKey = [`competitor-analysis-${analysis.id || analysis.domain}`];
+      queryClient.setQueryData(cacheKey, analysis.competitorAnalysis);
+    }
+  }, [analysis.id, analysis.competitorAnalysis, analysis.domain, queryClient]);
 
   const exportCSV = async () => {
     if (!analysis.id) {

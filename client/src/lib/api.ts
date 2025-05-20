@@ -56,3 +56,13 @@ export async function compareWithCompetitor(data: CompetitorAnalysisRequest): Pr
     throw error;
   }
 }
+
+export async function saveCompetitorAnalysis(analysisId: number, competitorData: any): Promise<any> {
+  try {
+    const response = await apiRequest('POST', `/api/analysis/${analysisId}/save-competitor`, competitorData);
+    return await response.json();
+  } catch (error) {
+    console.error("Error saving competitor analysis:", error);
+    throw error;
+  }
+}

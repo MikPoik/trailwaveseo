@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { WebsiteAnalysis } from '@/lib/types';
-import { compareWithCompetitor } from '@/lib/api';
+import { compareWithCompetitor, saveCompetitorAnalysis } from '@/lib/api';
 import { InfoIcon, AlertTriangle, AlertCircle, Check, ChevronRight } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -129,6 +129,20 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       
       // Update the cache with enhanced comparison data
       queryClient.setQueryData(cacheKey, enhancedComparisonData);
+      
+      // Save the competitor analysis data to the database if we have an analysis ID
+      if (mainAnalysis.id) {
+        // Save the competitor analysis data to the database
+        saveCompetitorAnalysis(mainAnalysis.id, enhancedComparisonData)
+          .then(() => {
+            console.log('Competitor analysis saved to database');
+            // Invalidate the analysis cache to force a refresh
+            queryClient.invalidateQueries({queryKey: [`/api/analysis/${mainAnalysis.id}`]});
+          })
+          .catch(error => {
+            console.error('Error saving competitor analysis:', error);
+          });
+      }
       
       toast({
         title: 'Analysis Complete',

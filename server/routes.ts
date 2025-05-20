@@ -555,6 +555,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to compare with competitor" });
     }
   });
+  
+  // Save competitor analysis to an existing analysis
+  app.post("/api/analysis/:id/save-competitor", async (req, res) => {
+    try {
+      const analysisId = parseInt(req.params.id);
+      const competitorData = req.body;
+      
+      if (!competitorData) {
+        return res.status(400).json({ error: "Competitor analysis data is required" });
+      }
+      
+      const updatedAnalysis = await storage.updateCompetitorAnalysis(analysisId, competitorData);
+      
+      if (!updatedAnalysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+      
+      res.json(updatedAnalysis);
+    } catch (error) {
+      console.error("Error saving competitor analysis:", error);
+      res.status(500).json({ error: "Failed to save competitor analysis" });
+    }
+  });
 
   // Export analysis as JSON
   app.get("/api/analysis/:id/export/json", async (req, res) => {
