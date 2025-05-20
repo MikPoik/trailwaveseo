@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
@@ -26,6 +26,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 const Settings = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
 
   // Default values
@@ -42,12 +43,41 @@ const Settings = () => {
     resolver: zodResolver(settingsSchema),
     defaultValues,
   });
+  
+  // Fetch current settings
+  const { data: currentSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['/api/settings'],
+    onError: (error) => {
+      toast({
+        title: "Failed to load settings",
+        description: "Your default settings will be used instead.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update form values when settings are loaded
+  useEffect(() => {
+    if (currentSettings && !isLoadingSettings) {
+      form.reset({
+        maxPages: currentSettings.maxPages,
+        crawlDelay: currentSettings.crawlDelay,
+        followExternalLinks: currentSettings.followExternalLinks,
+        analyzeImages: currentSettings.analyzeImages,
+        analyzeLinkStructure: currentSettings.analyzeLinkStructure,
+        useAI: currentSettings.useAI,
+      });
+    }
+  }, [currentSettings, isLoadingSettings, form]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: SettingsFormValues) => {
       return await apiRequest("POST", "/api/settings", data);
     },
     onSuccess: () => {
+      // Invalidate the settings query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
       toast({
         title: "Settings updated",
         description: "Your SEO analysis settings have been saved.",
