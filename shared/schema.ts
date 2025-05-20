@@ -1,23 +1,39 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
 // User table for authentication/preferences
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Insert schema for users
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export const insertUserSchema = createInsertSchema(users);
+
+// Upsert schema for Replit Auth
+export const upsertUserSchema = createInsertSchema(users);
 
 // Stored SEO analyses
 export const analyses = pgTable("analyses", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
   domain: text("domain").notNull(),
   date: timestamp("date").notNull().defaultNow(),
   pagesCount: integer("pages_count").notNull(),
@@ -28,6 +44,7 @@ export const analyses = pgTable("analyses", {
 
 // Insert schema for analyses
 export const insertAnalysisSchema = createInsertSchema(analyses).pick({
+  userId: true,
   domain: true,
   pagesCount: true,
   metrics: true,
@@ -38,7 +55,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
 // User settings
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id"),
+  userId: varchar("user_id").references(() => users.id),
   maxPages: integer("max_pages").notNull().default(20),
   crawlDelay: integer("crawl_delay").notNull().default(500),
   followExternalLinks: boolean("follow_external_links").notNull().default(false),

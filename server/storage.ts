@@ -1,42 +1,151 @@
 import { users, type User, type InsertUser, analyses, type Analysis, type InsertAnalysis, settings, type Settings, type InsertSettings } from "@shared/schema";
+import { z } from "zod";
 
 // Interface for all storage operations
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   
   // Analysis operations
   getAnalysisById(id: number): Promise<Analysis | undefined>;
-  getAnalysisHistory(): Promise<Analysis[]>;
-  getRecentAnalyses(limit: number): Promise<{id: number, domain: string}[]>;
-  getLatestAnalysisByDomain(domain: string): Promise<Analysis | null>;
-  saveAnalysis(analysis: any): Promise<Analysis>;
+  getAnalysisHistory(userId?: string): Promise<Analysis[]>;
+  getRecentAnalyses(limit: number, userId?: string): Promise<{id: number, domain: string}[]>;
+  getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null>;
+  saveAnalysis(analysis: any, userId?: string): Promise<Analysis>;
   deleteAnalysis(id: number): Promise<boolean>;
   
   // Settings operations
-  getSettings(): Promise<Settings>;
-  updateSettings(newSettings: Partial<Settings>): Promise<Settings>;
+  getSettings(userId?: string): Promise<Settings>;
+  updateSettings(newSettings: Partial<Settings>, userId?: string): Promise<Settings>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private analyses: Map<number, Analysis>;
-  private appSettings: Settings;
-  private userIdCounter: number;
-  private analysisIdCounter: number;
+// Type for user upsert from Replit Auth
+export type UpsertUser = {
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+};
 
-  constructor() {
-    this.users = new Map();
-    this.analyses = new Map();
-    this.userIdCounter = 1;
-    this.analysisIdCounter = 1;
+import { db } from './db';
+import { eq, desc, and, count, sql } from 'drizzle-orm';
+
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+    return user;
+  }
+  
+  // Analysis operations
+  async getAnalysisById(id: number): Promise<Analysis | undefined> {
+    const [analysis] = await db.select().from(analyses).where(eq(analyses.id, id));
+    return analysis;
+  }
+  
+  async getAnalysisHistory(userId?: string): Promise<Analysis[]> {
+    if (userId) {
+      return db.select().from(analyses)
+        .where(eq(analyses.userId, userId))
+        .orderBy(desc(analyses.date));
+    }
+    return db.select().from(analyses).orderBy(desc(analyses.date));
+  }
+  
+  async getRecentAnalyses(limit: number, userId?: string): Promise<{id: number, domain: string}[]> {
+    let query = db.select({
+      id: analyses.id,
+      domain: analyses.domain
+    }).from(analyses);
     
-    // Default settings
-    this.appSettings = {
-      id: 1,
-      userId: null,
+    if (userId) {
+      query = query.where(eq(analyses.userId, userId));
+    }
+    
+    return query.orderBy(desc(analyses.date)).limit(limit);
+  }
+  
+  async getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null> {
+    let query = db.select().from(analyses)
+      .where(eq(analyses.domain, domain));
+    
+    if (userId) {
+      query = query.where(eq(analyses.userId, userId));
+    }
+    
+    const analysisResults = await query.orderBy(desc(analyses.date)).limit(1);
+    return analysisResults.length > 0 ? analysisResults[0] : null;
+  }
+  
+  async saveAnalysis(analysis: any, userId?: string): Promise<Analysis> {
+    const [newAnalysis] = await db
+      .insert(analyses)
+      .values({
+        userId: userId || null,
+        domain: analysis.domain,
+        date: new Date(),
+        pagesCount: analysis.pagesCount || analysis.pages.length,
+        metrics: analysis.metrics,
+        pages: analysis.pages,
+        contentRepetitionAnalysis: analysis.contentRepetitionAnalysis
+      })
+      .returning();
+    
+    return newAnalysis;
+  }
+  
+  async deleteAnalysis(id: number): Promise<boolean> {
+    const result = await db.delete(analyses).where(eq(analyses.id, id));
+    return result.count > 0;
+  }
+  
+  // Settings operations
+  async getSettings(userId?: string): Promise<Settings> {
+    let settingsQuery = db.select().from(settings);
+    
+    if (userId) {
+      settingsQuery = settingsQuery.where(eq(settings.userId, userId));
+    } else {
+      // Get global settings (no userId)
+      settingsQuery = settingsQuery.where(sql`${settings.userId} IS NULL`);
+    }
+    
+    const settingsResults = await settingsQuery.limit(1);
+    
+    if (settingsResults.length > 0) {
+      return settingsResults[0];
+    }
+    
+    // If no settings found, create default settings
+    const defaultSettings: Omit<Settings, 'id'> = {
+      userId: userId || null,
       maxPages: 20,
       crawlDelay: 500,
       followExternalLinks: false,
@@ -44,97 +153,34 @@ export class MemStorage implements IStorage {
       analyzeLinkStructure: true,
       useAI: true
     };
-  }
-
-  // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-  
-  // Analysis operations
-  async getAnalysisById(id: number): Promise<Analysis | undefined> {
-    return this.analyses.get(id);
-  }
-  
-  async getAnalysisHistory(): Promise<Analysis[]> {
-    return Array.from(this.analyses.values())
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }
-  
-  async getRecentAnalyses(limit: number): Promise<{id: number, domain: string}[]> {
-    return Array.from(this.analyses.values())
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, limit)
-      .map(analysis => ({
-        id: analysis.id,
-        domain: analysis.domain
-      }));
-  }
-  
-  /**
-   * Get the latest analysis for a specific domain
-   * @param domain Domain to search for
-   * @returns Most recent analysis for the domain, or null if not found
-   */
-  async getLatestAnalysisByDomain(domain: string): Promise<Analysis | null> {
-    const analysisHistory = await this.getAnalysisHistory();
     
-    // Find all analyses for this domain
-    const domainAnalyses = analysisHistory.filter(analysis => analysis.domain === domain);
+    // Insert default settings
+    const [newSettings] = await db
+      .insert(settings)
+      .values(defaultSettings)
+      .returning();
     
-    // Sort by date (newest first)
-    domainAnalyses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    // Return the most recent, or null if none found
-    return domainAnalyses.length > 0 ? domainAnalyses[0] : null;
+    return newSettings;
   }
   
-  async saveAnalysis(analysis: any): Promise<Analysis> {
-    const id = this.analysisIdCounter++;
-    const newAnalysis: Analysis = {
-      id,
-      domain: analysis.domain,
-      date: analysis.date || new Date().toISOString(),
-      pagesCount: analysis.pagesCount || analysis.pages.length,
-      metrics: analysis.metrics,
-      pages: analysis.pages,
-      contentRepetitionAnalysis: analysis.contentRepetitionAnalysis
-    };
+  async updateSettings(newSettings: Partial<Settings>, userId?: string): Promise<Settings> {
+    // First, ensure settings exist
+    await this.getSettings(userId);
     
-    this.analyses.set(id, newAnalysis);
-    return newAnalysis;
-  }
-  
-  async deleteAnalysis(id: number): Promise<boolean> {
-    return this.analyses.delete(id);
-  }
-  
-  // Settings operations
-  async getSettings(): Promise<Settings> {
-    return { ...this.appSettings };
-  }
-  
-  async updateSettings(newSettings: Partial<Settings>): Promise<Settings> {
-    this.appSettings = {
-      ...this.appSettings,
-      ...newSettings
-    };
+    let updateQuery = db.update(settings);
     
-    return { ...this.appSettings };
+    if (userId) {
+      updateQuery = updateQuery.where(eq(settings.userId, userId));
+    } else {
+      updateQuery = updateQuery.where(sql`${settings.userId} IS NULL`);
+    }
+    
+    const [updatedSettings] = await updateQuery
+      .set(newSettings)
+      .returning();
+    
+    return updatedSettings;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
