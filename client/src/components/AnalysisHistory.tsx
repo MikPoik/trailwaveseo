@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Calendar, ExternalLink } from "lucide-react";
+import { useLocation } from "wouter";
 import { WebsiteAnalysis } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +71,10 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
     },
   });
 
+  // Import useLocation for navigation
+  const [, setLocation] = useLocation();
+  
+  // We'll keep the mutation for backward compatibility
   const { mutate: fetchAnalysis, isPending: isLoadingAnalysis } = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("GET", `/api/analysis/${id}`);
@@ -158,8 +163,7 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => fetchAnalysis(analysis.id)}
-                    disabled={isLoadingAnalysis}
+                    onClick={() => setLocation(`/analysis/${analysis.id}`)}
                   >
                     <ExternalLink className="h-4 w-4" />
                     <span className="sr-only">View</span>
