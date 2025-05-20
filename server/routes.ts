@@ -8,6 +8,7 @@ import { generateSeoSuggestions } from "./openai";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { EventEmitter } from "events";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 // Global event emitter for Server-Sent Events
 const analysisEvents = new EventEmitter();
@@ -28,6 +29,20 @@ const crawlLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up Replit Auth
+  await setupAuth(app);
+  
+  // User endpoint - protected by auth
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
   // Input validation schemas
   const analyzeRequestSchema = z.object({
     domain: z.string().min(1).max(255),
@@ -50,9 +65,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", apiLimiter);
 
   // Default settings endpoint
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const settings = await storage.getSettings();
+      const userId = req.user.claims.sub;
+      const settings = await storage.getSettings(userId);
       res.json(settings);
     } catch (error) {
       res.status(500).json({ error: "Failed to retrieve settings" });
@@ -60,10 +76,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update settings endpoint
-  app.post("/api/settings", async (req, res) => {
+  app.post("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const parsedSettings = settingsSchema.parse(req.body);
-      const updatedSettings = await storage.updateSettings(parsedSettings);
+      const updatedSettings = await storage.updateSettings(parsedSettings, userId);
       res.json(updatedSettings);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -75,12 +92,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analyze website endpoint
-  app.post("/api/analyze", crawlLimiter, async (req, res) => {
+  app.post("/api/analyze", isAuthenticated, crawlLimiter, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { domain, useSitemap } = analyzeRequestSchema.parse(req.body);
 
       // Start analysis in the background
-      analyzeSite(domain, useSitemap, analysisEvents)
+      analyzeSite(domain, useSitemap, analysisEvents, false, userId)
         .catch(error => {
           console.error(`Analysis error for ${domain}:`, error);
           analysisEvents.emit(domain, {

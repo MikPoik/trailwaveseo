@@ -1,5 +1,7 @@
 import { users, type User, type InsertUser, analyses, type Analysis, type InsertAnalysis, settings, type Settings, type InsertSettings } from "@shared/schema";
 import { z } from "zod";
+import { db } from './db';
+import { eq, desc, and, count, sql } from 'drizzle-orm';
 
 // Interface for all storage operations
 export interface IStorage {
@@ -28,9 +30,6 @@ export type UpsertUser = {
   lastName?: string | null;
   profileImageUrl?: string | null;
 };
-
-import { db } from './db';
-import { eq, desc, and, count, sql } from 'drizzle-orm';
 
 export class DatabaseStorage implements IStorage {
   // User operations

@@ -21,8 +21,9 @@ const ongoingAnalyses = new Map();
  * @param useSitemap Whether to attempt to use sitemap.xml first
  * @param events EventEmitter for sending progress updates
  * @param isCompetitor Whether this is a competitor analysis (skips alt text generation)
+ * @param userId Optional user ID to associate with the analysis
  */
-export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter, isCompetitor: boolean = false) {
+export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter, isCompetitor: boolean = false, userId?: string) {
   // Set up cancellation token
   const controller = new AbortController();
   ongoingAnalyses.set(domain, controller);
