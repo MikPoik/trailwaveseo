@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarIcon, ExternalLinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useEffect } from "react";
 
 const SiteHistory = () => {
   const { toast } = useToast();
@@ -13,13 +14,16 @@ const SiteHistory = () => {
     queryKey: ['/api/analysis/history'],
   });
 
-  if (error) {
-    toast({
-      title: "Error loading history",
-      description: "Could not load your previous analyses",
-      variant: "destructive",
-    });
-  }
+  // Use useEffect to show error toast only when error changes
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error loading history",
+        description: "Could not load your previous analyses",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   return (
     <>

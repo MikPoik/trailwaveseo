@@ -69,6 +69,42 @@ export interface ContentRepetitionAnalysis {
   overallRecommendations: string[];
 }
 
+export interface ComparisonMetric {
+  main: number;
+  competitor: number;
+  difference: number;
+}
+
+export interface CompetitorAnalysisResult {
+  mainDomain: string;
+  competitorDomain: string;
+  metrics: {
+    titleOptimization: ComparisonMetric;
+    descriptionOptimization: ComparisonMetric;
+    headingsOptimization: ComparisonMetric;
+    imagesOptimization: ComparisonMetric;
+    criticalIssues: ComparisonMetric;
+  };
+  recommendations: string[];
+  analysis?: WebsiteAnalysis;
+  details?: {
+    main: {
+      titles: string[];
+      descriptions: string[];
+      headings: string[];
+      images: number;
+      pages: number;
+    };
+    competitor: {
+      titles: string[];
+      descriptions: string[];
+      headings: string[];
+      images: number;
+      pages: number;
+    };
+  };
+}
+
 export interface WebsiteAnalysis {
   id?: number;
   domain: string;
@@ -77,6 +113,7 @@ export interface WebsiteAnalysis {
   metrics: WebsiteAnalysisMetrics;
   pages: PageAnalysis[];
   contentRepetitionAnalysis?: ContentRepetitionAnalysis;
+  competitorAnalysis?: CompetitorAnalysisResult;
 }
 
 // API Types
