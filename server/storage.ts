@@ -150,6 +150,9 @@ export class DatabaseStorage implements IStorage {
       followExternalLinks: false,
       analyzeImages: true,
       analyzeLinkStructure: true,
+      analyzePageSpeed: true,
+      analyzeStructuredData: true,
+      analyzeMobileCompatibility: true,
       useAI: true
     };
     

@@ -79,14 +79,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log("Updating settings for user:", userId);
+      console.log("Settings payload:", JSON.stringify(req.body));
+      
       const parsedSettings = settingsSchema.parse(req.body);
+      console.log("Parsed settings:", JSON.stringify(parsedSettings));
+      
       const updatedSettings = await storage.updateSettings(parsedSettings, userId);
       res.json(updatedSettings);
     } catch (error) {
+      console.error("Settings update failed:", error);
+      
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", JSON.stringify(error.errors));
         res.status(400).json({ error: "Invalid settings format", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to update settings" });
+        console.error("Server error updating settings:", error);
+        res.status(500).json({ error: "Failed to update settings: " + error.message });
       }
     }
   });

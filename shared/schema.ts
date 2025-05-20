@@ -61,6 +61,9 @@ export const settings = pgTable("settings", {
   followExternalLinks: boolean("follow_external_links").notNull().default(false),
   analyzeImages: boolean("analyze_images").notNull().default(true),
   analyzeLinkStructure: boolean("analyze_link_structure").notNull().default(true),
+  analyzePageSpeed: boolean("analyze_page_speed").notNull().default(true),
+  analyzeStructuredData: boolean("analyze_structured_data").notNull().default(true),
+  analyzeMobileCompatibility: boolean("analyze_mobile_compatibility").notNull().default(true),
   useAI: boolean("use_ai").notNull().default(true),
 });
 
@@ -72,6 +75,9 @@ export const insertSettingsSchema = createInsertSchema(settings).pick({
   followExternalLinks: true,
   analyzeImages: true,
   analyzeLinkStructure: true,
+  analyzePageSpeed: true,
+  analyzeStructuredData: true,
+  analyzeMobileCompatibility: true,
   useAI: true,
 });
 
