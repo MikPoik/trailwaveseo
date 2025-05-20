@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,6 +10,34 @@ import HowItWorks from "@/pages/HowItWorks";
 import Settings from "@/pages/Settings";
 import AnalysisDetails from "@/pages/AnalysisDetails";
 import Sidebar from "@/components/Sidebar";
+import { useAuth } from "./hooks/useAuth";
+
+function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>; path: string }) {
+  const { isAuthenticated, isLoading, login } = useAuth();
+  const [location] = useLocation();
+
+  if (isLoading) {
+    return <div className="p-8 flex justify-center items-center">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    // Could use a redirect, but for simplicity just show a message
+    return (
+      <div className="p-8 flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+        <p className="mb-4">You need to log in to access this page.</p>
+        <button 
+          onClick={() => login()}
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          Log in
+        </button>
+      </div>
+    );
+  }
+
+  return <Component {...rest} />;
+}
 
 function Router() {
   return (
@@ -18,11 +46,24 @@ function Router() {
       <main className="flex-1 overflow-auto">
         <Switch>
           <Route path="/" component={Dashboard} />
-          <Route path="/site-history" component={SiteHistory} />
-          <Route path="/history" component={SiteHistory} />
-          <Route path="/analysis/:id" component={AnalysisDetails} />
+          <Route path="/site-history">
+            <ProtectedRoute path="/site-history" component={SiteHistory} />
+          </Route>
+          <Route path="/history">
+            <ProtectedRoute path="/history" component={SiteHistory} />
+          </Route>
+          <Route path="/analysis/:id">
+            {(params) => (
+              <ProtectedRoute 
+                path={`/analysis/${params.id}`} 
+                component={AnalysisDetails} 
+              />
+            )}
+          </Route>
           <Route path="/how-it-works" component={HowItWorks} />
-          <Route path="/settings" component={Settings} />
+          <Route path="/settings">
+            <ProtectedRoute path="/settings" component={Settings} />
+          </Route>
           <Route component={NotFound} />
         </Switch>
       </main>

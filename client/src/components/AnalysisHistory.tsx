@@ -18,7 +18,7 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: analysisHistory, isLoading } = useQuery({
+  const { data: analysisHistory = [], isLoading } = useQuery({
     queryKey: ["/api/analysis/history"],
     enabled: isAuthenticated,
   });
@@ -47,7 +47,7 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
   const { mutate: fetchAnalysis, isPending: isLoadingAnalysis } = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("GET", `/api/analysis/${id}`);
-      return response as WebsiteAnalysis;
+      return response as unknown as WebsiteAnalysis;
     },
     onSuccess: (data) => {
       onSelectAnalysis(data);
