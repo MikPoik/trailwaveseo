@@ -11,13 +11,16 @@ import {
   Zap
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 
 const Sidebar = () => {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
   
   const { data: recentSites = [] } = useQuery<{id: number, domain: string}[]>({
     queryKey: ['/api/analysis/recent'],
+    enabled: isAuthenticated, // Only fetch recent sites if user is authenticated
   });
 
   const navItems = [
@@ -83,7 +86,7 @@ const Sidebar = () => {
           </Link>
         ))}
         
-        {recentSites && recentSites.length > 0 && (
+        {isAuthenticated && recentSites && recentSites.length > 0 && (
           <div className="pt-4 mt-4 border-t border-gray-200">
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Recent Sites
