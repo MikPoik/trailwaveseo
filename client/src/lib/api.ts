@@ -59,8 +59,17 @@ export async function compareWithCompetitor(data: CompetitorAnalysisRequest): Pr
 
 export async function saveCompetitorAnalysis(analysisId: number, competitorData: any): Promise<any> {
   try {
+    console.log(`Saving competitor analysis for ID ${analysisId}, data size: ${JSON.stringify(competitorData).length} bytes`);
     const response = await apiRequest('POST', `/api/analysis/${analysisId}/save-competitor`, competitorData);
-    return await response.json();
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save competitor analysis: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log(`Successfully saved competitor analysis for ID ${analysisId}`);
+    return result;
   } catch (error) {
     console.error("Error saving competitor analysis:", error);
     throw error;

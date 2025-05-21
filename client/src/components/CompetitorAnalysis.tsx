@@ -133,15 +133,31 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       // Save the competitor analysis data to the database if we have an analysis ID
       if (mainAnalysis.id) {
         // Save the competitor analysis data to the database
+        console.log(`Attempting to save competitor analysis for ${mainAnalysis.domain} vs ${variables.competitorDomain}`);
         saveCompetitorAnalysis(mainAnalysis.id, enhancedComparisonData)
-          .then(() => {
-            console.log('Competitor analysis saved to database');
+          .then((result) => {
+            console.log('Competitor analysis saved to database:', result);
             // Invalidate the analysis cache to force a refresh
             queryClient.invalidateQueries({queryKey: [`/api/analysis/${mainAnalysis.id}`]});
+            
+            // Show success toast
+            toast({
+              title: 'Analysis Saved',
+              description: `Competitor analysis with ${variables.competitorDomain} was saved successfully`,
+            });
           })
           .catch(error => {
             console.error('Error saving competitor analysis:', error);
+            
+            // Show error toast
+            toast({
+              title: 'Save Failed',
+              description: 'Could not save competitor analysis. Please try again.',
+              variant: 'destructive'
+            });
           });
+      } else {
+        console.warn('Cannot save competitor analysis: Analysis ID is missing');
       }
       
       toast({

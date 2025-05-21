@@ -538,8 +538,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Save competitor analysis to an existing analysis
-  app.post("/api/analysis/:id/save-competitor", async (req, res) => {
+  app.post("/api/analysis/:id/save-competitor", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const analysisId = parseInt(req.params.id);
       const competitorData = req.body;
 
@@ -547,16 +548,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Competitor analysis data is required" });
       }
 
+      // Check if the analysis exists and belongs to the user
+      const analysis = await storage.getAnalysisById(analysisId);
+      
+      if (!analysis) {
+        console.log(`Analysis with ID ${analysisId} not found for saving competitor data`);
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      if (analysis.userId && analysis.userId !== userId) {
+        console.log(`User ${userId} attempted to update analysis ${analysisId} belonging to user ${analysis.userId}`);
+        return res.status(403).json({ error: "You don't have permission to update this analysis" });
+      }
+
+      console.log(`Saving competitor analysis for ID ${analysisId}, user ${userId}, data size: ${JSON.stringify(competitorData).length} bytes`);
+      
       const updatedAnalysis = await storage.updateCompetitorAnalysis(analysisId, competitorData);
 
       if (!updatedAnalysis) {
-        return res.status(404).json({ error: "Analysis not found" });
+        return res.status(500).json({ error: "Failed to update analysis with competitor data" });
       }
 
       res.json(updatedAnalysis);
     } catch (error) {
       console.error("Error saving competitor analysis:", error);
-      res.status(500).json({ error: "Failed to save competitor analysis" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ 
+        error: "Failed to save competitor analysis",
+        message: errorMessage,
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+      });
     }
   });
 

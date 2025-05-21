@@ -128,16 +128,42 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
     
-    // Update the analysis with competitor data
-    const [updatedAnalysis] = await db
-      .update(analyses)
-      .set({
-        competitorAnalysis: competitorData
-      })
-      .where(eq(analyses.id, id))
-      .returning();
+    console.log(`Saving competitor analysis for ID ${id}, data:`, JSON.stringify(competitorData).substring(0, 200) + '...');
     
-    return updatedAnalysis;
+    try {
+      // Update the analysis with competitor data
+      const [updatedAnalysis] = await db
+        .update(analyses)
+        .set({
+          competitorAnalysis: competitorData
+        })
+        .where(eq(analyses.id, id))
+        .returning();
+      
+      console.log(`Successfully saved competitor analysis for ID ${id}`);
+      return updatedAnalysis;
+    } catch (error) {
+      console.error(`Error saving competitor analysis for ID ${id}:`, error);
+      // Try using raw SQL as a fallback if the ORM approach fails
+      try {
+        const { pool } = await import('./db');
+        const result = await pool.query(
+          'UPDATE analyses SET competitor_analysis = $1 WHERE id = $2 RETURNING *',
+          [JSON.stringify(competitorData), id]
+        );
+        
+        if (result.rows && result.rows.length > 0) {
+          console.log(`Successfully saved competitor analysis with raw SQL for ID ${id}`);
+          return result.rows[0];
+        } else {
+          console.error(`No rows updated for ID ${id}`);
+          return undefined;
+        }
+      } catch (sqlError) {
+        console.error(`Fallback SQL error for ID ${id}:`, sqlError);
+        return undefined;
+      }
+    }
   }
   
   async deleteAnalysis(id: number): Promise<boolean> {
