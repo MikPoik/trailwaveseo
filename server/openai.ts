@@ -63,7 +63,7 @@ export async function generateSeoSuggestions(url: string, pageData: any): Promis
       Each suggestion should be concise (1-2 sentences) and directly related to fixing the identified issues.
       
       Format your response as a JSON array of strings. Example:
-      ["Add a unique and descriptive title tag between 50-60 characters.", "Include primary keywords in your H1 heading."]
+      ["Add a unique and descriptive title tag between 50-60 characters, such as ...", "Include primary keywords in your H1 heading, such as ..."]
       Respond with the same language as the website's Meta Description and H1 heading is.
     `;
 
@@ -338,7 +338,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
       3. How many H1 headings appear to be duplicated or too similar
       4. For each category (titles, descriptions, headings), provide specific examples of repetitive content
       5. For each category, provide actionable recommendations to fix the issues
-      6. Provide overall recommendations for improving content uniqueness across the site
+      6. Provide overall recommendations for improving content uniqueness across the site, suggesting specific changes to titles, descriptions, and headings
       
       Respond with a JSON object in this format:
       {
