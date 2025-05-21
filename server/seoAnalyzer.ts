@@ -89,9 +89,16 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     }
     
     // Limit the number of pages to analyze
+    // Note: We don't need to force reaching the maximum page count
+    // Just respect the smaller of: actual pages found or max setting
     if (pages.length > settings.maxPages) {
       pages = pages.slice(0, settings.maxPages);
     }
+    
+    console.log(`Analyzing ${pages.length} pages for ${domain} (max setting: ${settings.maxPages})`);
+    
+    // Ensure we don't have duplicate URLs in the pages array
+    pages = [...new Set(pages)];
     
     // Analyze pages in parallel with a concurrency limit
     const analyzedPages = [];

@@ -187,8 +187,8 @@ export async function crawlWebsite(
             continue;
           }
           
-          // Skip already discovered URLs
-          if (discoveredUrls.has(normalizedLink)) {
+          // Skip already discovered or crawled URLs to prevent duplicates
+          if (discoveredUrls.has(normalizedLink) || crawledUrls.has(normalizedLink)) {
             continue;
           }
           
@@ -206,8 +206,8 @@ export async function crawlWebsite(
           discoveredUrls.add(normalizedLink);
           const priority = calculateUrlPriority(normalizedLink, baseDomain);
           
-          // Add to queue for processing if we're under the limit
-          if (priorityQueue.length + crawledUrls.size < maxPages) {
+          // Add to queue for processing if we're under the limit and not already crawled
+          if (discoveredUrls.size < maxPages && !crawledUrls.has(normalizedLink)) {
             priorityQueue.push({ url: normalizedLink, priority });
           }
         } catch (error) {
