@@ -87,8 +87,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxPages: z.number().optional(),
         crawlDelay: z.number().optional(),
         followExternalLinks: z.boolean().optional(),
-        analyzeImages: z.number().optional(),
-        analyzeLinkStructure: z.number().optional(),
+        analyzeImages: z.boolean().optional(),
+        analyzeLinkStructure: z.boolean().optional(),
         useAI: z.boolean().optional(),
         // Optional newer fields
         analyzePageSpeed: z.boolean().optional(),
