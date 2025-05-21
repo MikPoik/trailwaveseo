@@ -37,7 +37,17 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     
     if (useSitemap) {
       try {
+        console.log(`Attempting to parse sitemap for ${domain}`);
+        // First try the sitemap index, which should list all sitemaps
         pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
+        
+        // If no pages found, try the specific main sitemap
+        if (pages.length === 0) {
+          console.log(`No pages found in sitemap index, trying sitemap-1.xml directly`);
+          pages = await parseSitemap(`https://${domain}/sitemap-1.xml`, controller.signal);
+        }
+        
+        console.log(`Found ${pages.length} pages in sitemaps for ${domain}`);
         
         // Emit progress update after sitemap is retrieved
         events.emit(domain, {
@@ -50,7 +60,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           percentage: 0
         });
       } catch (error) {
-        console.log(`No sitemap found or error parsing sitemap for ${domain}, falling back to crawling`);
+        console.log(`No sitemap found or error parsing sitemap for ${domain}, falling back to crawling: ${error instanceof Error ? error.message : String(error)}`);
         // Fallback to crawling
         useSitemap = false;
       }

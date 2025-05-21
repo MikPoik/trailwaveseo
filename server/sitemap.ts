@@ -9,6 +9,12 @@ import { parseStringPromise } from 'xml2js';
  */
 export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Promise<string[]> {
   try {
+    // Skip image and video sitemaps - they're not useful for page analysis
+    if (sitemapUrl.includes('image-sitemap') || sitemapUrl.includes('video-sitemap')) {
+      console.log(`Skipping media sitemap: ${sitemapUrl}`);
+      return [];
+    }
+    
     // Fetch the sitemap XML
     const response = await axios.get(sitemapUrl, {
       signal,
@@ -37,6 +43,12 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
       for (const sitemap of sitemaps) {
         if (signal?.aborted) {
           throw new Error('Sitemap parsing cancelled');
+        }
+        
+        // Skip image and video sitemaps
+        if (sitemap.loc.includes('image-sitemap') || sitemap.loc.includes('video-sitemap')) {
+          console.log(`Skipping media sitemap: ${sitemap.loc}`);
+          continue;
         }
         
         try {
