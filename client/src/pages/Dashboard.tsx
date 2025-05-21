@@ -71,7 +71,25 @@ const Dashboard = () => {
             currentPageUrl={progressData.currentPageUrl}
             analyzedPages={progressData.analyzedPages}
             percentage={progressData.percentage}
-            onCancel={() => setAnalysisState("idle")}
+            onCancel={async () => {
+              // Call the cancel API endpoint first
+              try {
+                await fetch('/api/analyze/cancel', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ domain: progressData.domain }),
+                });
+                
+                // Then update the UI state
+                setAnalysisState("idle");
+              } catch (error) {
+                console.error("Error canceling analysis:", error);
+                // Still update UI state even if API call fails
+                setAnalysisState("idle");
+              }
+            }}
           />
         )}
 
