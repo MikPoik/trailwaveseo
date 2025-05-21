@@ -10,7 +10,11 @@ import { parseStringPromise } from 'xml2js';
 export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Promise<string[]> {
   try {
     // Skip image and video sitemaps - they're not useful for page analysis
-    if (sitemapUrl.toLowerCase().includes('image') || sitemapUrl.toLowerCase().includes('video')) {
+    // Check the entire URL path for any mention of image or video
+    if (sitemapUrl.toLowerCase().includes('image') || 
+        sitemapUrl.toLowerCase().includes('video') || 
+        sitemapUrl.toLowerCase().includes('media') ||
+        sitemapUrl.toLowerCase().includes('img')) {
       console.log(`Skipping media sitemap: ${sitemapUrl}`);
       return [];
     }
@@ -67,7 +71,21 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
         ? result.urlset.url 
         : [result.urlset.url];
       
-      return urls.map((url: { loc: string }) => url.loc);
+      // Filter out URLs that might point to image or video resources
+      return urls
+        .map((url: { loc: string }) => url.loc)
+        .filter(url => {
+          const isMediaUrl = url.toLowerCase().includes('image') || 
+                            url.toLowerCase().includes('video') || 
+                            url.toLowerCase().includes('media') || 
+                            url.toLowerCase().includes('img');
+          
+          if (isMediaUrl) {
+            console.log(`Skipping media URL: ${url}`);
+            return false;
+          }
+          return true;
+        });
     }
     
     // Fallback for unexpected format

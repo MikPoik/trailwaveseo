@@ -34,27 +34,27 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
 
     // Get pages to analyze (either from sitemap or by crawling)
     let pages: string[] = [];
-    
+
     if (useSitemap) {
       try {
         console.log(`Attempting to parse sitemap for ${domain}`);
         // First try the sitemap index, which is the standard pattern
         pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
-        
+
         // If no pages found, try some common sitemap naming patterns
         if (pages.length === 0) {
           console.log(`No pages found in sitemap index, trying common sitemap patterns`);
           // Try common sitemap patterns - sitemap.xml failed already, so try others
           const commonPatterns = ['sitemap_index.xml', 'sitemap1.xml', 'sitemap-1.xml', 'post-sitemap.xml', 'page-sitemap.xml'];
-          
+
           for (const pattern of commonPatterns) {
             if (controller.signal.aborted) {
               throw new Error('Sitemap parsing cancelled');
             }
-            
+
             console.log(`Trying ${pattern}...`);
             const sitemapPages = await parseSitemap(`https://${domain}/${pattern}`, controller.signal);
-            
+
             if (sitemapPages.length > 0) {
               console.log(`Found ${sitemapPages.length} pages in ${pattern}`);
               pages = sitemapPages;
@@ -62,9 +62,9 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             }
           }
         }
-        
-        console.log(`Found ${pages.length} pages in sitemaps for ${domain}`);
-        
+
+        console.log(`Found ${pages.length} content pages in sitemaps for ${domain} (after filtering media sitemaps)`);
+
         // Emit progress update after sitemap is retrieved
         events.emit(domain, {
           status: 'in-progress',
@@ -81,12 +81,12 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         useSitemap = false;
       }
     }
-    
+
     if (!useSitemap || pages.length === 0) {
       // Crawl the website to find pages
       // Collect basic SEO data during crawling to improve user experience
       const basicSeoData = new Map();
-      
+
       pages = await crawlWebsite(
         `https://${domain}`, 
         settings.maxPages, 
@@ -98,7 +98,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           if (seoData) {
             basicSeoData.set(seoData.url, seoData);
           }
-          
+
           // Emit progress update during crawling with basic SEO data
           events.emit(domain, {
             status: 'in-progress',
@@ -113,30 +113,30 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         }
       );
     }
-    
+
     // Limit the number of pages to analyze
     // Note: We don't need to force reaching the maximum page count
     // Just respect the smaller of: actual pages found or max setting
     if (pages.length > settings.maxPages) {
       pages = pages.slice(0, settings.maxPages);
     }
-    
+
     console.log(`Analyzing ${pages.length} pages for ${domain} (max setting: ${settings.maxPages})`);
-    
+
     // Ensure we don't have duplicate URLs in the pages array
     pages = [...new Set(pages)];
-    
+
     // Analyze pages in parallel with a concurrency limit
     const analyzedPages = [];
     const totalPages = pages.length;
     const concurrencyLimit = 3; // Process 3 pages concurrently
-    
+
     // Function to analyze a single page and update progress
     const analyzeSinglePage = async (pageUrl: string, pageIndex: number) => {
       if (controller.signal.aborted) {
         throw new Error('Analysis cancelled');
       }
-      
+
       // Emit progress update for current page
       events.emit(domain, {
         status: 'in-progress',
@@ -147,12 +147,12 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         analyzedPages: analyzedPages.map(p => p.url),
         percentage: Math.floor((analyzedPages.length / totalPages) * 100)
       });
-      
+
       try {
         // Analyze the page
         const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor);
         analyzedPages.push(pageAnalysis);
-        
+
         // Re-emit progress to update the count
         events.emit(domain, {
           status: 'in-progress',
@@ -163,33 +163,33 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           analyzedPages: analyzedPages.map(p => p.url),
           percentage: Math.floor((analyzedPages.length / totalPages) * 100)
         });
-        
+
         return pageAnalysis;
       } catch (error) {
         console.error(`Error analyzing page ${pageUrl}:`, error);
         return null;
       }
     };
-    
+
     // Process pages in batches with the concurrency limit
     for (let i = 0; i < totalPages; i += concurrencyLimit) {
       // Check if analysis was cancelled
       if (controller.signal.aborted) {
         throw new Error('Analysis cancelled');
       }
-      
+
       const batch = pages.slice(i, i + concurrencyLimit);
       const batchPromises = batch.map((pageUrl, index) => 
         analyzeSinglePage(pageUrl, i + index)
       );
-      
+
       // Wait for all pages in this batch to complete
       await Promise.all(batchPromises);
     }
-    
+
     // Calculate overall metrics
     const metrics = calculateMetrics(analyzedPages);
-    
+
     // Perform content repetition analysis
     let contentRepetitionAnalysis: ContentRepetitionAnalysis | undefined;
     if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
@@ -202,7 +202,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         // Continue without content repetition analysis if it fails
       }
     }
-    
+
     // Save analysis to storage
     const analysis = {
       domain,
@@ -212,9 +212,9 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       pages: analyzedPages,
       contentRepetitionAnalysis
     };
-    
+
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
-    
+
     // Emit completed event with analysis results
     events.emit(domain, {
       status: 'completed',
@@ -226,17 +226,17 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       percentage: 100,
       analysis: savedAnalysis
     });
-    
+
     // Clean up
     ongoingAnalyses.delete(domain);
-    
+
     return savedAnalysis.id;
   } catch (error) {
     console.error(`Analysis error for ${domain}:`, error);
-    
+
     // Clean up
     ongoingAnalyses.delete(domain);
-    
+
     // Emit error event
     events.emit(domain, {
       status: 'error',
@@ -248,7 +248,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       analyzedPages: [],
       percentage: 0
     });
-    
+
     throw error;
   }
 }
@@ -432,21 +432,21 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         };
 
         suggestions = await generateSeoSuggestions(url, pageData);
-        
+
         // Generate alt text for images without alt text (skip for competitor analysis)
         if (!signal.aborted && settings.analyzeImages !== false && images.length > 0 && !isCompetitor) {
           const imagesWithoutAlt = images.filter(img => !img.alt);
-          
+
           if (imagesWithoutAlt.length > 0) {
             console.log(`Generating alt text for ${imagesWithoutAlt.length} images on ${url}`);
-            
+
             // Extract first heading (H1 if available, otherwise first heading)
             const firstHeading = headings.find(h => h.level === 1)?.text || 
                                 (headings.length > 0 ? headings[0].text : undefined);
-            
+
             // Extract site title from domain name
             const siteTitle = url.split('/')[2]?.split('.')[0] || '';
-            
+
             // Build more comprehensive context for alt text generation
             const imagesToProcess = imagesWithoutAlt.map(img => ({
               src: img.src,
@@ -462,9 +462,9 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                 keywords: metaKeywordsArray ? metaKeywordsArray.join(', ') : undefined
               }
             }));
-            
+
             const altTextResults = await generateBatchImageAltText(imagesToProcess);
-            
+
             // Add suggestedAlt to the images array
             for (const result of altTextResults) {
               const imageIndex = images.findIndex(img => img.src === result.src);
@@ -507,12 +507,12 @@ function calculateMetrics(pages: any[]) {
   let goodPractices = 0;
   let warnings = 0;
   let criticalIssues = 0;
-  
+
   let titleOptimization = 0;
   let descriptionOptimization = 0;
   let headingsOptimization = 0;
   let imagesOptimization = 0;
-  
+
   // Analyze all pages
   pages.forEach(page => {
     // Count issues by severity
@@ -524,7 +524,7 @@ function calculateMetrics(pages: any[]) {
       } else if (issue.severity === 'info') {
         goodPractices++;
       }
-      
+
       // Optimize category-specific metrics
       switch (issue.category) {
         case 'title':
@@ -541,36 +541,36 @@ function calculateMetrics(pages: any[]) {
           break;
       }
     });
-    
+
     // Award points for good practices
     if (page.title && page.title.length >= 10 && page.title.length <= 60) {
       titleOptimization += 20;
       goodPractices++;
     }
-    
+
     if (page.metaDescription && page.metaDescription.length >= 50 && page.metaDescription.length <= 160) {
       descriptionOptimization += 20;
       goodPractices++;
     }
-    
+
     if (page.headings.length > 0 && page.headings.some(h => h.level === 1)) {
       headingsOptimization += 20;
       goodPractices++;
     }
-    
+
     if (page.images.length > 0 && page.images.every(img => img.alt)) {
       imagesOptimization += 20;
       goodPractices++;
     }
   });
-  
+
   // Normalize metrics to 0-100 scale
   const pageCount = Math.max(1, pages.length);
   titleOptimization = Math.max(0, Math.min(100, 50 + (titleOptimization / pageCount)));
   descriptionOptimization = Math.max(0, Math.min(100, 50 + (descriptionOptimization / pageCount)));
   headingsOptimization = Math.max(0, Math.min(100, 50 + (headingsOptimization / pageCount)));
   imagesOptimization = Math.max(0, Math.min(100, 50 + (imagesOptimization / pageCount)));
-  
+
   return {
     goodPractices,
     warnings,
