@@ -38,13 +38,13 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     if (useSitemap) {
       try {
         console.log(`Attempting to parse sitemap for ${domain}`);
-        // First try the sitemap index, which should list all sitemaps
-        pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
+        // First try the specific main sitemap directly (most common pattern)
+        pages = await parseSitemap(`https://${domain}/sitemap-1.xml`, controller.signal);
         
-        // If no pages found, try the specific main sitemap
+        // If no pages found, try the sitemap index as fallback
         if (pages.length === 0) {
-          console.log(`No pages found in sitemap index, trying sitemap-1.xml directly`);
-          pages = await parseSitemap(`https://${domain}/sitemap-1.xml`, controller.signal);
+          console.log(`No pages found in sitemap-1.xml, trying sitemap index`);
+          pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
         }
         
         console.log(`Found ${pages.length} pages in sitemaps for ${domain}`);

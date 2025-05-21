@@ -45,7 +45,7 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
           throw new Error('Sitemap parsing cancelled');
         }
         
-        // Skip image and video sitemaps
+        // Skip image and video sitemaps 
         if (sitemap.loc.includes('image-sitemap') || sitemap.loc.includes('video-sitemap')) {
           console.log(`Skipping media sitemap: ${sitemap.loc}`);
           continue;
