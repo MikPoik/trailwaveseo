@@ -10,7 +10,7 @@ import { parseStringPromise } from 'xml2js';
 export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Promise<string[]> {
   try {
     // Skip image and video sitemaps - they're not useful for page analysis
-    if (sitemapUrl.includes('image-sitemap') || sitemapUrl.includes('video-sitemap')) {
+    if (sitemapUrl.toLowerCase().includes('image') || sitemapUrl.toLowerCase().includes('video')) {
       console.log(`Skipping media sitemap: ${sitemapUrl}`);
       return [];
     }
@@ -45,8 +45,8 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
           throw new Error('Sitemap parsing cancelled');
         }
         
-        // Skip image and video sitemaps 
-        if (sitemap.loc.includes('image-sitemap') || sitemap.loc.includes('video-sitemap')) {
+        // Skip image and video sitemaps with a more comprehensive check
+        if (sitemap.loc.toLowerCase().includes('image') || sitemap.loc.toLowerCase().includes('video')) {
           console.log(`Skipping media sitemap: ${sitemap.loc}`);
           continue;
         }

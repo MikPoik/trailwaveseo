@@ -38,13 +38,29 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     if (useSitemap) {
       try {
         console.log(`Attempting to parse sitemap for ${domain}`);
-        // First try the specific main sitemap directly (most common pattern)
-        pages = await parseSitemap(`https://${domain}/sitemap-1.xml`, controller.signal);
+        // First try the sitemap index, which is the standard pattern
+        pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
         
-        // If no pages found, try the sitemap index as fallback
+        // If no pages found, try some common sitemap naming patterns
         if (pages.length === 0) {
-          console.log(`No pages found in sitemap-1.xml, trying sitemap index`);
-          pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
+          console.log(`No pages found in sitemap index, trying common sitemap patterns`);
+          // Try common sitemap patterns - sitemap.xml failed already, so try others
+          const commonPatterns = ['sitemap_index.xml', 'sitemap1.xml', 'sitemap-1.xml', 'post-sitemap.xml', 'page-sitemap.xml'];
+          
+          for (const pattern of commonPatterns) {
+            if (controller.signal.aborted) {
+              throw new Error('Sitemap parsing cancelled');
+            }
+            
+            console.log(`Trying ${pattern}...`);
+            const sitemapPages = await parseSitemap(`https://${domain}/${pattern}`, controller.signal);
+            
+            if (sitemapPages.length > 0) {
+              console.log(`Found ${sitemapPages.length} pages in ${pattern}`);
+              pages = sitemapPages;
+              break;
+            }
+          }
         }
         
         console.log(`Found ${pages.length} pages in sitemaps for ${domain}`);
