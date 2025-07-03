@@ -308,6 +308,39 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       }
     });
 
+    // Extract paragraph content for context analysis
+    const paragraphs: string[] = [];
+    let totalContentLength = 0;
+    const maxTotalLength = 10000;
+    const maxParagraphLength = 1000;
+
+    $('p').each((_, el) => {
+      if (totalContentLength >= maxTotalLength) {
+        return false; // Stop processing if we've reached the limit
+      }
+
+      let paragraphText = $(el).text().trim();
+      if (paragraphText.length > 0) {
+        // Truncate paragraph if it's too long
+        if (paragraphText.length > maxParagraphLength) {
+          paragraphText = paragraphText.substring(0, maxParagraphLength) + '...';
+        }
+
+        // Check if adding this paragraph would exceed total limit
+        if (totalContentLength + paragraphText.length <= maxTotalLength) {
+          paragraphs.push(paragraphText);
+          totalContentLength += paragraphText.length;
+        } else {
+          // Add partial paragraph to reach the limit
+          const remainingLength = maxTotalLength - totalContentLength;
+          if (remainingLength > 0) {
+            paragraphs.push(paragraphText.substring(0, remainingLength) + '...');
+          }
+          return false; // Stop processing
+        }
+      }
+    });
+
     // Collect SEO issues
     const issues: SeoIssue[] = [];
 
@@ -428,7 +461,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
             category: issue.category,
             severity: issue.severity,
             title: issue.title
-          }))
+          })),
+          paragraphs: paragraphs.slice(0, 10) // Include up to 10 paragraphs for context
         };
 
         suggestions = await generateSeoSuggestions(url, pageData);
@@ -459,7 +493,9 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                 siteTitle: siteTitle.charAt(0).toUpperCase() + siteTitle.slice(1), // Capitalize first letter
                 firstHeading: firstHeading,
                 // Include meta keywords if available
-                keywords: metaKeywordsArray ? metaKeywordsArray.join(', ') : undefined
+                keywords: metaKeywordsArray ? metaKeywordsArray.join(', ') : undefined,
+                // Include first few paragraphs for better context
+                paragraphContent: paragraphs.slice(0, 3).join(' ').substring(0, 500)
               }
             }));
 
@@ -490,6 +526,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       images,
       canonical,
       robotsMeta,
+      paragraphs,
       issues,
       suggestions
     };
