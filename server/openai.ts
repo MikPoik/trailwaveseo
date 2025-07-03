@@ -82,6 +82,24 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     const extractedKeywords = extractKeywords(pageContent);
     const metaKeywords = pageData.metaKeywords || [];
 
+    // Analyze existing internal links quality
+    const existingLinksAnalysis = pageData.internalLinks ? `
+
+      Current Internal Links Analysis (${pageData.internalLinks.length} links found):
+      ${pageData.internalLinks.map(link => {
+        const linkText = link.text || 'No anchor text';
+        const linkUrl = link.href;
+        const isGeneric = ['click here', 'read more', 'learn more', 'here', 'this', 'link', 'more info'].some(generic => 
+          linkText.toLowerCase().includes(generic)
+        );
+        const hasKeywords = extractedKeywords.some(keyword => 
+          linkText.toLowerCase().includes(keyword.toLowerCase())
+        );
+        return `- "${linkText}" → ${linkUrl}
+          Quality: ${isGeneric ? 'Generic (needs improvement)' : hasKeywords ? 'Good (keyword-rich)' : 'Neutral'}`;
+      }).join('\n')}
+    ` : '';
+
     // Build enhanced site structure information
     const siteStructureInfo = siteStructure ? `
 
@@ -93,11 +111,13 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         const pageKeywords = extractKeywords([page.title || '', h1].join(' ')).slice(0, 3);
         const urlPath = new URL(page.url).pathname;
         const category = urlPath.split('/')[1] || 'root';
+        const isAlreadyLinked = pageData.internalLinks?.some(link => link.href.includes(page.url)) || false;
         return `- ${page.url}
           Category: ${category}
           Title: "${page.title || 'No title'}"
           H1: "${h1 || 'No H1'}"
-          Key topics: ${pageKeywords.join(', ') || 'none detected'}`;
+          Key topics: ${pageKeywords.join(', ') || 'none detected'}
+          Already linked: ${isAlreadyLinked ? 'Yes' : 'No'}`;
       }).join('\n')}
 
       ${siteStructure.allPages.length > 15 ? `... and ${siteStructure.allPages.length - 15} more pages` : ''}
@@ -108,12 +128,18 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .map(page => {
           const pageKeywords = extractKeywords([page.title || '', page.headings.find(h => h.level === 1)?.text || ''].join(' '));
           const commonKeywords = extractedKeywords.filter(keyword => pageKeywords.includes(keyword));
-          return { page, relevanceScore: commonKeywords.length, commonKeywords };
+          const isAlreadyLinked = pageData.internalLinks?.some(link => link.href.includes(page.url)) || false;
+          return { page, relevanceScore: commonKeywords.length, commonKeywords, isAlreadyLinked };
         })
         .filter(item => item.relevanceScore > 0)
-        .sort((a, b) => b.relevanceScore - a.relevanceScore)
-        .slice(0, 8)
-        .map(item => `- ${item.page.title || 'Untitled'} (${item.page.url}) - Common topics: ${item.commonKeywords.join(', ')}`)
+        .sort((a, b) => {
+          // Prioritize unlinked pages with high relevance
+          if (a.isAlreadyLinked && !b.isAlreadyLinked) return 1;
+          if (!a.isAlreadyLinked && b.isAlreadyLinked) return -1;
+          return b.relevanceScore - a.relevanceScore;
+        })
+        .slice(0, 10)
+        .map(item => `- ${item.page.title || 'Untitled'} (${item.page.url}) - Common topics: ${item.commonKeywords.join(', ')} ${item.isAlreadyLinked ? '[Already linked]' : '[Not linked - opportunity]'}`)
         .join('\n')}
     ` : '';
 
@@ -142,6 +168,8 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
 
       ${contentAnalysis}
 
+      ${existingLinksAnalysis}
+
       Page Content Sample:
       ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
         pageData.paragraphs.slice(0, 5).join('\n\n').substring(0, 1200) + 
@@ -165,7 +193,10 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       1. Include specific keyword suggestions based on the content analysis
       2. Provide exact title and meta description examples (with character counts)
       3. Suggest specific heading improvements with examples
-      4. Recommend concrete internal linking opportunities using the site structure
+      4. Analyze existing internal links and suggest improvements:
+         - Identify generic anchor text that should be replaced with keyword-rich alternatives
+         - Recommend new internal links to relevant unlinked pages
+         - Suggest removing poor-quality internal links if any exist
       5. Suggest content enhancements with specific topics or keywords to add
       6. Provide image optimization suggestions if applicable
 
@@ -175,12 +206,15 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       - Reference actual page content, keywords, or site structure
       - Specify exact character counts for titles/descriptions
       - Include specific URLs for internal links when suggesting them
+      - For internal link improvements, provide exact current and suggested anchor text
 
       Format as JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
 
       Examples of good suggestions:
       - "Optimize title to 'Keyword-Rich Title Here' (52 characters) instead of current '${pageData.title}' to better target the keywords: ${extractedKeywords.slice(0, 3).join(', ')}"
-      - "Add internal links to '${siteStructure?.allPages[0]?.title}' (${siteStructure?.allPages[0]?.url}) in the second paragraph to improve topical relevance"
+      - "Replace generic anchor text 'click here' with keyword-rich 'learn about sustainable energy solutions' for the link to [specific URL]"
+      - "Add internal links to '${siteStructure?.allPages[0]?.title}' (${siteStructure?.allPages[0]?.url}) using anchor text '${extractedKeywords[0] || 'relevant keyword'}' in the second paragraph"
+      - "Remove or improve the internal link to [URL] as it's not topically relevant to this page's content about ${extractedKeywords[0] || 'main topic'}"
       - "Include the keyword '${extractedKeywords[0] || 'primary-keyword'}' in your H1 heading for better keyword targeting"
 
       Respond in the same language as the page content (detected from title/headings).
