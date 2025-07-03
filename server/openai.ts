@@ -55,6 +55,7 @@ export async function generateSeoSuggestions(url: string, pageData: any): Promis
       - Meta Description: ${pageData.metaDescription || 'None'}
       - H1 Heading: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'None'}
       - Other Headings: ${pageData.headings.filter((h: any) => h.level !== 1).map((h: any) => `H${h.level}: ${h.text}`).join(', ') || 'None'}
+      - Page Content: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? pageData.paragraphs.slice(0, 3).join(' ').substring(0, 500) + '...' : 'No content available'}
       
       Issues identified:
       ${pageData.issues.map((issue: any) => `- ${issue.title}: ${issue.description}`).join('\n')}
