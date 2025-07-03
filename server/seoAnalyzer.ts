@@ -187,6 +187,60 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       await Promise.all(batchPromises);
     }
 
+    // Enhance suggestions with site structure for internal linking (if AI is enabled)
+    if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
+      try {
+        console.log(`Enhancing SEO suggestions with internal linking recommendations for ${domain}...`);
+        
+        // Build site structure for internal linking suggestions
+        const siteStructure = {
+          allPages: analyzedPages.map(page => ({
+            url: page.url,
+            title: page.title,
+            headings: page.headings
+          }))
+        };
+
+        // Re-generate suggestions for each page with site structure context
+        for (const page of analyzedPages) {
+          // Only enhance if the page has existing suggestions
+          if (page.suggestions && page.suggestions.length > 0) {
+            const pageData = {
+              url: page.url,
+              title: page.title,
+              metaDescription: page.metaDescription,
+              headings: page.headings,
+              images: page.images.map(img => ({
+                src: img.src,
+                alt: img.alt
+              })),
+              issues: page.issues.map(issue => ({
+                category: issue.category,
+                severity: issue.severity,
+                title: issue.title
+              })),
+              paragraphs: page.paragraphs ? page.paragraphs.slice(0, 10) : []
+            };
+
+            try {
+              const enhancedSuggestions = await generateSeoSuggestions(page.url, pageData, siteStructure);
+              if (enhancedSuggestions && enhancedSuggestions.length > 0) {
+                page.suggestions = enhancedSuggestions;
+              }
+            } catch (error) {
+              console.error(`Error enhancing suggestions for ${page.url}:`, error);
+              // Keep original suggestions if enhancement fails
+            }
+          }
+        }
+        
+        console.log(`Internal linking suggestions enhancement completed for ${domain}`);
+      } catch (error) {
+        console.error(`Error enhancing suggestions with site structure for ${domain}:`, error);
+        // Continue without enhancement if it fails
+      }
+    }
+
     // Calculate overall metrics
     const metrics = calculateMetrics(analyzedPages);
 
@@ -463,6 +517,15 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
             title: issue.title
           })),
           paragraphs: paragraphs.slice(0, 10) // Include up to 10 paragraphs for context
+        };
+
+        // Build site structure for internal linking suggestions
+        const siteStructure = {
+          allPages: analyzedPages.map(page => ({
+            url: page.url,
+            title: page.title,
+            headings: page.headings
+          }))
         };
 
         suggestions = await generateSeoSuggestions(url, pageData);

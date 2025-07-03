@@ -35,15 +35,33 @@ export interface ContentDuplicationAnalysis {
  * Generate SEO improvement suggestions using OpenAI
  * @param url URL of the page being analyzed
  * @param pageData Extracted SEO data from the page
+ * @param siteStructure Optional site structure data for internal linking suggestions
  * @returns Array of improvement suggestions
  */
-export async function generateSeoSuggestions(url: string, pageData: any): Promise<string[]> {
+export async function generateSeoSuggestions(url: string, pageData: any, siteStructure?: {
+  allPages: Array<{
+    url: string;
+    title?: string;
+    headings: Array<{ level: number; text: string }>;
+  }>;
+}): Promise<string[]> {
   try {
     // If no OpenAI API key is set, return empty suggestions
     if (!process.env.OPENAI_API_KEY) {
       console.warn("OpenAI API key not set, skipping AI suggestions");
       return [];
     }
+
+    // Build site structure information for internal linking suggestions
+    const siteStructureInfo = siteStructure ? `
+      
+      Site Structure (for internal linking suggestions):
+      ${siteStructure.allPages.slice(0, 20).map(page => {
+        const h1 = page.headings.find(h => h.level === 1)?.text || '';
+        return `- ${page.url} | Title: "${page.title || 'No title'}" | H1: "${h1 || 'No H1'}"`;
+      }).join('\n')}
+      ${siteStructure.allPages.length > 20 ? `\n... and ${siteStructure.allPages.length - 20} more pages` : ''}
+    ` : '';
 
     const prompt = `
       I need SEO improvement suggestions for a webpage.
@@ -56,15 +74,17 @@ export async function generateSeoSuggestions(url: string, pageData: any): Promis
       - H1 Heading: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'None'}
       - Other Headings: ${pageData.headings.filter((h: any) => h.level !== 1).map((h: any) => `H${h.level}: ${h.text}`).join(', ') || 'None'}
       - Page Content: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? pageData.paragraphs.slice(0, 3).join(' ').substring(0, 500) + '...' : 'No content available'}
+      ${siteStructureInfo}
       
       Issues identified:
       ${pageData.issues.map((issue: any) => `- ${issue.title}: ${issue.description}`).join('\n')}
       
       Please provide 3-5 specific, actionable suggestions to improve this page's SEO. 
       Each suggestion should be concise (1-2 sentences) and directly related to fixing the identified issues.
+      ${siteStructure ? 'When appropriate, suggest specific internal links to relevant pages from the site structure to improve SEO and user navigation.' : ''}
       
       Format your response as a JSON array of strings. Example:
-      ["Add a unique and descriptive title tag between 50-60 characters, such as ...", "Include primary keywords in your H1 heading, such as ..."]
+      ["Add a unique and descriptive title tag between 50-60 characters, such as ...", "Include primary keywords in your H1 heading, such as ...", "Add internal links to relevant pages like [Page Title](URL) to improve user navigation and SEO"]
       Respond with the same language as the website's Meta Description and H1 heading is.
     `;
 
