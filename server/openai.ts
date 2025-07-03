@@ -44,7 +44,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     title?: string;
     headings: Array<{ level: number; text: string }>;
   }>;
-}): Promise<string[]> {
+}, additionalInfo?: string): Promise<string[]> {
   try {
     // If no OpenAI API key is set, return empty suggestions
     if (!process.env.OPENAI_API_KEY) {
@@ -151,6 +151,13 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       
       Current Issues Identified:
       ${pageData.issues.map((issue: any) => `- ${issue.title}: ${issue.description}`).join('\n')}
+      
+      ${additionalInfo ? `
+      Additional Context from User:
+      ${additionalInfo}
+      
+      Please incorporate this additional context into your analysis and suggestions. Use any keywords, business goals, target audience information, or other relevant details provided to make your recommendations more targeted and specific.
+      ` : ''}
       
       Please provide 4-6 specific, actionable SEO improvements with concrete examples:
       

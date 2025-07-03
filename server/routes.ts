@@ -47,6 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const analyzeRequestSchema = z.object({
     domain: z.string().min(1).max(255),
     useSitemap: z.boolean().default(true),
+    additionalInfo: z.string().optional(),
   });
 
   const settingsSchema = z.object({
@@ -124,10 +125,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/analyze", isAuthenticated, crawlLimiter, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { domain, useSitemap } = analyzeRequestSchema.parse(req.body);
+      const { domain, useSitemap, additionalInfo } = analyzeRequestSchema.parse(req.body);
 
       // Start analysis in the background
-      analyzeSite(domain, useSitemap, analysisEvents, false, userId)
+      analyzeSite(domain, useSitemap, analysisEvents, false, userId, additionalInfo)
         .catch(error => {
           console.error(`Analysis error for ${domain}:`, error);
           analysisEvents.emit(domain, {

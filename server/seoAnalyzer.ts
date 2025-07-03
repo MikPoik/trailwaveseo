@@ -23,7 +23,7 @@ const ongoingAnalyses = new Map();
  * @param isCompetitor Whether this is a competitor analysis (skips alt text generation)
  * @param userId Optional user ID to associate with the analysis
  */
-export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter, isCompetitor: boolean = false, userId?: string) {
+export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter, isCompetitor: boolean = false, userId?: string, additionalInfo?: string) {
   // Set up cancellation token
   const controller = new AbortController();
   ongoingAnalyses.set(domain, controller);
@@ -150,7 +150,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
 
       try {
         // Analyze the page
-        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor, analyzedPages);
+        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor, analyzedPages, additionalInfo);
         analyzedPages.push(pageAnalysis);
 
         // Re-emit progress to update the count
@@ -223,7 +223,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             };
 
             try {
-              const enhancedSuggestions = await generateSeoSuggestions(page.url, pageData, siteStructure);
+              const enhancedSuggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, additionalInfo);
               if (enhancedSuggestions && enhancedSuggestions.length > 0) {
                 page.suggestions = enhancedSuggestions;
               }
@@ -314,7 +314,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
  * @param signal AbortSignal for cancellation
  * @param isCompetitor Whether this is a competitor analysis (to skip alt text generation)
  */
-async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[]) {
+async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[], additionalInfo?: string) {
   try {
     // Fetch page content
     const response = await axios.get(url, {
@@ -521,7 +521,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
           paragraphs: paragraphs.slice(0, 15) // Include more paragraphs for better context
         };
 
-        suggestions = await generateSeoSuggestions(url, pageData);
+        suggestions = await generateSeoSuggestions(url, pageData, undefined, additionalInfo);
 
         // Generate alt text for images without alt text (skip for competitor analysis)
         if (!signal.aborted && settings.analyzeImages !== false && images.length > 0 && !isCompetitor) {
