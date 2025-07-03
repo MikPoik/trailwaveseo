@@ -188,7 +188,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Please incorporate this additional context into your analysis and suggestions. Use any keywords, business goals, target audience information, or other relevant details provided to make your recommendations more targeted and specific.
       ` : ''}
 
-      Please provide 4-6 specific, actionable SEO improvements with concrete examples:
+      Please provide 4-8 specific, actionable SEO improvements with concrete examples:
 
       1. Include specific keyword suggestions based on the content analysis
       2. Provide exact title and meta description examples (with character counts)
@@ -197,7 +197,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
          - Identify generic anchor text that should be replaced with keyword-rich alternatives
          - Recommend new internal links to relevant unlinked pages
          - Suggest removing poor-quality internal links if any exist
-      5. Suggest content enhancements with specific topics or keywords to add
+      5. Suggest content enhancements with specific topics,sections or keywords to add
       6. Provide image optimization suggestions if applicable
 
       Each suggestion should be:
@@ -216,6 +216,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       - "Add internal links to '${siteStructure?.allPages[0]?.title}' (${siteStructure?.allPages[0]?.url}) using anchor text '${extractedKeywords[0] || 'relevant keyword'}' in the second paragraph"
       - "Remove or improve the internal link to [URL] as it's not topically relevant to this page's content about ${extractedKeywords[0] || 'main topic'}"
       - "Include the keyword '${extractedKeywords[0] || 'primary-keyword'}' in your H1 heading for better keyword targeting"
+      - ...
 
       Respond in the same language as the page content (detected from title/headings).
     `;
