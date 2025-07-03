@@ -16,6 +16,12 @@ export interface Image {
   suggestedAlt?: string;
 }
 
+export interface InternalLink {
+  href: string;
+  text: string;
+  title?: string;
+}
+
 export interface SeoIssue {
   category: SeoCategory;
   severity: IssueType;
@@ -31,6 +37,7 @@ export interface PageAnalysis {
   metaKeywords: string[] | null;
   headings: Heading[];
   images: Image[];
+  internalLinks?: InternalLink[];
   canonical: string | null;
   robotsMeta: string | null;
   issues: SeoIssue[];
@@ -45,6 +52,7 @@ export interface WebsiteAnalysisMetrics {
   descriptionOptimization: number;
   headingsOptimization: number;
   imagesOptimization: number;
+  linksOptimization: number;
 }
 
 export interface ContentRepetitionAnalysis {

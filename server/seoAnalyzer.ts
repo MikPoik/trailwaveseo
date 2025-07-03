@@ -362,6 +362,55 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       }
     });
 
+    // Extract internal links (if link structure analysis is enabled)
+    const internalLinks: { href: string; text: string; title?: string }[] = [];
+    if (settings.analyzeLinkStructure) {
+      const urlObj = new URL(url);
+      const baseDomain = urlObj.hostname;
+
+      $('a[href]').each((_, el) => {
+        const href = $(el).attr('href');
+        const linkText = $(el).text().trim();
+        const title = $(el).attr('title');
+        
+        if (href && linkText) {
+          try {
+            // Handle relative URLs and internal links
+            let fullUrl: string;
+            if (href.startsWith('http')) {
+              const linkUrlObj = new URL(href);
+              // Only include links to the same domain
+              if (linkUrlObj.hostname === baseDomain) {
+                fullUrl = href;
+              } else {
+                return; // Skip external links
+              }
+            } else if (href.startsWith('/') || !href.includes('://')) {
+              // Relative URL - make it absolute
+              fullUrl = new URL(href, url).toString();
+            } else {
+              return; // Skip other protocols (mailto:, tel:, etc.)
+            }
+
+            // Skip anchor links to the same page
+            const linkUrl = new URL(fullUrl);
+            if (linkUrl.pathname === urlObj.pathname && linkUrl.search === urlObj.search) {
+              return;
+            }
+
+            internalLinks.push({
+              href: fullUrl,
+              text: linkText,
+              title: title || undefined
+            });
+          } catch (error) {
+            // Skip malformed URLs
+            console.warn(`Skipping malformed URL: ${href} on page ${url}`);
+          }
+        }
+      });
+    }
+
     // Extract paragraph content for context analysis
     const paragraphs: string[] = [];
     let totalContentLength = 0;
@@ -487,6 +536,51 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
+    // Internal link issues (if link structure analysis is enabled)
+    if (settings.analyzeLinkStructure && internalLinks.length >= 0) {
+      if (internalLinks.length === 0) {
+        issues.push({
+          category: 'links',
+          severity: 'warning',
+          title: 'No Internal Links Found',
+          description: 'This page has no internal links, which can hurt SEO and user navigation.'
+        });
+      } else if (internalLinks.length < 3) {
+        issues.push({
+          category: 'links',
+          severity: 'info',
+          title: 'Few Internal Links',
+          description: `This page only has ${internalLinks.length} internal link${internalLinks.length === 1 ? '' : 's'}. Consider adding more relevant internal links.`
+        });
+      }
+
+      // Check for generic anchor text
+      const genericTexts = ['click here', 'read more', 'learn more', 'here', 'this', 'link'];
+      const genericLinks = internalLinks.filter(link => 
+        genericTexts.some(generic => link.text.toLowerCase().includes(generic))
+      );
+
+      if (genericLinks.length > 0) {
+        issues.push({
+          category: 'links',
+          severity: 'warning',
+          title: 'Generic Anchor Text Found',
+          description: `${genericLinks.length} link${genericLinks.length === 1 ? '' : 's'} use${genericLinks.length === 1 ? 's' : ''} generic anchor text. Use descriptive, keyword-rich anchor text instead.`
+        });
+      }
+
+      // Check for overly long anchor text
+      const longLinks = internalLinks.filter(link => link.text.length > 100);
+      if (longLinks.length > 0) {
+        issues.push({
+          category: 'links',
+          severity: 'info',
+          title: 'Long Anchor Text Found',
+          description: `${longLinks.length} link${longLinks.length === 1 ? '' : 's'} ha${longLinks.length === 1 ? 's' : 've'} very long anchor text. Consider using shorter, more focused anchor text.`
+        });
+      }
+    }
+
     // Get page name from URL for display
     const urlObj = new URL(url);
     const pathSegments = urlObj.pathname.split('/').filter(Boolean);
@@ -580,6 +674,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       metaKeywords: metaKeywordsArray,
       headings,
       images,
+      internalLinks: settings.analyzeLinkStructure ? internalLinks : undefined,
       canonical,
       robotsMeta,
       paragraphs,
@@ -605,6 +700,7 @@ function calculateMetrics(pages: any[]) {
   let descriptionOptimization = 0;
   let headingsOptimization = 0;
   let imagesOptimization = 0;
+  let linksOptimization = 0;
 
   // Analyze all pages
   pages.forEach(page => {
@@ -632,6 +728,9 @@ function calculateMetrics(pages: any[]) {
         case 'images':
           imagesOptimization -= (issue.severity === 'critical' ? 25 : 10);
           break;
+        case 'links':
+          linksOptimization -= (issue.severity === 'critical' ? 25 : 10);
+          break;
       }
     });
 
@@ -655,6 +754,22 @@ function calculateMetrics(pages: any[]) {
       imagesOptimization += 20;
       goodPractices++;
     }
+
+    if (page.internalLinks && page.internalLinks.length >= 3) {
+      linksOptimization += 15;
+      goodPractices++;
+    }
+
+    if (page.internalLinks && page.internalLinks.length > 0) {
+      const genericTexts = ['click here', 'read more', 'learn more', 'here', 'this', 'link'];
+      const hasGoodAnchorText = page.internalLinks.every(link => 
+        !genericTexts.some(generic => link.text.toLowerCase().includes(generic))
+      );
+      if (hasGoodAnchorText) {
+        linksOptimization += 10;
+        goodPractices++;
+      }
+    }
   });
 
   // Normalize metrics to 0-100 scale
@@ -663,6 +778,7 @@ function calculateMetrics(pages: any[]) {
   descriptionOptimization = Math.max(0, Math.min(100, 50 + (descriptionOptimization / pageCount)));
   headingsOptimization = Math.max(0, Math.min(100, 50 + (headingsOptimization / pageCount)));
   imagesOptimization = Math.max(0, Math.min(100, 50 + (imagesOptimization / pageCount)));
+  linksOptimization = Math.max(0, Math.min(100, 50 + (linksOptimization / pageCount)));
 
   return {
     goodPractices,
@@ -671,7 +787,8 @@ function calculateMetrics(pages: any[]) {
     titleOptimization,
     descriptionOptimization,
     headingsOptimization,
-    imagesOptimization
+    imagesOptimization,
+    linksOptimization
   };
 }
 
