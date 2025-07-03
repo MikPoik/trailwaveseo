@@ -156,69 +156,39 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     `;
 
     const prompt = `
-      I need specific, actionable SEO improvement suggestions for this webpage. Provide concrete examples and specific recommendations.
+      Analyze this webpage and provide 4-8 specific, actionable SEO improvements with concrete examples.
 
       URL: ${url}
+      Title: ${pageData.title || 'Missing'}
+      Meta Description: ${pageData.metaDescription || 'Missing'}
+      H1: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
+      Headings: ${pageData.headings.map((h: any) => `H${h.level}: "${h.text}"`).join(' | ') || 'None'}
 
-      Current SEO Elements:
-      - Title: ${pageData.title || 'Missing'}
-      - Meta Description: ${pageData.metaDescription || 'Missing'}
-      - H1 Heading: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
-      - All Headings: ${pageData.headings.map((h: any) => `H${h.level}: "${h.text}"`).join(' | ') || 'None'}
-
-      ${contentAnalysis}
+      Content Analysis:
+      - Keywords: ${extractedKeywords.slice(0, 6).join(', ') || 'none detected'}
+      - Word count: ~${pageContent.split(/\s+/).length}
+      - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
+      - Page type: ${url.includes('/blog/') ? 'Blog' : url.includes('/product/') ? 'Product' : url.includes('/service/') ? 'Service' : 'General'}
 
       ${existingLinksAnalysis}
 
-      Page Content Sample:
-      ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
-        pageData.paragraphs.slice(0, 5).join('\n\n').substring(0, 1200) + 
-        (pageData.paragraphs.join('').length > 1200 ? '...' : '') 
-        : 'No content available'}
-
       ${siteStructureInfo}
 
-      Current Issues Identified:
-      ${pageData.issues.map((issue: any) => `- ${issue.title}: ${issue.description}`).join('\n')}
+      Current Issues: ${pageData.issues.map((issue: any) => issue.title).join(', ') || 'None'}
 
-      ${additionalInfo ? `
-      Additional Context from User:
-      ${additionalInfo}
+      ${additionalInfo ? `User Context: ${additionalInfo}` : ''}
 
-      Please incorporate this additional context into your analysis and suggestions. Use any keywords, business goals, target audience information, or other relevant details provided to make your recommendations more targeted and specific.
-      ` : ''}
+      Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
+        pageData.paragraphs.slice(0, 3).join(' ').substring(0, 800) + '...' : 'No content'}
 
-      Please provide 4-8 specific, actionable SEO improvements with concrete examples:
+      Provide specific recommendations with:
+      - Exact title/meta examples with character counts
+      - Specific internal link improvements (current vs suggested anchor text)
+      - Concrete keyword targeting suggestions
+      - Specific URLs for new internal links
 
-      1. Include specific keyword suggestions based on the content analysis
-      2. Provide exact title and meta description examples (with character counts)
-      3. Suggest specific heading improvements with examples
-      4. Analyze existing internal links and suggest improvements:
-         - Identify generic anchor text that should be replaced with keyword-rich alternatives
-         - Recommend new internal links to relevant unlinked pages
-         - Suggest removing poor-quality internal links if any exist
-      5. Suggest content enhancements with specific topics,sections or keywords to add
-      6. Provide image optimization suggestions if applicable
-
-      Each suggestion should be:
-      - Specific and actionable (not generic advice)
-      - Include concrete examples when possible
-      - Reference actual page content, keywords, or site structure
-      - Specify exact character counts for titles/descriptions
-      - Include specific URLs for internal links when suggesting them
-      - For internal link improvements, provide exact current and suggested anchor text
-
-      Format as JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
-
-      Examples of good suggestions:
-      - "Optimize title to 'Keyword-Rich Title Here' (52 characters) instead of current '${pageData.title}' to better target the keywords: ${extractedKeywords.slice(0, 3).join(', ')}"
-      - "Replace generic anchor text 'click here' with keyword-rich 'learn about sustainable energy solutions' for the link to [specific URL]"
-      - "Add internal links to '${siteStructure?.allPages[0]?.title}' (${siteStructure?.allPages[0]?.url}) using anchor text '${extractedKeywords[0] || 'relevant keyword'}' in the second paragraph"
-      - "Remove or improve the internal link to [URL] as it's not topically relevant to this page's content about ${extractedKeywords[0] || 'main topic'}"
-      - "Include the keyword '${extractedKeywords[0] || 'primary-keyword'}' in your H1 heading for better keyword targeting"
-      - ...
-
-      Respond in the same language as the page content (detected from title/headings).
+      Format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
+      Language: Match the page content language.
     `;
 
     const response = await openai.chat.completions.create({
