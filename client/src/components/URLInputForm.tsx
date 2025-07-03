@@ -14,6 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AnalysisState, WebsiteAnalysis } from "@/lib/types";
 import { useAuth } from "../hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface URLInputFormProps {
   onAnalyzeStart: (domain: string, useSitemap: boolean) => void;
@@ -39,8 +40,9 @@ const URLInputForm = ({
   onAnalysisComplete,
   analysisState
 }: URLInputFormProps) => {
-  const { toast } = useToast();
   const { isAuthenticated, login } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const form = useForm<FormValues>({
@@ -60,20 +62,20 @@ const URLInputForm = ({
         useSitemap: data.crawlMethod === "sitemap",
         additionalInfo: data.additionalInfo
       });
-      
+
       // Setup event source for real-time progress updates
       const domain = data.websiteUrl;
       const useSitemap = data.crawlMethod === "sitemap";
-      
+
       onAnalyzeStart(domain, useSitemap);
 
       // Using EventSource for SSE (Server-Sent Events)
       const source = new EventSource(`/api/analyze/progress?domain=${encodeURIComponent(domain)}`);
-      
+
       return new Promise<WebsiteAnalysis>((resolve, reject) => {
         source.onmessage = (event) => {
           const data = JSON.parse(event.data);
-          
+
           if (data.status === "in-progress") {
             onAnalysisUpdate({
               domain,
@@ -86,9 +88,13 @@ const URLInputForm = ({
           } else if (data.status === "completed") {
             source.close();
             resolve(data.analysis);
+
+              // Invalidate queries to refresh the history and recent sites
+              queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
           }
         };
-        
+
         source.onerror = (error) => {
           source.close();
           reject(new Error("Failed to connect to analysis progress stream"));
@@ -152,7 +158,7 @@ const URLInputForm = ({
             )}
             <p className="mt-1 text-sm text-gray-500">Enter a website URL without the https:// prefix</p>
           </div>
-          
+
           <RadioGroup 
             defaultValue="sitemap" 
             className="flex items-center space-x-4"
@@ -170,7 +176,7 @@ const URLInputForm = ({
               <Label htmlFor="crawl-site">Crawl site (fallback)</Label>
             </div>
           </RadioGroup>
-          
+
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">
               <Checkbox 
