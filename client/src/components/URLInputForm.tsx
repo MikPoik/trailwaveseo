@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,6 +28,7 @@ const urlSchema = z.object({
     .regex(/^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(\/.*)?$/, "Enter a valid domain without http:// or https://"),
   crawlMethod: z.enum(["sitemap", "crawl"]),
   advancedOptions: z.boolean().optional(),
+  additionalInfo: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof urlSchema>;
@@ -46,7 +48,8 @@ const URLInputForm = ({
     defaultValues: {
       websiteUrl: "",
       crawlMethod: "sitemap",
-      advancedOptions: false
+      advancedOptions: false,
+      additionalInfo: ""
     }
   });
 
@@ -54,7 +57,8 @@ const URLInputForm = ({
     mutationFn: async (data: FormValues) => {
       const response = await apiRequest("POST", "/api/analyze", {
         domain: data.websiteUrl,
-        useSitemap: data.crawlMethod === "sitemap"
+        useSitemap: data.crawlMethod === "sitemap",
+        additionalInfo: data.additionalInfo
       });
       
       // Setup event source for real-time progress updates
@@ -190,10 +194,20 @@ const URLInputForm = ({
           {showAdvanced && (
             <div className="pt-4 border-t mt-4 space-y-4">
               <h4 className="text-sm font-medium text-gray-900">Advanced Options</h4>
-              {/* Advanced options would be implemented here */}
-              <p className="text-sm text-gray-500">
-                Configure advanced options in the Settings page.
-              </p>
+              <div>
+                <Label htmlFor="additional-info">Additional Information</Label>
+                <Textarea
+                  id="additional-info"
+                  className="mt-1"
+                  placeholder="Enter additional context for analysis (e.g., Google Search Console keyword data, target keywords, business goals, etc.)"
+                  rows={4}
+                  {...form.register("additionalInfo")}
+                  disabled={isPending || analysisState === "analyzing"}
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Provide additional context like keyword statistics, target audience, or business goals to enhance the AI-powered analysis.
+                </p>
+              </div>
             </div>
           )}
         </form>
