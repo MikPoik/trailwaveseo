@@ -150,7 +150,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
 
       try {
         // Analyze the page
-        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor);
+        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor, analyzedPages);
         analyzedPages.push(pageAnalysis);
 
         // Re-emit progress to update the count
@@ -191,7 +191,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
       try {
         console.log(`Enhancing SEO suggestions with internal linking recommendations for ${domain}...`);
-        
+
         // Build site structure for internal linking suggestions
         const siteStructure = {
           allPages: analyzedPages.map(page => ({
@@ -233,7 +233,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             }
           }
         }
-        
+
         console.log(`Internal linking suggestions enhancement completed for ${domain}`);
       } catch (error) {
         console.error(`Error enhancing suggestions with site structure for ${domain}:`, error);
@@ -314,7 +314,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
  * @param signal AbortSignal for cancellation
  * @param isCompetitor Whether this is a competitor analysis (to skip alt text generation)
  */
-async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false) {
+async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[]) {
   try {
     // Fetch page content
     const response = await axios.get(url, {
@@ -501,11 +501,12 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
     let suggestions: string[] = [];
     if (settings.useAI) {
       try {
-        // Prepare page data for the AI
+        // Prepare comprehensive page data for the AI
         const pageData = {
           url,
           title,
           metaDescription,
+          metaKeywords: metaKeywordsArray,
           headings,
           images: images.map(img => ({
             src: img.src,
@@ -514,18 +515,10 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
           issues: issues.map(issue => ({
             category: issue.category,
             severity: issue.severity,
-            title: issue.title
+            title: issue.title,
+            description: issue.description
           })),
-          paragraphs: paragraphs.slice(0, 10) // Include up to 10 paragraphs for context
-        };
-
-        // Build site structure for internal linking suggestions
-        const siteStructure = {
-          allPages: analyzedPages.map(page => ({
-            url: page.url,
-            title: page.title,
-            headings: page.headings
-          }))
+          paragraphs: paragraphs.slice(0, 15) // Include more paragraphs for better context
         };
 
         suggestions = await generateSeoSuggestions(url, pageData);

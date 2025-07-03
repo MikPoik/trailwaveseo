@@ -52,51 +52,144 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       return [];
     }
 
-    // Build site structure information for internal linking suggestions
+    // Extract keywords from page content for better analysis
+    const extractKeywords = (text: string): string[] => {
+      if (!text) return [];
+      const words = text.toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 3 && !['this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'more', 'very', 'what', 'know', 'just', 'first', 'into', 'over', 'think', 'also', 'back', 'after', 'work', 'well', 'want', 'because', 'good', 'water', 'through', 'right', 'where', 'come', 'could', 'would', 'should', 'about', 'make', 'than', 'only', 'other', 'many', 'some', 'like', 'when', 'here', 'them', 'your', 'there'].includes(word));
+      
+      const wordFreq = words.reduce((acc, word) => {
+        acc[word] = (acc[word] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      return Object.entries(wordFreq)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10)
+        .map(([word]) => word);
+    };
+
+    // Analyze page content for keywords
+    const pageContent = [
+      pageData.title || '',
+      pageData.metaDescription || '',
+      pageData.headings.map((h: any) => h.text).join(' '),
+      ...(pageData.paragraphs || [])
+    ].join(' ');
+
+    const extractedKeywords = extractKeywords(pageContent);
+    const metaKeywords = pageData.metaKeywords || [];
+
+    // Build enhanced site structure information
     const siteStructureInfo = siteStructure ? `
       
-      Site Structure (for internal linking suggestions):
-      ${siteStructure.allPages.slice(0, 20).map(page => {
+      Website Structure Analysis (${siteStructure.allPages.length} total pages):
+      
+      Main Pages:
+      ${siteStructure.allPages.slice(0, 15).map(page => {
         const h1 = page.headings.find(h => h.level === 1)?.text || '';
-        return `- ${page.url} | Title: "${page.title || 'No title'}" | H1: "${h1 || 'No H1'}"`;
+        const pageKeywords = extractKeywords([page.title || '', h1].join(' ')).slice(0, 3);
+        const urlPath = new URL(page.url).pathname;
+        const category = urlPath.split('/')[1] || 'root';
+        return `- ${page.url}
+          Category: ${category}
+          Title: "${page.title || 'No title'}"
+          H1: "${h1 || 'No H1'}"
+          Key topics: ${pageKeywords.join(', ') || 'none detected'}`;
       }).join('\n')}
-      ${siteStructure.allPages.length > 20 ? `\n... and ${siteStructure.allPages.length - 20} more pages` : ''}
+      
+      ${siteStructure.allPages.length > 15 ? `... and ${siteStructure.allPages.length - 15} more pages` : ''}
+      
+      Related Pages for Internal Linking:
+      ${siteStructure.allPages
+        .filter(page => page.url !== url) // Exclude current page
+        .map(page => {
+          const pageKeywords = extractKeywords([page.title || '', page.headings.find(h => h.level === 1)?.text || ''].join(' '));
+          const commonKeywords = extractedKeywords.filter(keyword => pageKeywords.includes(keyword));
+          return { page, relevanceScore: commonKeywords.length, commonKeywords };
+        })
+        .filter(item => item.relevanceScore > 0)
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 8)
+        .map(item => `- ${item.page.title || 'Untitled'} (${item.page.url}) - Common topics: ${item.commonKeywords.join(', ')}`)
+        .join('\n')}
     ` : '';
 
+    // Build comprehensive content analysis
+    const contentAnalysis = `
+      Content Analysis:
+      - Word count: ~${pageContent.split(/\s+/).length} words
+      - Content keywords detected: ${extractedKeywords.slice(0, 8).join(', ') || 'none'}
+      - Meta keywords: ${metaKeywords.length > 0 ? metaKeywords.join(', ') : 'none set'}
+      - Heading structure: ${pageData.headings.map((h: any) => `H${h.level}`).join(', ') || 'none'}
+      - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
+      - Page type: ${url.includes('/blog/') ? 'Blog post' : url.includes('/product/') ? 'Product page' : url.includes('/service/') ? 'Service page' : url.includes('/about') ? 'About page' : url.includes('/contact') ? 'Contact page' : 'General page'}
+    `;
+
     const prompt = `
-      I need SEO improvement suggestions for a webpage.
+      I need specific, actionable SEO improvement suggestions for this webpage. Provide concrete examples and specific recommendations.
       
       URL: ${url}
       
-      Current SEO elements:
-      - Title: ${pageData.title || 'None'}
-      - Meta Description: ${pageData.metaDescription || 'None'}
-      - H1 Heading: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'None'}
-      - Other Headings: ${pageData.headings.filter((h: any) => h.level !== 1).map((h: any) => `H${h.level}: ${h.text}`).join(', ') || 'None'}
-      - Page Content: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? pageData.paragraphs.slice(0, 3).join(' ').substring(0, 500) + '...' : 'No content available'}
+      Current SEO Elements:
+      - Title: ${pageData.title || 'Missing'}
+      - Meta Description: ${pageData.metaDescription || 'Missing'}
+      - H1 Heading: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
+      - All Headings: ${pageData.headings.map((h: any) => `H${h.level}: "${h.text}"`).join(' | ') || 'None'}
+      
+      ${contentAnalysis}
+      
+      Page Content Sample:
+      ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
+        pageData.paragraphs.slice(0, 5).join('\n\n').substring(0, 1200) + 
+        (pageData.paragraphs.join('').length > 1200 ? '...' : '') 
+        : 'No content available'}
+      
       ${siteStructureInfo}
       
-      Issues identified:
+      Current Issues Identified:
       ${pageData.issues.map((issue: any) => `- ${issue.title}: ${issue.description}`).join('\n')}
       
-      Please provide 3-5 specific, actionable suggestions to improve this page's SEO. 
-      Each suggestion should be concise (1-2 sentences) and directly related to fixing the identified issues.
-      ${siteStructure ? 'When appropriate, suggest specific internal links to relevant pages from the site structure to improve SEO and user navigation.' : ''}
+      Please provide 4-6 specific, actionable SEO improvements with concrete examples:
       
-      Format your response as a JSON array of strings. Example:
-      ["Add a unique and descriptive title tag between 50-60 characters, such as ...", "Include primary keywords in your H1 heading, such as ...", "Add internal links to relevant pages like [Page Title](URL) to improve user navigation and SEO"]
-      Respond with the same language as the website's Meta Description and H1 heading is.
+      1. Include specific keyword suggestions based on the content analysis
+      2. Provide exact title and meta description examples (with character counts)
+      3. Suggest specific heading improvements with examples
+      4. Recommend concrete internal linking opportunities using the site structure
+      5. Suggest content enhancements with specific topics or keywords to add
+      6. Provide image optimization suggestions if applicable
+      
+      Each suggestion should be:
+      - Specific and actionable (not generic advice)
+      - Include concrete examples when possible
+      - Reference actual page content, keywords, or site structure
+      - Specify exact character counts for titles/descriptions
+      - Include specific URLs for internal links when suggesting them
+      
+      Format as JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
+      
+      Examples of good suggestions:
+      - "Optimize title to 'Keyword-Rich Title Here' (52 characters) instead of current '${pageData.title}' to better target the keywords: ${extractedKeywords.slice(0, 3).join(', ')}"
+      - "Add internal links to '${siteStructure?.allPages[0]?.title}' (${siteStructure?.allPages[0]?.url}) in the second paragraph to improve topical relevance"
+      - "Include the keyword '${extractedKeywords[0] || 'primary-keyword'}' in your H1 heading for better keyword targeting"
+      
+      Respond in the same language as the page content (detected from title/headings).
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o",
       messages: [
-        { role: "system", content: "You are an SEO expert assistant. Provide concise, actionable SEO improvement suggestions. Respond with the same language as the website's Meta Description and H1 heading is." },
+        { 
+          role: "system", 
+          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic."
+        },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.5,
-      max_tokens: 600
+      temperature: 0.3, // Lower temperature for more consistent, focused suggestions
+      max_tokens: 1200 // Increased for more detailed suggestions
     });
 
     const content = response.choices[0].message.content;
