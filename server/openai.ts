@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import axios from "axios";
 import crypto from "crypto";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// the newest OpenAI model is "gpt-4.1 which was released 2025. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Cache for storing generated alt text to avoid regenerating for the same images
@@ -176,7 +176,9 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
 
       Current Issues: ${pageData.issues.map((issue: any) => issue.title).join(', ') || 'None'}
 
-      ${additionalInfo ? `User Context: ${additionalInfo}` : ''}
+      ${additionalInfo ? `User Context: ${additionalInfo}
+      
+      Take user context into account and try to incorporate it in your suggestions` : ''}
 
       Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
         pageData.paragraphs.slice(0, 3).join(' ').substring(0, 800) + '...' : 'No content'}
@@ -190,13 +192,13 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Respond in JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
       Language: Match the page content language.
     `;
-
+    console.log(prompt)
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1", //Newest model as of 2025
       messages: [
         { 
           role: "system", 
-          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Match your response language to the page content language"
+          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Match your response language to the page content language."
         },
         { role: "user", content: prompt }
       ],
