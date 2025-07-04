@@ -207,18 +207,9 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       return cached.suggestions;
     }
 
-    // Cache for keyword extraction to avoid redundant processing
-    const keywordCache = new Map<string, string[]>();
-    
-    // Extract keywords from page content for better analysis
+    // Simple keyword extraction for content context (no programmatic business detection)
     const extractKeywords = (text: string): string[] => {
       if (!text) return [];
-      
-      // Use cache key based on first 500 characters
-      const cacheKey = text.substring(0, 500);
-      if (keywordCache.has(cacheKey)) {
-        return keywordCache.get(cacheKey) || [];
-      }
       
       const stopWords = new Set(['this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'more', 'very', 'what', 'know', 'just', 'first', 'into', 'over', 'think', 'also', 'back', 'after', 'work', 'well', 'want', 'because', 'good', 'water', 'through', 'right', 'where', 'come', 'could', 'would', 'should', 'about', 'make', 'than', 'only', 'other', 'many', 'some', 'like', 'when', 'here', 'them', 'your', 'there']);
       
@@ -232,13 +223,10 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         return acc;
       }, {} as Record<string, number>);
 
-      const keywords = Object.entries(wordFreq)
+      return Object.entries(wordFreq)
         .sort(([,a], [,b]) => b - a)
         .slice(0, 10)
         .map(([word]) => word);
-      
-      keywordCache.set(cacheKey, keywords);
-      return keywords;
     };
 
     // Analyze page content for keywords with enhanced context
@@ -250,9 +238,8 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     ].join(' ');
 
     const extractedKeywords = extractKeywords(pageContent);
-    const metaKeywords = pageData.metaKeywords || [];
     
-    // Use AI-generated business context or fallback to basic detection
+    // Use AI-generated business context from site overview analysis
     const businessContext = siteOverview ? {
       industry: siteOverview.industry,
       businessType: siteOverview.businessType,
@@ -262,14 +249,11 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       location: siteOverview.location,
       contentType: pageData.paragraphs && pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'
     } : {
-      industry: url.includes('terapia') || extractedKeywords.includes('terapia') ? 'Healthcare/Therapy' :
-                url.includes('shop') || url.includes('store') ? 'E-commerce' :
-                url.includes('blog') ? 'Content/Blog' :
-                url.includes('service') ? 'Services' : 'General Business',
+      industry: 'Unknown',
       businessType: 'Unknown',
       targetAudience: 'Unknown',
       mainServices: [],
-      isLocal: extractedKeywords.some(k => ['järvenpää', 'helsinki', 'tampere', 'turku', 'oulu'].includes(k.toLowerCase())),
+      isLocal: false,
       location: undefined,
       contentType: pageData.paragraphs && pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'
     };
@@ -312,22 +296,22 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .join('\n')}
     ` : '';
 
-    const prompt = `Analyze this ${businessContext.industry} webpage and provide 4-8 actionable SEO improvements.
+    const prompt = `Analyze this webpage and provide 4-8 actionable SEO improvements.
 
 URL: ${url}
 Title: ${pageData.title || 'Missing'} (${pageData.title?.length || 0} chars)
 Meta Description: ${pageData.metaDescription || 'Missing'} (${pageData.metaDescription?.length || 0} chars)
 H1: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
 
-Business Context:
+${siteOverview ? `Business Context (AI Analysis):
 - Industry: ${businessContext.industry}
 - Business Type: ${businessContext.businessType}
 - Target Audience: ${businessContext.targetAudience}
-- Main Services: ${businessContext.mainServices.join(', ') || 'Unknown'}
-- Location: ${businessContext.location || 'Not specified'}${businessContext.isLocal ? ' (Local business)' : ''}
+- Main Services: ${businessContext.mainServices.join(', ') || 'Not specified'}
+- Location: ${businessContext.location || 'Not specified'}${businessContext.isLocal ? ' (Local business)' : ''}` : 'Business Context: Not analyzed'}
 
 Content Analysis:
-- Keywords: ${extractedKeywords.slice(0, 6).join(', ') || 'none'}
+- Key terms: ${extractedKeywords.slice(0, 6).join(', ') || 'none'}
 - Word count: ~${pageContent.split(/\s+/).length}
 - Content type: ${businessContext.contentType}
 - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
@@ -338,17 +322,17 @@ ${siteStructureInfo}
 
 Current Issues: ${pageData.issues.map((issue: any) => issue.title).join(', ') || 'None'}
 
-${additionalInfo ? `Business Context: ${additionalInfo}` : ''}
+${additionalInfo ? `Additional Business Context: ${additionalInfo}` : ''}
 
 Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
   pageData.paragraphs.slice(0, 2).join(' ').substring(0, 800) + '...' : 'No content'}
 
 Provide specific recommendations with exact examples:
-- Title/meta improvements with character counts (optimized for ${businessContext.targetAudience})
+- Title/meta improvements with character counts${siteOverview ? ` (optimized for ${businessContext.targetAudience})` : ''}
 - Internal link suggestions with anchor text
-- Keyword targeting for ${businessContext.industry} targeting ${businessContext.targetAudience}
-- Service-specific content optimization for: ${businessContext.mainServices.join(', ')}
-- Local SEO recommendations (if applicable for ${businessContext.location || 'location'})
+- Keyword targeting${siteOverview ? ` for ${businessContext.industry} targeting ${businessContext.targetAudience}` : ''}
+- Content optimization${siteOverview && businessContext.mainServices.length > 0 ? ` for: ${businessContext.mainServices.join(', ')}` : ''}
+${businessContext.isLocal ? `- Local SEO recommendations for ${businessContext.location}` : ''}
 - Specific URLs for new internal links
 
 JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
