@@ -602,6 +602,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       // For now, just prepare the page data - suggestions will be generated later with full context
       // This avoids duplicate API calls to OpenAI
 
+      try {
         // Generate alt text for images without alt text (skip for competitor analysis)
         if (!signal.aborted && settings.analyzeImages !== false && images.length > 0 && !isCompetitor) {
           const imagesWithoutAlt = images.filter(img => !img.alt);
