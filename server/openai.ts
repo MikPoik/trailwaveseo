@@ -187,7 +187,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       - Concrete keyword targeting suggestions, topic, sections etc.
       - Specific URLs for new internal links
 
-      Format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
+      Respond in JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
       Language: Match the page content language.
     `;
 
@@ -467,7 +467,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
       5. For each category, provide actionable recommendations to fix the issues
       6. Provide overall recommendations for improving content uniqueness across the site, suggesting specific changes to titles, descriptions, and headings
 
-      Respond with a JSON object in this format:
+      Respond with a JSON object in this exact format:
       {
         "titleRepetition": {
           "repetitiveCount": number,
@@ -494,7 +494,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
       messages: [
-        { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content." },
+        { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content. Always respond in JSON format." },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },

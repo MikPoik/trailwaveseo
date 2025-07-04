@@ -501,8 +501,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               difference: competitorAnalysis.metrics.criticalIssues - mainAnalysis.metrics.criticalIssues
             }
           },
-          // Include the full analysis objects for detailed comparison
-          analysis: competitorAnalysis,
+          // Include optimized analysis data to reduce payload size
+        analysis: {
+          ...competitorAnalysis,
+          // Remove large data that's not needed for comparison
+          pages: competitorAnalysis.pages.map(page => ({
+            ...page,
+            paragraphs: page.paragraphs ? page.paragraphs.slice(0, 2) : [], // Limit paragraphs
+            suggestions: page.suggestions ? page.suggestions.slice(0, 3) : [] // Limit suggestions
+          }))
+        },
           recommendations: []
         };
 
@@ -551,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if the analysis exists and belongs to the user
       const analysis = await storage.getAnalysisById(analysisId);
-      
+
       if (!analysis) {
         console.log(`Analysis with ID ${analysisId} not found for saving competitor data`);
         return res.status(404).json({ error: "Analysis not found" });
@@ -563,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Saving competitor analysis for ID ${analysisId}, user ${userId}, data size: ${JSON.stringify(competitorData).length} bytes`);
-      
+
       const updatedAnalysis = await storage.updateCompetitorAnalysis(analysisId, competitorData);
 
       if (!updatedAnalysis) {
