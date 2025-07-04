@@ -201,36 +201,34 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           }))
         };
 
-        // Re-generate suggestions for each page with site structure context
+        // Generate suggestions for each page with full site structure context
         for (const page of analyzedPages) {
-          // Only enhance if the page has existing suggestions
-          if (page.suggestions && page.suggestions.length > 0) {
-            const pageData = {
-              url: page.url,
-              title: page.title,
-              metaDescription: page.metaDescription,
-              headings: page.headings,
-              images: page.images.map(img => ({
-                src: img.src,
-                alt: img.alt
-              })),
-              issues: page.issues.map(issue => ({
-                category: issue.category,
-                severity: issue.severity,
-                title: issue.title
-              })),
-              paragraphs: page.paragraphs ? page.paragraphs.slice(0, 10) : []
-            };
+          const pageData = {
+            url: page.url,
+            title: page.title,
+            metaDescription: page.metaDescription,
+            metaKeywords: page.metaKeywords,
+            headings: page.headings,
+            images: page.images.map(img => ({
+              src: img.src,
+              alt: img.alt
+            })),
+            issues: page.issues.map(issue => ({
+              category: issue.category,
+              severity: issue.severity,
+              title: issue.title,
+              description: issue.description
+            })),
+            paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
+            internalLinks: page.internalLinks
+          };
 
-            try {
-              const enhancedSuggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, additionalInfo);
-              if (enhancedSuggestions && enhancedSuggestions.length > 0) {
-                page.suggestions = enhancedSuggestions;
-              }
-            } catch (error) {
-              console.error(`Error enhancing suggestions for ${page.url}:`, error);
-              // Keep original suggestions if enhancement fails
-            }
+          try {
+            const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, additionalInfo);
+            page.suggestions = suggestions || [];
+          } catch (error) {
+            console.error(`Error generating suggestions for ${page.url}:`, error);
+            page.suggestions = [];
           }
         }
 
@@ -591,31 +589,11 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                                                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                                                           .join(' ');
 
-    // Generate suggestions if AI is enabled
+    // Generate suggestions if AI is enabled (will be enhanced later with site structure)
     let suggestions: string[] = [];
     if (settings.useAI) {
-      try {
-        // Prepare comprehensive page data for the AI
-        const pageData = {
-          url,
-          title,
-          metaDescription,
-          metaKeywords: metaKeywordsArray,
-          headings,
-          images: images.map(img => ({
-            src: img.src,
-            alt: img.alt
-          })),
-          issues: issues.map(issue => ({
-            category: issue.category,
-            severity: issue.severity,
-            title: issue.title,
-            description: issue.description
-          })),
-          paragraphs: paragraphs.slice(0, 15) // Include more paragraphs for better context
-        };
-
-        suggestions = await generateSeoSuggestions(url, pageData, undefined, additionalInfo);
+      // For now, just prepare the page data - suggestions will be generated later with full context
+      // This avoids duplicate API calls to OpenAI
 
         // Generate alt text for images without alt text (skip for competitor analysis)
         if (!signal.aborted && settings.analyzeImages !== false && images.length > 0 && !isCompetitor) {
