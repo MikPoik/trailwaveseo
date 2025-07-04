@@ -184,7 +184,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Provide specific recommendations with:
       - Exact title/meta examples with character counts
       - Specific internal link improvements (current vs suggested anchor text)
-      - Concrete keyword targeting suggestions
+      - Concrete keyword targeting suggestions, topic, sections etc.
       - Specific URLs for new internal links
 
       Format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
@@ -196,7 +196,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       messages: [
         { 
           role: "system", 
-          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic."
+          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Match your response language to the page content language"
         },
         { role: "user", content: prompt }
       ],
