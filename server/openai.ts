@@ -105,23 +105,6 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
 
       Website Structure Analysis (${siteStructure.allPages.length} total pages):
 
-      Main Pages:
-      ${siteStructure.allPages.slice(0, 15).map(page => {
-        const h1 = page.headings.find(h => h.level === 1)?.text || '';
-        const pageKeywords = extractKeywords([page.title || '', h1].join(' ')).slice(0, 3);
-        const urlPath = new URL(page.url).pathname;
-        const category = urlPath.split('/')[1] || 'root';
-        const isAlreadyLinked = pageData.internalLinks?.some(link => link.href.includes(page.url)) || false;
-        return `- ${page.url}
-          Category: ${category}
-          Title: "${page.title || 'No title'}"
-          H1: "${h1 || 'No H1'}"
-          Key topics: ${pageKeywords.join(', ') || 'none detected'}
-          Already linked: ${isAlreadyLinked ? 'Yes' : 'No'}`;
-      }).join('\n')}
-
-      ${siteStructure.allPages.length > 15 ? `... and ${siteStructure.allPages.length - 15} more pages` : ''}
-
       Related Pages for Internal Linking:
       ${siteStructure.allPages
         .filter(page => page.url !== url) // Exclude current page
@@ -165,7 +148,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Headings: ${pageData.headings.map((h: any) => `H${h.level}: "${h.text}"`).join(' | ') || 'None'}
 
       Content Analysis:
-      - Keywords: ${extractedKeywords.slice(0, 6).join(', ') || 'none detected'}
+      - Keywords: ${extractedKeywords.slice(0, 8).join(', ') || 'none detected'}
       - Word count: ~${pageContent.split(/\s+/).length}
       - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
       - Page type: ${url.includes('/blog/') ? 'Blog' : url.includes('/product/') ? 'Product' : url.includes('/service/') ? 'Service' : 'General'}
@@ -181,7 +164,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Take user context into account and try to incorporate it in your suggestions` : ''}
 
       Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
-        pageData.paragraphs.slice(0, 3).join(' ').substring(0, 800) + '...' : 'No content'}
+        pageData.paragraphs.slice(0, 3).join(' ').substring(0, 1000) + '...' : 'No content'}
 
       Provide specific recommendations with:
       - Exact title/meta examples with character counts
