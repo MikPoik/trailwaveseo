@@ -36,10 +36,137 @@ export interface ContentDuplicationAnalysis {
 }
 
 /**
+ * Analyze site overview to detect business context and provide general insights
+ * @param siteStructure Site structure with all pages
+ * @param additionalInfo Additional business context provided by user
+ * @returns Business context and site overview analysis
+ */
+export async function analyzeSiteOverview(siteStructure: {
+  allPages: Array<{
+    url: string;
+    title?: string;
+    headings: Array<{ level: number; text: string }>;
+    metaDescription?: string;
+    paragraphs?: string[];
+  }>;
+}, additionalInfo?: string): Promise<{
+  businessType: string;
+  industry: string;
+  targetAudience: string;
+  mainServices: string[];
+  location?: string;
+  siteStructureAnalysis: string;
+  contentStrategy: string[];
+  overallRecommendations: string[];
+}> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OpenAI API key not set, skipping site overview analysis");
+      return {
+        businessType: 'Unknown',
+        industry: 'Unknown',
+        targetAudience: 'Unknown',
+        mainServices: [],
+        siteStructureAnalysis: 'Analysis unavailable',
+        contentStrategy: [],
+        overallRecommendations: []
+      };
+    }
+
+    // Prepare site overview data
+    const siteOverview = siteStructure.allPages.map(page => ({
+      url: page.url,
+      title: page.title || 'Untitled',
+      h1: page.headings.find(h => h.level === 1)?.text || 'No H1',
+      metaDescription: page.metaDescription || 'No description',
+      contentSample: page.paragraphs ? page.paragraphs.slice(0, 2).join(' ').substring(0, 300) : 'No content'
+    }));
+
+    const prompt = `Analyze this website's overall structure and content to provide comprehensive business context.
+
+SITE OVERVIEW (${siteStructure.allPages.length} pages):
+${siteOverview.map(page => `
+URL: ${page.url}
+Title: ${page.title}
+H1: ${page.h1}
+Meta: ${page.metaDescription}
+Content: ${page.contentSample}
+---`).join('\n')}
+
+${additionalInfo ? `Additional Business Context: ${additionalInfo}` : ''}
+
+Please analyze and provide:
+1. Business type and industry classification
+2. Target audience analysis
+3. Main services/products offered
+4. Geographic location (if any)
+5. Site structure analysis (navigation, content organization)
+6. Content strategy recommendations
+7. Overall SEO improvement priorities
+
+Respond in JSON format:
+{
+  "businessType": "string",
+  "industry": "string", 
+  "targetAudience": "string",
+  "mainServices": ["service1", "service2"],
+  "location": "string or null",
+  "siteStructureAnalysis": "detailed analysis string",
+  "contentStrategy": ["strategy1", "strategy2"],
+  "overallRecommendations": ["recommendation1", "recommendation2"]
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert business analyst and SEO consultant. Analyze website structure and content to provide accurate business context and strategic recommendations. Always respond in JSON format."
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 1500
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("No content in response");
+    }
+
+    const result = JSON.parse(content);
+    
+    return {
+      businessType: result.businessType || 'Unknown',
+      industry: result.industry || 'Unknown', 
+      targetAudience: result.targetAudience || 'Unknown',
+      mainServices: result.mainServices || [],
+      location: result.location || undefined,
+      siteStructureAnalysis: result.siteStructureAnalysis || 'Analysis unavailable',
+      contentStrategy: result.contentStrategy || [],
+      overallRecommendations: result.overallRecommendations || []
+    };
+  } catch (error) {
+    console.error("Error analyzing site overview with OpenAI:", error);
+    return {
+      businessType: 'Unknown',
+      industry: 'Unknown',
+      targetAudience: 'Unknown', 
+      mainServices: [],
+      siteStructureAnalysis: 'Analysis unavailable',
+      contentStrategy: [],
+      overallRecommendations: []
+    };
+  }
+}
+
+/**
  * Generate SEO improvement suggestions using OpenAI
  * @param url URL of the page being analyzed
  * @param pageData Extracted SEO data from the page
  * @param siteStructure Optional site structure data for internal linking suggestions
+ * @param siteOverview Business context and site analysis from overview
  * @returns Array of improvement suggestions
  */
 export async function generateSeoSuggestions(url: string, pageData: any, siteStructure?: {
@@ -48,6 +175,12 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     title?: string;
     headings: Array<{ level: number; text: string }>;
   }>;
+}, siteOverview?: {
+  businessType: string;
+  industry: string;
+  targetAudience: string;
+  mainServices: string[];
+  location?: string;
 }, additionalInfo?: string): Promise<string[]> {
   try {
     // If no OpenAI API key is set, return empty suggestions
@@ -119,13 +252,25 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     const extractedKeywords = extractKeywords(pageContent);
     const metaKeywords = pageData.metaKeywords || [];
     
-    // Detect business/industry context from URL and content
-    const businessContext = {
+    // Use AI-generated business context or fallback to basic detection
+    const businessContext = siteOverview ? {
+      industry: siteOverview.industry,
+      businessType: siteOverview.businessType,
+      targetAudience: siteOverview.targetAudience,
+      mainServices: siteOverview.mainServices,
+      isLocal: !!siteOverview.location,
+      location: siteOverview.location,
+      contentType: pageData.paragraphs && pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'
+    } : {
       industry: url.includes('terapia') || extractedKeywords.includes('terapia') ? 'Healthcare/Therapy' :
                 url.includes('shop') || url.includes('store') ? 'E-commerce' :
                 url.includes('blog') ? 'Content/Blog' :
                 url.includes('service') ? 'Services' : 'General Business',
+      businessType: 'Unknown',
+      targetAudience: 'Unknown',
+      mainServices: [],
       isLocal: extractedKeywords.some(k => ['järvenpää', 'helsinki', 'tampere', 'turku', 'oulu'].includes(k.toLowerCase())),
+      location: undefined,
       contentType: pageData.paragraphs && pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'
     };
 
@@ -174,11 +319,17 @@ Title: ${pageData.title || 'Missing'} (${pageData.title?.length || 0} chars)
 Meta Description: ${pageData.metaDescription || 'Missing'} (${pageData.metaDescription?.length || 0} chars)
 H1: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
 
+Business Context:
+- Industry: ${businessContext.industry}
+- Business Type: ${businessContext.businessType}
+- Target Audience: ${businessContext.targetAudience}
+- Main Services: ${businessContext.mainServices.join(', ') || 'Unknown'}
+- Location: ${businessContext.location || 'Not specified'}${businessContext.isLocal ? ' (Local business)' : ''}
+
 Content Analysis:
 - Keywords: ${extractedKeywords.slice(0, 6).join(', ') || 'none'}
 - Word count: ~${pageContent.split(/\s+/).length}
 - Content type: ${businessContext.contentType}
-- Business context: ${businessContext.industry}${businessContext.isLocal ? ' (Local business)' : ''}
 - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
 
 ${existingLinksAnalysis}
@@ -193,9 +344,11 @@ Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ?
   pageData.paragraphs.slice(0, 2).join(' ').substring(0, 800) + '...' : 'No content'}
 
 Provide specific recommendations with exact examples:
-- Title/meta improvements with character counts
+- Title/meta improvements with character counts (optimized for ${businessContext.targetAudience})
 - Internal link suggestions with anchor text
-- Keyword targeting for ${businessContext.industry}
+- Keyword targeting for ${businessContext.industry} targeting ${businessContext.targetAudience}
+- Service-specific content optimization for: ${businessContext.mainServices.join(', ')}
+- Local SEO recommendations (if applicable for ${businessContext.location || 'location'})
 - Specific URLs for new internal links
 
 JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}

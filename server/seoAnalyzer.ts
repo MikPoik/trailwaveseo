@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { parseSitemap } from './sitemap';
 import { crawlWebsite } from './crawler';
-import { generateSeoSuggestions, generateBatchImageAltText, analyzeContentRepetition } from './openai';
+import { generateSeoSuggestions, generateBatchImageAltText, analyzeContentRepetition, analyzeSiteOverview } from './openai';
 import { storage } from './storage';
 import { EventEmitter } from 'events';
 import { Heading, Image, SeoIssue, SeoCategory, ContentRepetitionAnalysis } from '../client/src/lib/types';
@@ -190,18 +190,25 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Enhance suggestions with site structure for internal linking (if AI is enabled)
     if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
       try {
-        console.log(`Enhancing SEO suggestions with internal linking recommendations for ${domain}...`);
+        console.log(`Analyzing site overview and generating SEO suggestions for ${domain}...`);
 
-        // Build site structure for internal linking suggestions
+        // Build site structure for analysis
         const siteStructure = {
           allPages: analyzedPages.map(page => ({
             url: page.url,
             title: page.title,
-            headings: page.headings
+            headings: page.headings,
+            metaDescription: page.metaDescription,
+            paragraphs: page.paragraphs
           }))
         };
 
-        // Generate suggestions for each page with full site structure context
+        // First, analyze the overall site to get business context
+        console.log(`Generating business context analysis for ${domain}...`);
+        const siteOverview = await analyzeSiteOverview(siteStructure, additionalInfo);
+        console.log(`Business context detected - Industry: ${siteOverview.industry}, Type: ${siteOverview.businessType}, Target: ${siteOverview.targetAudience}`);
+
+        // Generate suggestions for each page with full site structure and business context
         for (const page of analyzedPages) {
           const pageData = {
             url: page.url,
@@ -224,7 +231,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           };
 
           try {
-            const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, additionalInfo);
+            const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
             page.suggestions = suggestions || [];
           } catch (error) {
             console.error(`Error generating suggestions for ${page.url}:`, error);
@@ -232,7 +239,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           }
         }
 
-        console.log(`Internal linking suggestions enhancement completed for ${domain}`);
+        console.log(`AI-powered SEO suggestions with business context completed for ${domain}`);
       } catch (error) {
         console.error(`Error enhancing suggestions with site structure for ${domain}:`, error);
         // Continue without enhancement if it fails
