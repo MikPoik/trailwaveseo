@@ -8,6 +8,10 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Cache for storing generated alt text to avoid regenerating for the same images
 const altTextCache = new Map<string, string>();
 
+// Cache for SEO suggestions to avoid regenerating for similar pages
+const seoSuggestionsCache = new Map<string, { suggestions: string[], timestamp: number }>();
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
 // Define interface for content duplication analysis results
 export interface ContentDuplicationAnalysis {
   titleRepetition: {
@@ -52,26 +56,59 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       return [];
     }
 
+    // Create cache key based on page content fingerprint
+    const contentFingerprint = crypto.createHash('md5')
+      .update(JSON.stringify({
+        title: pageData.title,
+        metaDescription: pageData.metaDescription,
+        headings: pageData.headings.slice(0, 3), // First 3 headings
+        firstParagraph: pageData.paragraphs?.[0]?.substring(0, 200) || '',
+        issues: pageData.issues.map(i => i.category).sort()
+      }))
+      .digest('hex');
+
+    // Check cache first
+    const cached = seoSuggestionsCache.get(contentFingerprint);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log(`Using cached SEO suggestions for similar content pattern`);
+      return cached.suggestions;
+    }
+
+    // Cache for keyword extraction to avoid redundant processing
+    const keywordCache = new Map<string, string[]>();
+    
     // Extract keywords from page content for better analysis
     const extractKeywords = (text: string): string[] => {
       if (!text) return [];
+      
+      // Use cache key based on first 500 characters
+      const cacheKey = text.substring(0, 500);
+      if (keywordCache.has(cacheKey)) {
+        return keywordCache.get(cacheKey) || [];
+      }
+      
+      const stopWords = new Set(['this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'more', 'very', 'what', 'know', 'just', 'first', 'into', 'over', 'think', 'also', 'back', 'after', 'work', 'well', 'want', 'because', 'good', 'water', 'through', 'right', 'where', 'come', 'could', 'would', 'should', 'about', 'make', 'than', 'only', 'other', 'many', 'some', 'like', 'when', 'here', 'them', 'your', 'there']);
+      
       const words = text.toLowerCase()
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter(word => word.length > 3 && !['this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'more', 'very', 'what', 'know', 'just', 'first', 'into', 'over', 'think', 'also', 'back', 'after', 'work', 'well', 'want', 'because', 'good', 'water', 'through', 'right', 'where', 'come', 'could', 'would', 'should', 'about', 'make', 'than', 'only', 'other', 'many', 'some', 'like', 'when', 'here', 'them', 'your', 'there'].includes(word));
+        .filter(word => word.length > 3 && !stopWords.has(word));
 
       const wordFreq = words.reduce((acc, word) => {
         acc[word] = (acc[word] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      return Object.entries(wordFreq)
+      const keywords = Object.entries(wordFreq)
         .sort(([,a], [,b]) => b - a)
         .slice(0, 10)
         .map(([word]) => word);
+      
+      keywordCache.set(cacheKey, keywords);
+      return keywords;
     };
 
-    // Analyze page content for keywords
+    // Analyze page content for keywords with enhanced context
     const pageContent = [
       pageData.title || '',
       pageData.metaDescription || '',
@@ -81,33 +118,38 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
 
     const extractedKeywords = extractKeywords(pageContent);
     const metaKeywords = pageData.metaKeywords || [];
+    
+    // Detect business/industry context from URL and content
+    const businessContext = {
+      industry: url.includes('terapia') || extractedKeywords.includes('terapia') ? 'Healthcare/Therapy' :
+                url.includes('shop') || url.includes('store') ? 'E-commerce' :
+                url.includes('blog') ? 'Content/Blog' :
+                url.includes('service') ? 'Services' : 'General Business',
+      isLocal: extractedKeywords.some(k => ['järvenpää', 'helsinki', 'tampere', 'turku', 'oulu'].includes(k.toLowerCase())),
+      contentType: pageData.paragraphs && pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'
+    };
 
-    // Analyze existing internal links quality
-    const existingLinksAnalysis = pageData.internalLinks ? `
-
-      Current Internal Links Analysis (${pageData.internalLinks.length} links found):
-      ${pageData.internalLinks.map(link => {
+    // Analyze existing internal links quality (optimized)
+    const existingLinksAnalysis = pageData.internalLinks && pageData.internalLinks.length > 0 ? `
+      Internal Links (${pageData.internalLinks.length} found):
+      ${pageData.internalLinks.slice(0, 5).map(link => {
         const linkText = link.text || 'No anchor text';
-        const linkUrl = link.href;
         const isGeneric = ['click here', 'read more', 'learn more', 'here', 'this', 'link', 'more info'].some(generic => 
           linkText.toLowerCase().includes(generic)
         );
         const hasKeywords = extractedKeywords.some(keyword => 
           linkText.toLowerCase().includes(keyword.toLowerCase())
         );
-        return `- "${linkText}" → ${linkUrl}
-          Quality: ${isGeneric ? 'Generic (needs improvement)' : hasKeywords ? 'Good (keyword-rich)' : 'Neutral'}`;
-      }).join('\n')}
+        return `- "${linkText}" (${isGeneric ? 'Generic' : hasKeywords ? 'Good' : 'Neutral'})`;
+      }).join('\n')}${pageData.internalLinks.length > 5 ? `\n  +${pageData.internalLinks.length - 5} more links` : ''}
     ` : '';
 
-    // Build enhanced site structure information
+    // Build optimized site structure information
     const siteStructureInfo = siteStructure ? `
-
-      Website Structure Analysis (${siteStructure.allPages.length} total pages):
-
-      Related Pages for Internal Linking:
+      Site Structure (${siteStructure.allPages.length} pages):
+      Internal Link Opportunities:
       ${siteStructure.allPages
-        .filter(page => page.url !== url) // Exclude current page
+        .filter(page => page.url !== url)
         .map(page => {
           const pageKeywords = extractKeywords([page.title || '', page.headings.find(h => h.level === 1)?.text || ''].join(' '));
           const commonKeywords = extractedKeywords.filter(keyword => pageKeywords.includes(keyword));
@@ -116,65 +158,48 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         })
         .filter(item => item.relevanceScore > 0)
         .sort((a, b) => {
-          // Prioritize unlinked pages with high relevance
           if (a.isAlreadyLinked && !b.isAlreadyLinked) return 1;
           if (!a.isAlreadyLinked && b.isAlreadyLinked) return -1;
           return b.relevanceScore - a.relevanceScore;
         })
-        .slice(0, 10)
-        .map(item => `- ${item.page.title || 'Untitled'} (${item.page.url}) - Common topics: ${item.commonKeywords.join(', ')} ${item.isAlreadyLinked ? '[Already linked]' : '[Not linked - opportunity]'}`)
+        .slice(0, 6)
+        .map(item => `- ${item.page.title || 'Untitled'} (${item.page.url}) - Topics: ${item.commonKeywords.slice(0, 3).join(', ')} ${item.isAlreadyLinked ? '[Linked]' : '[New opportunity]'}`)
         .join('\n')}
     ` : '';
 
-    // Build comprehensive content analysis
-    const contentAnalysis = `
-      Content Analysis:
-      - Word count: ~${pageContent.split(/\s+/).length} words
-      - Content keywords detected: ${extractedKeywords.slice(0, 8).join(', ') || 'none'}
-      - Meta keywords: ${metaKeywords.length > 0 ? metaKeywords.join(', ') : 'none set'}
-      - Heading structure: ${pageData.headings.map((h: any) => `H${h.level}`).join(', ') || 'none'}
-      - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
-      - Internal links: ${pageData.internalLinks?.length || 0} internal links found
-      - Page type: ${url.includes('/blog/') ? 'Blog post' : url.includes('/product/') ? 'Product page' : url.includes('/service/') ? 'Service page' : url.includes('/about') ? 'About page' : url.includes('/contact') ? 'Contact page' : 'General page'}
-    `;
+    const prompt = `Analyze this ${businessContext.industry} webpage and provide 4-8 actionable SEO improvements.
 
-    const prompt = `
-      Analyze this webpage and provide 4-8 specific, actionable SEO improvements with concrete examples.
+URL: ${url}
+Title: ${pageData.title || 'Missing'} (${pageData.title?.length || 0} chars)
+Meta Description: ${pageData.metaDescription || 'Missing'} (${pageData.metaDescription?.length || 0} chars)
+H1: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
 
-      URL: ${url}
-      Title: ${pageData.title || 'Missing'}
-      Meta Description: ${pageData.metaDescription || 'Missing'}
-      H1: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
-      Headings: ${pageData.headings.map((h: any) => `H${h.level}: "${h.text}"`).join(' | ') || 'None'}
+Content Analysis:
+- Keywords: ${extractedKeywords.slice(0, 6).join(', ') || 'none'}
+- Word count: ~${pageContent.split(/\s+/).length}
+- Content type: ${businessContext.contentType}
+- Business context: ${businessContext.industry}${businessContext.isLocal ? ' (Local business)' : ''}
+- Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
 
-      Content Analysis:
-      - Keywords: ${extractedKeywords.slice(0, 8).join(', ') || 'none detected'}
-      - Word count: ~${pageContent.split(/\s+/).length}
-      - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
-      - Page type: ${url.includes('/blog/') ? 'Blog' : url.includes('/product/') ? 'Product' : url.includes('/service/') ? 'Service' : 'General'}
+${existingLinksAnalysis}
 
-      ${existingLinksAnalysis}
+${siteStructureInfo}
 
-      ${siteStructureInfo}
+Current Issues: ${pageData.issues.map((issue: any) => issue.title).join(', ') || 'None'}
 
-      Current Issues: ${pageData.issues.map((issue: any) => issue.title).join(', ') || 'None'}
+${additionalInfo ? `Business Context: ${additionalInfo}` : ''}
 
-      ${additionalInfo ? `User Context: ${additionalInfo}
-      
-      Take user context into account and try to incorporate it in your suggestions` : ''}
+Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
+  pageData.paragraphs.slice(0, 2).join(' ').substring(0, 800) + '...' : 'No content'}
 
-      Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
-        pageData.paragraphs.slice(0, 3).join(' ').substring(0, 1000) + '...' : 'No content'}
+Provide specific recommendations with exact examples:
+- Title/meta improvements with character counts
+- Internal link suggestions with anchor text
+- Keyword targeting for ${businessContext.industry}
+- Specific URLs for new internal links
 
-      Provide specific recommendations with:
-      - Exact title/meta examples with character counts
-      - Specific internal link improvements (current vs suggested anchor text)
-      - Concrete keyword targeting suggestions, topic, sections etc.
-      - Specific URLs for new internal links
-
-      Respond in JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
-      Language: Match the page content language.
-    `;
+JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
+Language: Match page content language.`;
     console.log(prompt)
     const response = await openai.chat.completions.create({
       model: "gpt-4.1", //Newest model as of 2025
@@ -199,15 +224,24 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     const result = JSON.parse(content);
 
     // Ensure we have an array of suggestions
+    let suggestions: string[] = [];
     if (Array.isArray(result.suggestions)) {
-      return result.suggestions;
+      suggestions = result.suggestions;
     } else if (result.suggestions) {
-      return [result.suggestions];
+      suggestions = [result.suggestions];
     } else if (Array.isArray(result)) {
-      return result;
+      suggestions = result;
     }
 
-    return [];
+    // Cache successful results
+    if (suggestions.length > 0) {
+      seoSuggestionsCache.set(contentFingerprint, {
+        suggestions,
+        timestamp: Date.now()
+      });
+    }
+
+    return suggestions;
   } catch (error) {
     console.error("Error generating SEO suggestions with OpenAI:", error);
     // Return empty array on error
