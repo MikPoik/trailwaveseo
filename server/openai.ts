@@ -189,21 +189,23 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       return [];
     }
 
-    // Create cache key based on page content fingerprint
+    // Create cache key based on page content fingerprint and URL
     const contentFingerprint = crypto.createHash('md5')
       .update(JSON.stringify({
+        url: url, // Include URL to avoid cross-page caching
         title: pageData.title,
         metaDescription: pageData.metaDescription,
         headings: pageData.headings.slice(0, 3), // First 3 headings
         firstParagraph: pageData.paragraphs?.[0]?.substring(0, 200) || '',
-        issues: pageData.issues.map(i => i.category).sort()
+        issues: pageData.issues.map(i => i.category).sort(),
+        timestamp: Math.floor(Date.now() / (1000 * 60 * 60)) // Cache per hour
       }))
       .digest('hex');
 
-    // Check cache first
+    // Check cache first - but be less aggressive
     const cached = seoSuggestionsCache.get(contentFingerprint);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log(`Using cached SEO suggestions for similar content pattern`);
+    if (cached && Date.now() - cached.timestamp < (CACHE_DURATION / 4)) { // Reduce cache time to 6 hours
+      console.log(`Using cached SEO suggestions for ${url}`);
       return cached.suggestions;
     }
 
@@ -317,76 +319,91 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       - Content readability: ${pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'}
     ` : 'Content Structure: No paragraph content found';
 
-    const prompt = `Analyze this webpage and provide 6-10 actionable SEO and conversion improvements.
+    // Build a more focused prompt
+    const seoIssuesList = pageData.issues.map((issue: any) => `${issue.title} (${issue.severity})`).join(', ') || 'No major issues found';
+    
+    const prompt = `You are an SEO expert. Analyze this webpage and provide 8-12 specific, actionable SEO improvement suggestions.
 
+WEBPAGE ANALYSIS:
 URL: ${url}
-Title: ${pageData.title || 'Missing'} (${pageData.title?.length || 0} chars)
-Meta Description: ${pageData.metaDescription || 'Missing'} (${pageData.metaDescription?.length || 0} chars)
-H1: ${pageData.headings.find((h: any) => h.level === 1)?.text || 'Missing'}
+Title: "${pageData.title || 'MISSING'}" (${pageData.title?.length || 0} characters)
+Meta Description: "${pageData.metaDescription || 'MISSING'}" (${pageData.metaDescription?.length || 0} characters)
+H1 Heading: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
 
-${siteOverview ? `Business Context (AI Analysis):
-- Industry: ${businessContext.industry}
-- Business Type: ${businessContext.businessType}
-- Target Audience: ${businessContext.targetAudience}
-- Main Services: ${businessContext.mainServices.join(', ') || 'Not specified'}
-- Location: ${businessContext.location || 'Not specified'}${businessContext.isLocal ? ' (Local business)' : ''}` : 'Business Context: Not analyzed'}
+CONTENT OVERVIEW:
+- Content Keywords: ${extractedKeywords.slice(0, 8).join(', ') || 'No clear keywords found'}
+- Content Length: ~${pageContent.split(/\s+/).length} words
+- Paragraphs: ${pageData.paragraphs?.length || 0} found
+- Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text)
+- Internal Links: ${pageData.internalLinks?.length || 0} found
+- CTA Elements: ${pageData.ctaElements?.length || 0} found
 
-Content Analysis:
-- Key terms: ${extractedKeywords.slice(0, 6).join(', ') || 'none'}
-- Word count: ~${pageContent.split(/\s+/).length}
-- Content type: ${businessContext.contentType}
-- Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
+DETECTED ISSUES:
+${seoIssuesList}
 
-${paragraphAnalysis}
+${siteOverview && siteOverview.industry !== 'Unknown' ? `
+BUSINESS CONTEXT:
+- Industry: ${siteOverview.industry}
+- Business Type: ${siteOverview.businessType}
+- Target Audience: ${siteOverview.targetAudience}
+- Main Services: ${siteOverview.mainServices.join(', ') || 'General'}
+${siteOverview.location ? `- Location: ${siteOverview.location}` : ''}
+` : ''}
 
-${ctaAnalysis}
+CONTENT SAMPLE:
+${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
+  pageData.paragraphs.slice(0, 3).join(' ').substring(0, 1000) + (pageData.paragraphs.slice(0, 3).join(' ').length > 1000 ? '...' : '') : 'No content available'}
 
-${existingLinksAnalysis}
+TASK:
+Provide specific, actionable SEO improvements. Include:
+1. Title optimization (exact character counts and suggestions)
+2. Meta description improvements (with character counts)
+3. Content structure recommendations
+4. Internal linking opportunities with specific anchor text
+5. Image optimization suggestions
+6. Call-to-action improvements
+7. Content gap analysis and additional topics to cover
+8. Keyword targeting recommendations
 
-${siteStructureInfo}
+Respond in JSON format with actionable suggestions:
+{"suggestions": ["specific suggestion 1", "specific suggestion 2", ...]}
 
-Current Issues: ${pageData.issues.map((issue: any) => issue.title).join(', ') || 'None'}
-
-${additionalInfo ? `Additional Business Context: ${additionalInfo}` : ''}
-
-Content Sample: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
-  pageData.paragraphs.slice(0, 2).join(' ').substring(0, 800) + '...' : 'No content'}
-
-Provide specific recommendations with exact examples:
-- Title/meta improvements with character counts${siteOverview ? ` (optimized for ${businessContext.targetAudience})` : ''}
-- Internal link suggestions with anchor text
-- Keyword targeting${siteOverview ? ` for ${businessContext.industry} targeting ${businessContext.targetAudience}` : ''}
-- Content optimization${siteOverview && businessContext.mainServices.length > 0 ? ` for: ${businessContext.mainServices.join(', ')}` : ''}
-- Call-to-action improvements (positioning, text, design suggestions)
-- Paragraph structure improvements (readability, length, engagement)
-- Content gap analysis (missing topics, additional paragraphs needed)
-${businessContext.isLocal ? `- Local SEO recommendations for ${businessContext.location}` : ''}
-- Specific URLs for new internal links
-
-JSON format: {"suggestions": ["suggestion 1", "suggestion 2", ...]}
-Language: Match page content language.`;
-    console.log(prompt)
+Make suggestions SPECIFIC and ACTIONABLE, not generic advice.`;
+    
+    console.log('SEO Suggestions Prompt:', prompt.substring(0, 500) + '...')
+    console.log(`Generating SEO suggestions for: ${url}`);
+    
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1", //Newest model as of 2025
+      model: "gpt-4.1",
       messages: [
         { 
           role: "system", 
-          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Match your response language to the page content language."
+          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in JSON format only."
         },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.3, // Lower temperature for more consistent, focused suggestions
-      max_tokens: 1200 // Increased for more detailed suggestions
+      temperature: 0.4,
+      max_tokens: 1500
     });
 
     const content = response.choices[0].message.content;
     if (!content) {
+      console.error(`No content returned from OpenAI for ${url}`);
       return [];
     }
 
+    console.log(`OpenAI response for ${url}:`, content.substring(0, 200) + '...');
+
     // Parse the JSON response
-    const result = JSON.parse(content);
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch (parseError) {
+      console.error(`Failed to parse OpenAI response for ${url}:`, parseError);
+      console.error('Raw response:', content);
+      return [];
+    }
 
     // Ensure we have an array of suggestions
     let suggestions: string[] = [];
@@ -396,7 +413,12 @@ Language: Match page content language.`;
       suggestions = [result.suggestions];
     } else if (Array.isArray(result)) {
       suggestions = result;
+    } else {
+      console.error(`Unexpected response format for ${url}:`, result);
+      return [];
     }
+
+    console.log(`Generated ${suggestions.length} suggestions for ${url}`);
 
     // Cache successful results
     if (suggestions.length > 0) {
