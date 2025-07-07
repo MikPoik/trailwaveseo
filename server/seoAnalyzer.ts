@@ -449,6 +449,90 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       }
     });
 
+    // Extract CTA elements (buttons, form submits, prominent links)
+    const ctaElements: Array<{
+      type: 'button' | 'link' | 'form';
+      text: string;
+      href?: string;
+      position: 'header' | 'content' | 'footer' | 'sidebar';
+      attributes?: Record<string, string>;
+    }> = [];
+
+    // Extract buttons
+    $('button, input[type="submit"], input[type="button"]').each((_, el) => {
+      const $el = $(el);
+      const text = $el.text().trim() || $el.attr('value') || $el.attr('aria-label') || '';
+      if (text) {
+        const position = $el.closest('header, nav').length ? 'header' : 
+                        $el.closest('footer').length ? 'footer' : 
+                        $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
+        
+        ctaElements.push({
+          type: 'button',
+          text,
+          position,
+          attributes: {
+            class: $el.attr('class') || '',
+            id: $el.attr('id') || ''
+          }
+        });
+      }
+    });
+
+    // Extract prominent links (likely CTAs)
+    $('a').each((_, el) => {
+      const $el = $(el);
+      const text = $el.text().trim();
+      const href = $el.attr('href');
+      
+      if (text && href) {
+        // Check if this looks like a CTA link (has certain classes or is prominent)
+        const classList = $el.attr('class') || '';
+        const isProminentLink = /\b(btn|button|cta|call-to-action|primary|secondary|link-button|action)\b/i.test(classList) ||
+                               text.toLowerCase().match(/\b(buy|shop|order|contact|subscribe|sign up|get started|learn more|download|book|schedule|call|email)\b/);
+        
+        if (isProminentLink) {
+          const position = $el.closest('header, nav').length ? 'header' : 
+                          $el.closest('footer').length ? 'footer' : 
+                          $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
+          
+          ctaElements.push({
+            type: 'link',
+            text,
+            href,
+            position,
+            attributes: {
+              class: classList,
+              id: $el.attr('id') || ''
+            }
+          });
+        }
+      }
+    });
+
+    // Extract forms as potential CTAs
+    $('form').each((_, el) => {
+      const $el = $(el);
+      const submitButton = $el.find('input[type="submit"], button[type="submit"], button:not([type])').first();
+      const submitText = submitButton.text().trim() || submitButton.attr('value') || 'Submit';
+      
+      if (submitText) {
+        const position = $el.closest('header, nav').length ? 'header' : 
+                        $el.closest('footer').length ? 'footer' : 
+                        $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
+        
+        ctaElements.push({
+          type: 'form',
+          text: submitText,
+          position,
+          attributes: {
+            action: $el.attr('action') || '',
+            method: $el.attr('method') || 'GET'
+          }
+        });
+      }
+    });
+
     // Collect SEO issues
     const issues: SeoIssue[] = [];
 
@@ -586,6 +670,41 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       }
     }
 
+    // CTA analysis issues
+    if (ctaElements.length === 0) {
+      issues.push({
+        category: 'links',
+        severity: 'warning',
+        title: 'No Call-to-Action Elements Found',
+        description: 'This page has no clear call-to-action elements (buttons, forms, or prominent links), which may hurt conversion rates.'
+      });
+    } else {
+      // Check for generic CTA text
+      const genericCtaTexts = ['click here', 'submit', 'go', 'more', 'continue', 'next'];
+      const genericCtas = ctaElements.filter(cta => 
+        genericCtaTexts.some(generic => cta.text.toLowerCase().includes(generic))
+      );
+
+      if (genericCtas.length > 0) {
+        issues.push({
+          category: 'links',
+          severity: 'info',
+          title: 'Generic Call-to-Action Text Found',
+          description: `${genericCtas.length} CTA element${genericCtas.length === 1 ? '' : 's'} use${genericCtas.length === 1 ? 's' : ''} generic text. Use action-oriented, specific text that describes the value proposition.`
+        });
+      }
+
+      // Check if there are too many CTAs (can dilute focus)
+      if (ctaElements.length > 5) {
+        issues.push({
+          category: 'links',
+          severity: 'info',
+          title: 'Too Many Call-to-Action Elements',
+          description: `This page has ${ctaElements.length} CTA elements, which might dilute user focus. Consider prioritizing the most important actions.`
+        });
+      }
+    }
+
     // Get page name from URL for display
     const urlObj = new URL(url);
     const pathSegments = urlObj.pathname.split('/').filter(Boolean);
@@ -661,6 +780,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       headings,
       images,
       internalLinks: settings.analyzeLinkStructure ? internalLinks : undefined,
+      ctaElements,
       canonical,
       robotsMeta,
       paragraphs,

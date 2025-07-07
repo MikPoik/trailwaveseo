@@ -296,7 +296,28 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .join('\n')}
     ` : '';
 
-    const prompt = `Analyze this webpage and provide 4-8 actionable SEO improvements.
+    // Analyze CTA elements
+    const ctaAnalysis = pageData.ctaElements && pageData.ctaElements.length > 0 ? `
+      Call-to-Action Elements (${pageData.ctaElements.length} found):
+      ${pageData.ctaElements.map((cta: any) => {
+        const isGeneric = ['click here', 'submit', 'go', 'more', 'continue', 'next'].some(generic => 
+          cta.text.toLowerCase().includes(generic)
+        );
+        return `- ${cta.type.toUpperCase()}: "${cta.text}" (${cta.position}) ${isGeneric ? '[Generic text]' : '[Good text]'}`;
+      }).join('\n')}
+    ` : 'Call-to-Action Elements: None found';
+
+    // Analyze paragraph content quality
+    const paragraphAnalysis = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
+      Content Structure Analysis:
+      - Total paragraphs: ${pageData.paragraphs.length}
+      - Average paragraph length: ~${Math.round(pageData.paragraphs.reduce((sum: number, p: string) => sum + p.length, 0) / pageData.paragraphs.length)} chars
+      - Short paragraphs (<50 chars): ${pageData.paragraphs.filter((p: string) => p.length < 50).length}
+      - Long paragraphs (>500 chars): ${pageData.paragraphs.filter((p: string) => p.length > 500).length}
+      - Content readability: ${pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'}
+    ` : 'Content Structure: No paragraph content found';
+
+    const prompt = `Analyze this webpage and provide 6-10 actionable SEO and conversion improvements.
 
 URL: ${url}
 Title: ${pageData.title || 'Missing'} (${pageData.title?.length || 0} chars)
@@ -316,6 +337,10 @@ Content Analysis:
 - Content type: ${businessContext.contentType}
 - Images: ${pageData.images?.length || 0} total, ${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text
 
+${paragraphAnalysis}
+
+${ctaAnalysis}
+
 ${existingLinksAnalysis}
 
 ${siteStructureInfo}
@@ -332,6 +357,9 @@ Provide specific recommendations with exact examples:
 - Internal link suggestions with anchor text
 - Keyword targeting${siteOverview ? ` for ${businessContext.industry} targeting ${businessContext.targetAudience}` : ''}
 - Content optimization${siteOverview && businessContext.mainServices.length > 0 ? ` for: ${businessContext.mainServices.join(', ')}` : ''}
+- Call-to-action improvements (positioning, text, design suggestions)
+- Paragraph structure improvements (readability, length, engagement)
+- Content gap analysis (missing topics, additional paragraphs needed)
 ${businessContext.isLocal ? `- Local SEO recommendations for ${businessContext.location}` : ''}
 - Specific URLs for new internal links
 
