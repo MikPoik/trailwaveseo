@@ -483,19 +483,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       href?: string;
       position: 'header' | 'content' | 'footer' | 'sidebar';
       attributes?: Record<string, string>;
-      quality?: {
-        hasActionVerb: boolean;
-        hasUrgency: boolean;
-        hasBenefit: boolean;
-        isSpecific: boolean;
-        hasPersonalization: boolean;
-      };
-      prominence?: {
-        hasCtaClass: boolean;
-        hasCtaText: boolean;
-        isVisuallyProminent: boolean;
-        isInProminentSection: boolean;
-      };
     }> = [];
 
     // Extract buttons
@@ -507,38 +494,19 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                         $el.closest('footer').length ? 'footer' : 
                         $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
         
-        // Analyze button CTA quality (language-agnostic)
-        const ctaQuality = {
-          hasActionVerb: text.length > 0, // Let AI determine in any language
-          hasUrgency: false, // Let AI determine in any language
-          hasBenefit: false, // Let AI determine in any language
-          isSpecific: text.length > 3 && text.trim() !== '',
-          hasPersonalization: false // Let AI determine in any language
-        };
-        
-        const classList = $el.attr('class') || '';
-        const prominence = {
-          hasCtaClass: /\b(btn|button|cta|call-to-action|primary|secondary|action)\b/i.test(classList),
-          hasCtaText: true, // Buttons are inherently CTA elements
-          isVisuallyProminent: /\b(large|big|prominent|primary|featured|highlight)\b/i.test(classList),
-          isInProminentSection: $el.closest('header, .header, .hero, .banner, .main-content').length > 0
-        };
-        
         ctaElements.push({
           type: 'button',
           text,
           position,
           attributes: {
-            class: classList,
+            class: $el.attr('class') || '',
             id: $el.attr('id') || ''
-          },
-          quality: ctaQuality,
-          prominence: prominence
+          }
         });
       }
     });
 
-    // Extract prominent links (likely CTAs) with enhanced detection
+    // Extract prominent links (likely CTAs) - basic structural detection only
     $('a').each((_, el) => {
       const $el = $(el);
       const text = $el.text().trim();
@@ -546,55 +514,20 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       
       if (text && href) {
         const classList = $el.attr('class') || '';
-        const ariaLabel = $el.attr('aria-label') || '';
-        const title = $el.attr('title') || '';
-        const parent = $el.parent();
-        const parentClass = parent.attr('class') || '';
         
-        // Universal CTA detection patterns (language-agnostic)
-        const ctaClassPatterns = /\b(btn|button|cta|call-to-action|primary|secondary|link-button|action|hero-button|main-button|purchase|checkout|signup|register|trial|demo|quote|consultation|booking|reserve|apply|join|membership|subscribe|newsletter|download|start|begin|launch|explore|discover|view|see|watch|play|read-more|continue|next|proceed|submit|send|contact|get-in-touch|request|inquiry|more-info|learn-more|find-out|details|pricing|plans|services|solutions|products|testimonials|reviews|portfolio|gallery|blog|news|events|careers|jobs|support|help|faq|resources|tools|guides|tips|free|offer|deal|sale|discount|promo|special|limited|exclusive|urgent|now|today|instant|immediate|fast|quick|easy|simple|best|top|popular|recommended|featured|new|latest|updated|improved|enhanced|advanced|professional|expert|premium|quality|trusted|reliable|secure|safe|guarantee|warranty|risk-free|money-back|satisfaction|success|results|proven|tested|verified|certified|approved|accredited)\b/i;
+        // Basic structural CTA detection (language-agnostic)
+        const hasCtaClass = /\b(btn|button|cta|call-to-action|primary|secondary|action)\b/i.test(classList);
+        const isVisuallyProminent = /\b(large|big|prominent|hero|main|primary|featured|highlight)\b/i.test(classList) ||
+                                   $el.closest('.hero, .banner, .header, .main, .primary, .featured, .highlight, .cta-section').length > 0;
+        const isNavigation = $el.closest('nav, .navigation, .menu, .navbar, .breadcrumb').length > 0;
         
-        // Remove language-specific text patterns - focus on structural indicators
-        const hasCtaText = false; // Will be determined by other factors
-        
-        // Check for CTA indicators
-        const hasCtaClass = ctaClassPatterns.test(classList) || ctaClassPatterns.test(parentClass);
-        
-        // Check for visual prominence indicators
-        const isVisuallyProminent = /\b(large|big|prominent|hero|main|primary|featured|highlight|emphasis|bold|strong|bright|colorful|standout)\b/i.test(classList) ||
-                                   $el.closest('.hero, .banner, .header, .main, .primary, .featured, .highlight, .call-out, .cta-section').length > 0;
-        
-        // Check for positioning that suggests importance
-        const isInProminentSection = $el.closest('header, .header, .hero, .banner, .main-content, .sidebar, .footer').length > 0;
-        
-        // Check if link appears to be a navigation vs action-oriented (language-agnostic)
-        const isNavigation = $el.closest('nav, .navigation, .menu, .navbar, .breadcrumb').length > 0 && 
-                            !hasCtaClass && 
-                            !isVisuallyProminent;
-        
-        // Universal CTA detection: focus on structural and design patterns
-        const hasActionStyling = /\b(btn|button|cta|action|primary|secondary)\b/i.test(classList);
-        const hasStrongStyling = $el.css && (/bold|600|700|800|900/.test($el.css('font-weight') || '') || 
-                                              $el.css('background-color') !== 'rgba(0, 0, 0, 0)' ||
-                                              $el.css('border') !== 'none');
-        const hasCallToActionContext = $el.closest('.cta, .call-to-action, .contact, .signup, .register, .download, .purchase, .buy').length > 0;
-        
-        // Determine if this is likely a CTA based on structural patterns
-        const isLikelyCTA = (hasCtaClass || hasActionStyling || isVisuallyProminent || hasCallToActionContext) && !isNavigation;
+        // Simple detection: if it has CTA styling or is visually prominent and not navigation
+        const isLikelyCTA = (hasCtaClass || isVisuallyProminent) && !isNavigation;
         
         if (isLikelyCTA) {
           const position = $el.closest('header, nav').length ? 'header' : 
                           $el.closest('footer').length ? 'footer' : 
                           $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
-          
-          // Analyze CTA quality (language-agnostic approach)
-          const ctaQuality = {
-            hasActionVerb: text.length > 0, // Let AI determine action verbs in any language
-            hasUrgency: false, // Let AI determine urgency indicators in any language
-            hasBenefit: false, // Let AI determine benefit indicators in any language
-            isSpecific: text.length > 4 && text.trim() !== '',
-            hasPersonalization: false // Let AI determine personalization in any language
-          };
           
           ctaElements.push({
             type: 'link',
@@ -604,15 +537,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
             attributes: {
               class: classList,
               id: $el.attr('id') || '',
-              'aria-label': ariaLabel,
-              title: title
-            },
-            quality: ctaQuality,
-            prominence: {
-              hasCtaClass,
-              hasCtaText,
-              isVisuallyProminent,
-              isInProminentSection
+              'aria-label': $el.attr('aria-label') || '',
+              title: $el.attr('title') || ''
             }
           });
         }
@@ -630,23 +556,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                         $el.closest('footer').length ? 'footer' : 
                         $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
         
-        // Analyze form CTA quality (language-agnostic)
-        const ctaQuality = {
-          hasActionVerb: submitText.length > 0, // Let AI determine in any language
-          hasUrgency: false, // Let AI determine in any language
-          hasBenefit: false, // Let AI determine in any language
-          isSpecific: submitText.length > 3 && submitText.trim() !== '',
-          hasPersonalization: false // Let AI determine in any language
-        };
-        
-        const formClass = $el.attr('class') || '';
-        const prominence = {
-          hasCtaClass: /\b(cta|call-to-action|subscribe|contact|signup|register|newsletter)\b/i.test(formClass),
-          hasCtaText: /\b(get|subscribe|join|register|signup|contact|request|apply)\b/i.test(submitText),
-          isVisuallyProminent: /\b(prominent|featured|highlight|main|primary)\b/i.test(formClass),
-          isInProminentSection: $el.closest('header, .header, .hero, .banner, .main-content, .sidebar').length > 0
-        };
-        
         ctaElements.push({
           type: 'form',
           text: submitText,
@@ -654,10 +563,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
           attributes: {
             action: $el.attr('action') || '',
             method: $el.attr('method') || 'GET',
-            class: formClass
-          },
-          quality: ctaQuality,
-          prominence: prominence
+            class: $el.attr('class') || ''
+          }
         });
       }
     });
@@ -843,20 +750,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         });
       }
 
-      // Check for generic anchor text
-      const genericTexts = ['click here', 'read more', 'learn more', 'here', 'this', 'link'];
-      const genericLinks = internalLinks.filter(link => 
-        genericTexts.some(generic => link.text.toLowerCase().includes(generic))
-      );
-
-      if (genericLinks.length > 0) {
-        issues.push({
-          category: 'links',
-          severity: 'warning',
-          title: 'Generic Anchor Text Found',
-          description: `${genericLinks.length} link${genericLinks.length === 1 ? '' : 's'} use${genericLinks.length === 1 ? 's' : ''} generic anchor text. Use descriptive, keyword-rich anchor text instead.`
-        });
-      }
+      // Note: Generic anchor text detection now handled by AI analysis
 
       // Check for overly long anchor text
       const longLinks = internalLinks.filter(link => link.text.length > 100);
@@ -878,31 +772,14 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         title: 'No Call-to-Action Elements Found',
         description: 'This page has no clear call-to-action elements (buttons, forms, or prominent links), which may hurt conversion rates.'
       });
-    } else {
-      // Check for generic CTA text
-      const genericCtaTexts = ['click here', 'submit', 'go', 'more', 'continue', 'next'];
-      const genericCtas = ctaElements.filter(cta => 
-        genericCtaTexts.some(generic => cta.text.toLowerCase().includes(generic))
-      );
-
-      if (genericCtas.length > 0) {
-        issues.push({
-          category: 'links',
-          severity: 'info',
-          title: 'Generic Call-to-Action Text Found',
-          description: `${genericCtas.length} CTA element${genericCtas.length === 1 ? '' : 's'} use${genericCtas.length === 1 ? 's' : ''} generic text. Use action-oriented, specific text that describes the value proposition.`
-        });
-      }
-
-      // Check if there are too many CTAs (can dilute focus)
-      if (ctaElements.length > 5) {
-        issues.push({
-          category: 'links',
-          severity: 'info',
-          title: 'Too Many Call-to-Action Elements',
-          description: `This page has ${ctaElements.length} CTA elements, which might dilute user focus. Consider prioritizing the most important actions.`
-        });
-      }
+    } else if (ctaElements.length > 5) {
+      // Only check for too many CTAs - let AI handle text quality analysis
+      issues.push({
+        category: 'links',
+        severity: 'info',
+        title: 'Too Many Call-to-Action Elements',
+        description: `This page has ${ctaElements.length} CTA elements, which might dilute user focus. Consider prioritizing the most important actions.`
+      });
     }
 
     // Get page name from URL for display
