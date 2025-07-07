@@ -347,7 +347,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     ` : '';
 
     // Build optimized site structure information
-    const siteStructureInfo = siteStructure ? `
+    const internalLinkingOpportunities = siteStructure ? `
       Site Structure (${siteStructure.allPages.length} pages):
       Internal Link Opportunities:
       ${siteStructure.allPages
