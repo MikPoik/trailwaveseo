@@ -205,7 +205,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     }
 
     // Enhance suggestions with site structure for internal linking (if AI is enabled)
-    if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
+    if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
       try {
         console.log(`Analyzing site overview and generating SEO suggestions for ${domain}...`);
 
@@ -278,7 +278,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
 
     // Perform content repetition analysis
     let contentRepetitionAnalysis: ContentRepetitionAnalysis | undefined;
-    if (settings.useAI && analyzedPages.length > 1 && !isCompetitor) {
+    if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
       try {
         console.log(`Analyzing content repetition for ${domain}...`);
         contentRepetitionAnalysis = await analyzeContentRepetition(analyzedPages);
@@ -752,6 +752,77 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         title: 'Missing Canonical Tag',
         description: 'The page does not have a canonical tag, which helps prevent duplicate content issues.'
       });
+    }
+
+    // Additional comprehensive SEO checks to ensure we find improvement opportunities
+    
+    // Content length analysis
+    const contentWordCount = paragraphs.join(' ').split(/\s+/).filter(word => word.length > 0).length;
+    if (contentWordCount < 150) {
+      issues.push({
+        category: 'content',
+        severity: 'warning',
+        title: 'Content Too Short',
+        description: `Page content is only ${contentWordCount} words. Consider adding more valuable content to improve SEO performance.`
+      });
+    }
+
+    // CTA optimization opportunities
+    if (ctaElements.length === 0) {
+      issues.push({
+        category: 'conversion',
+        severity: 'info',
+        title: 'No Call-to-Action Elements Found',
+        description: 'Consider adding clear call-to-action buttons or links to improve user engagement and conversions.'
+      });
+    }
+
+    // Title and meta description optimization opportunities
+    if (title && !title.includes('|') && !title.includes('-')) {
+      issues.push({
+        category: 'title',
+        severity: 'info',
+        title: 'Title Structure Enhancement',
+        description: 'Consider adding brand name or location to the title with separators (| or -) for better brand recognition.'
+      });
+    }
+
+    // Keyword density and relevance
+    if (title && metaDescription) {
+      const titleWords = title.toLowerCase().split(/\s+/);
+      const descWords = metaDescription.toLowerCase().split(/\s+/);
+      const commonWords = titleWords.filter(word => descWords.includes(word) && word.length > 3);
+      
+      if (commonWords.length < 2) {
+        issues.push({
+          category: 'keywords',
+          severity: 'info',
+          title: 'Keyword Consistency Opportunity',
+          description: 'Title and meta description should share important keywords for better topical relevance.'
+        });
+      }
+    }
+
+    // Content structure analysis
+    if (headings.length > 0) {
+      const h1Count = headings.filter(h => h.level === 1).length;
+      if (h1Count > 1) {
+        issues.push({
+          category: 'headings',
+          severity: 'warning',
+          title: 'Multiple H1 Tags',
+          description: `Found ${h1Count} H1 tags. Consider using only one H1 tag per page.`
+        });
+      }
+      
+      if (headings.length < 3) {
+        issues.push({
+          category: 'headings',
+          severity: 'info',
+          title: 'Limited Heading Structure',
+          description: 'Consider adding more headings (H2, H3) to improve content structure and readability.'
+        });
+      }
     }
 
     // Internal link issues (if link structure analysis is enabled)

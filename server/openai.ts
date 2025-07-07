@@ -375,18 +375,6 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       ${pageData.ctaElements.map((cta: any) => {
         let analysis = `- ${cta.type.toUpperCase()}: "${cta.text}" (${cta.position})`;
         
-        if (cta.quality) {
-          const qualityScore = Object.values(cta.quality).filter(Boolean).length;
-          const qualityIndicators = [];
-          if (cta.quality.hasActionVerb) qualityIndicators.push('action verb');
-          if (cta.quality.hasUrgency) qualityIndicators.push('urgency');
-          if (cta.quality.hasBenefit) qualityIndicators.push('benefit');
-          if (cta.quality.isSpecific) qualityIndicators.push('specific');
-          if (cta.quality.hasPersonalization) qualityIndicators.push('personalized');
-          
-          analysis += ` [Quality: ${qualityScore}/5${qualityIndicators.length ? ' - ' + qualityIndicators.join(', ') : ''}]`;
-        }
-        
         if (cta.prominence) {
           const prominenceIndicators = [];
           if (cta.prominence.hasCtaClass) prominenceIndicators.push('CTA styling');
@@ -394,9 +382,12 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
           if (cta.prominence.isInProminentSection) prominenceIndicators.push('strategic placement');
           
           if (prominenceIndicators.length > 0) {
-            analysis += ` [Prominence: ${prominenceIndicators.join(', ')}]`;
+            analysis += ` [Design: ${prominenceIndicators.join(', ')}]`;
           }
         }
+        
+        // Add text length and positioning context for AI to analyze in any language
+        analysis += ` [Text length: ${cta.text.length} chars]`;
         
         return analysis;
       }).join('\n')}
