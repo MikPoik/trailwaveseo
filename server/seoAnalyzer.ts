@@ -483,6 +483,19 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       href?: string;
       position: 'header' | 'content' | 'footer' | 'sidebar';
       attributes?: Record<string, string>;
+      quality?: {
+        hasActionVerb: boolean;
+        hasUrgency: boolean;
+        hasBenefit: boolean;
+        isSpecific: boolean;
+        hasPersonalization: boolean;
+      };
+      prominence?: {
+        hasCtaClass: boolean;
+        hasCtaText: boolean;
+        isVisuallyProminent: boolean;
+        isInProminentSection: boolean;
+      };
     }> = [];
 
     // Extract buttons
@@ -494,34 +507,87 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                         $el.closest('footer').length ? 'footer' : 
                         $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
         
+        // Analyze button CTA quality
+        const ctaQuality = {
+          hasActionVerb: /\b(get|buy|start|try|download|contact|book|subscribe|join|apply|request|claim|discover|learn|explore|submit|send|register|signup)\b/i.test(text),
+          hasUrgency: /\b(now|today|instant|immediate|limited|urgent|hurry|don't miss|last chance|while supplies last)\b/i.test(text),
+          hasBenefit: /\b(free|save|discount|guarantee|risk-free|money-back|bonus|special|exclusive|premium|best|top|proven)\b/i.test(text),
+          isSpecific: text.length > 6 && !['submit', 'button', 'click', 'go', 'ok'].includes(text.toLowerCase()),
+          hasPersonalization: /\b(your|you|my|me|our|we|custom|personal|tailored)\b/i.test(text)
+        };
+        
+        const classList = $el.attr('class') || '';
+        const prominence = {
+          hasCtaClass: /\b(btn|button|cta|call-to-action|primary|secondary|action)\b/i.test(classList),
+          hasCtaText: true, // Buttons are inherently CTA elements
+          isVisuallyProminent: /\b(large|big|prominent|primary|featured|highlight)\b/i.test(classList),
+          isInProminentSection: $el.closest('header, .header, .hero, .banner, .main-content').length > 0
+        };
+        
         ctaElements.push({
           type: 'button',
           text,
           position,
           attributes: {
-            class: $el.attr('class') || '',
+            class: classList,
             id: $el.attr('id') || ''
-          }
+          },
+          quality: ctaQuality,
+          prominence: prominence
         });
       }
     });
 
-    // Extract prominent links (likely CTAs)
+    // Extract prominent links (likely CTAs) with enhanced detection
     $('a').each((_, el) => {
       const $el = $(el);
       const text = $el.text().trim();
       const href = $el.attr('href');
       
       if (text && href) {
-        // Check if this looks like a CTA link (has certain classes or is prominent)
         const classList = $el.attr('class') || '';
-        const isProminentLink = /\b(btn|button|cta|call-to-action|primary|secondary|link-button|action)\b/i.test(classList) ||
-                               text.toLowerCase().match(/\b(buy|shop|order|contact|subscribe|sign up|get started|learn more|download|book|schedule|call|email)\b/);
+        const ariaLabel = $el.attr('aria-label') || '';
+        const title = $el.attr('title') || '';
+        const parent = $el.parent();
+        const parentClass = parent.attr('class') || '';
         
-        if (isProminentLink) {
+        // Enhanced CTA detection patterns
+        const ctaClassPatterns = /\b(btn|button|cta|call-to-action|primary|secondary|link-button|action|hero-button|main-button|purchase|checkout|signup|register|trial|demo|quote|consultation|booking|reserve|apply|join|membership|subscribe|newsletter|download|start|begin|launch|explore|discover|view|see|watch|play|read-more|continue|next|proceed|submit|send|contact-us|get-in-touch|request|inquiry|more-info|learn-more|find-out|details|pricing|plans|services|solutions|products|about-us|testimonials|reviews|portfolio|gallery|blog|news|events|careers|jobs|support|help|faq|resources|tools|guides|tips|free|offer|deal|sale|discount|promo|special|limited|exclusive|urgent|now|today|instant|immediate|fast|quick|easy|simple|best|top|popular|recommended|featured|new|latest|updated|improved|enhanced|advanced|professional|expert|premium|quality|trusted|reliable|secure|safe|guarantee|warranty|risk-free|money-back|satisfaction|success|results|proven|tested|verified|certified|approved|accredited)\b/i;
+        
+        const ctaTextPatterns = /\b(buy|shop|order|purchase|checkout|pay|subscribe|sign up|register|join|get started|start now|begin|launch|try|trial|demo|free trial|test drive|explore|discover|learn more|find out|read more|see more|view details|get details|more info|contact|contact us|get in touch|call|phone|email|message|chat|talk|speak|book|schedule|reserve|apply|request|inquiry|quote|estimate|consultation|appointment|meeting|visit|tour|download|get|obtain|access|unlock|claim|redeem|save|offer|deal|sale|discount|promo|special|limited time|act now|hurry|urgent|don't miss|last chance|while supplies last|today only|instant|immediate|fast|quick|easy|simple|effortless|hassle-free|no obligation|risk-free|money back|guarantee|warranty|satisfaction|success|results|proven|testimonials|reviews|case studies|portfolio|gallery|blog|news|events|webinar|seminar|workshop|course|training|guide|tips|resources|tools|calculator|assessment|quiz|survey|form|submit|send|go|proceed|continue|next|step|phase|stage|level|upgrade|enhance|improve|optimize|boost|increase|maximize|minimize|reduce|eliminate|solve|fix|repair|restore|protect|secure|defend|prevent|avoid|stop|start|begin|create|build|design|develop|launch|implement|execute|achieve|reach|attain|accomplish|complete|finish|end|close|finalize)\b/i;
+        
+        // Check for CTA indicators
+        const hasCtaClass = ctaClassPatterns.test(classList) || ctaClassPatterns.test(parentClass);
+        const hasCtaText = ctaTextPatterns.test(text) || ctaTextPatterns.test(ariaLabel) || ctaTextPatterns.test(title);
+        
+        // Check for visual prominence indicators
+        const isVisuallyProminent = /\b(large|big|prominent|hero|main|primary|featured|highlight|emphasis|bold|strong|bright|colorful|standout)\b/i.test(classList) ||
+                                   $el.closest('.hero, .banner, .header, .main, .primary, .featured, .highlight, .call-out, .cta-section').length > 0;
+        
+        // Check for positioning that suggests importance
+        const isInProminentSection = $el.closest('header, .header, .hero, .banner, .main-content, .sidebar, .footer').length > 0;
+        
+        // Check if link appears to be a navigation vs action-oriented
+        const isNavigation = $el.closest('nav, .navigation, .menu, .navbar').length > 0 && 
+                            !hasCtaText && 
+                            /\b(home|about|services|products|contact|blog|news|gallery|portfolio)\b/i.test(text);
+        
+        // Determine if this is likely a CTA
+        const isLikelyCTA = (hasCtaClass || hasCtaText || isVisuallyProminent) && !isNavigation;
+        
+        if (isLikelyCTA) {
           const position = $el.closest('header, nav').length ? 'header' : 
                           $el.closest('footer').length ? 'footer' : 
                           $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
+          
+          // Analyze CTA quality
+          const ctaQuality = {
+            hasActionVerb: /\b(get|buy|start|try|download|contact|book|subscribe|join|apply|request|claim|discover|learn|explore)\b/i.test(text),
+            hasUrgency: /\b(now|today|instant|immediate|limited|urgent|hurry|don't miss|last chance|while supplies last)\b/i.test(text),
+            hasBenefit: /\b(free|save|discount|guarantee|risk-free|money-back|bonus|special|exclusive|premium|best|top|proven)\b/i.test(text),
+            isSpecific: text.length > 8 && !['click here', 'read more', 'learn more', 'see more', 'find out more'].includes(text.toLowerCase()),
+            hasPersonalization: /\b(your|you|my|me|our|we|custom|personal|tailored)\b/i.test(text)
+          };
           
           ctaElements.push({
             type: 'link',
@@ -530,7 +596,16 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
             position,
             attributes: {
               class: classList,
-              id: $el.attr('id') || ''
+              id: $el.attr('id') || '',
+              'aria-label': ariaLabel,
+              title: title
+            },
+            quality: ctaQuality,
+            prominence: {
+              hasCtaClass,
+              hasCtaText,
+              isVisuallyProminent,
+              isInProminentSection
             }
           });
         }
@@ -548,14 +623,34 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                         $el.closest('footer').length ? 'footer' : 
                         $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
         
+        // Analyze form CTA quality
+        const ctaQuality = {
+          hasActionVerb: /\b(get|subscribe|join|register|signup|contact|request|apply|send|submit|book|schedule)\b/i.test(submitText),
+          hasUrgency: /\b(now|today|instant|immediate|limited|urgent|hurry|don't miss|last chance|while supplies last)\b/i.test(submitText),
+          hasBenefit: /\b(free|save|discount|guarantee|risk-free|money-back|bonus|special|exclusive|premium|newsletter|updates|info)\b/i.test(submitText),
+          isSpecific: submitText.length > 6 && submitText.toLowerCase() !== 'submit',
+          hasPersonalization: /\b(your|you|my|me|our|we|custom|personal|tailored)\b/i.test(submitText)
+        };
+        
+        const formClass = $el.attr('class') || '';
+        const prominence = {
+          hasCtaClass: /\b(cta|call-to-action|subscribe|contact|signup|register|newsletter)\b/i.test(formClass),
+          hasCtaText: /\b(get|subscribe|join|register|signup|contact|request|apply)\b/i.test(submitText),
+          isVisuallyProminent: /\b(prominent|featured|highlight|main|primary)\b/i.test(formClass),
+          isInProminentSection: $el.closest('header, .header, .hero, .banner, .main-content, .sidebar').length > 0
+        };
+        
         ctaElements.push({
           type: 'form',
           text: submitText,
           position,
           attributes: {
             action: $el.attr('action') || '',
-            method: $el.attr('method') || 'GET'
-          }
+            method: $el.attr('method') || 'GET',
+            class: formClass
+          },
+          quality: ctaQuality,
+          prominence: prominence
         });
       }
     });

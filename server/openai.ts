@@ -10,6 +10,74 @@ const altTextCache = new Map<string, string>();
 
 // Cache for SEO suggestions to avoid regenerating for similar pages
 const seoSuggestionsCache = new Map<string, { suggestions: string[], timestamp: number }>();
+
+/**
+ * Analyze content intent and user journey stage based on page content and business context
+ */
+function analyzeContentIntent(pageData: any, siteOverview?: any): {
+  intentType: string;
+  journeyStage: string;
+  businessRelevance: string;
+  conversionOpportunities: string[];
+} {
+  const title = pageData.title?.toLowerCase() || '';
+  const content = pageData.paragraphs?.join(' ').toLowerCase() || '';
+  const headings = pageData.headings?.map((h: any) => h.text.toLowerCase()).join(' ') || '';
+  const fullContent = `${title} ${content} ${headings}`;
+  
+  // Determine content intent
+  let intentType = 'informational';
+  if (/\b(buy|shop|order|purchase|pricing|cost|price|quote|estimate)\b/.test(fullContent)) {
+    intentType = 'transactional';
+  } else if (/\b(vs|versus|compare|comparison|best|top|review|alternative|option)\b/.test(fullContent)) {
+    intentType = 'comparison';
+  } else if (/\b(how|what|why|when|where|guide|tutorial|tips|steps|process)\b/.test(fullContent)) {
+    intentType = 'educational';
+  } else if (/\b(contact|about|services|team|company|location|address|phone)\b/.test(fullContent)) {
+    intentType = 'navigational';
+  }
+  
+  // Determine user journey stage
+  let journeyStage = 'awareness';
+  if (/\b(contact|quote|estimate|consultation|demo|trial|signup|register|book|schedule)\b/.test(fullContent)) {
+    journeyStage = 'decision';
+  } else if (/\b(features|benefits|pricing|plans|services|solutions|compare|vs)\b/.test(fullContent)) {
+    journeyStage = 'consideration';
+  } else if (/\b(support|help|faq|documentation|guide|troubleshoot|issue|problem)\b/.test(fullContent)) {
+    journeyStage = 'retention';
+  }
+  
+  // Analyze business relevance
+  let businessRelevance = 'general';
+  if (siteOverview?.mainServices) {
+    const serviceKeywords = siteOverview.mainServices.join(' ').toLowerCase();
+    if (fullContent.includes(serviceKeywords) || serviceKeywords.split(' ').some((service: string) => fullContent.includes(service))) {
+      businessRelevance = 'core service';
+    }
+  }
+  
+  // Identify conversion opportunities based on content and business context
+  const conversionOpportunities = [];
+  if (intentType === 'educational' && journeyStage === 'awareness') {
+    conversionOpportunities.push('Add soft CTAs to guide to consideration stage');
+    conversionOpportunities.push('Include related service mentions');
+  }
+  if (intentType === 'comparison' && journeyStage === 'consideration') {
+    conversionOpportunities.push('Highlight unique value propositions');
+    conversionOpportunities.push('Add consultation or demo CTAs');
+  }
+  if (journeyStage === 'decision') {
+    conversionOpportunities.push('Strengthen trust signals and testimonials');
+    conversionOpportunities.push('Optimize primary conversion CTAs');
+  }
+  
+  return {
+    intentType,
+    journeyStage,
+    businessRelevance,
+    conversionOpportunities
+  };
+}
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 // Define interface for content duplication analysis results
@@ -241,6 +309,9 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
 
     const extractedKeywords = extractKeywords(pageContent);
     
+    // Analyze content intent and business alignment
+    const contentIntent = analyzeContentIntent(pageData, siteOverview);
+    
     // Use AI-generated business context from site overview analysis
     const businessContext = siteOverview ? {
       industry: siteOverview.industry,
@@ -298,14 +369,36 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .join('\n')}
     ` : '';
 
-    // Analyze CTA elements
+    // Analyze CTA elements with enhanced business context
     const ctaAnalysis = pageData.ctaElements && pageData.ctaElements.length > 0 ? `
-      Call-to-Action Elements (${pageData.ctaElements.length} found):
+      Call-to-Action Elements Analysis (${pageData.ctaElements.length} found):
       ${pageData.ctaElements.map((cta: any) => {
-        const isGeneric = ['click here', 'submit', 'go', 'more', 'continue', 'next'].some(generic => 
-          cta.text.toLowerCase().includes(generic)
-        );
-        return `- ${cta.type.toUpperCase()}: "${cta.text}" (${cta.position}) ${isGeneric ? '[Generic text]' : '[Good text]'}`;
+        let analysis = `- ${cta.type.toUpperCase()}: "${cta.text}" (${cta.position})`;
+        
+        if (cta.quality) {
+          const qualityScore = Object.values(cta.quality).filter(Boolean).length;
+          const qualityIndicators = [];
+          if (cta.quality.hasActionVerb) qualityIndicators.push('action verb');
+          if (cta.quality.hasUrgency) qualityIndicators.push('urgency');
+          if (cta.quality.hasBenefit) qualityIndicators.push('benefit');
+          if (cta.quality.isSpecific) qualityIndicators.push('specific');
+          if (cta.quality.hasPersonalization) qualityIndicators.push('personalized');
+          
+          analysis += ` [Quality: ${qualityScore}/5${qualityIndicators.length ? ' - ' + qualityIndicators.join(', ') : ''}]`;
+        }
+        
+        if (cta.prominence) {
+          const prominenceIndicators = [];
+          if (cta.prominence.hasCtaClass) prominenceIndicators.push('CTA styling');
+          if (cta.prominence.isVisuallyProminent) prominenceIndicators.push('visual prominence');
+          if (cta.prominence.isInProminentSection) prominenceIndicators.push('strategic placement');
+          
+          if (prominenceIndicators.length > 0) {
+            analysis += ` [Prominence: ${prominenceIndicators.join(', ')}]`;
+          }
+        }
+        
+        return analysis;
       }).join('\n')}
     ` : 'Call-to-Action Elements: None found';
 
@@ -322,7 +415,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     // Build a more focused prompt
     const seoIssuesList = pageData.issues.map((issue: any) => `${issue.title} (${issue.severity})`).join(', ') || 'No major issues found';
     
-    const prompt = `You are an SEO expert. Analyze this webpage and provide 8-12 specific, actionable SEO improvement suggestions.
+    const prompt = `You are an SEO expert with expertise in conversion optimization and business strategy. Analyze this webpage and provide 8-12 specific, actionable SEO improvement suggestions based on the business context.
 
 WEBPAGE ANALYSIS:
 URL: ${url}
@@ -338,6 +431,12 @@ CONTENT OVERVIEW:
 - Internal Links: ${pageData.internalLinks?.length || 0} found
 - CTA Elements: ${pageData.ctaElements?.length || 0} found
 
+${ctaAnalysis}
+
+${paragraphAnalysis}
+
+${internalLinkingOpportunities}
+
 DETECTED ISSUES:
 ${seoIssuesList}
 
@@ -348,6 +447,12 @@ BUSINESS CONTEXT:
 - Target Audience: ${siteOverview.targetAudience}
 - Main Services: ${siteOverview.mainServices.join(', ') || 'General'}
 ${siteOverview.location ? `- Location: ${siteOverview.location}` : ''}
+${additionalInfo ? `- Additional Context: ${additionalInfo}` : ''}
+
+CONTENT STRATEGY ANALYSIS:
+- Content Intent: ${contentIntent.intentType} (${contentIntent.businessRelevance})
+- User Journey Stage: ${contentIntent.journeyStage}
+- Conversion Opportunities: ${contentIntent.conversionOpportunities.join(', ') || 'None identified'}
 ` : ''}
 
 CONTENT SAMPLE:
@@ -355,20 +460,27 @@ ${pageData.paragraphs && pageData.paragraphs.length > 0 ?
   pageData.paragraphs.slice(0, 3).join(' ').substring(0, 1000) + (pageData.paragraphs.slice(0, 3).join(' ').length > 1000 ? '...' : '') : 'No content available'}
 
 TASK:
-Provide specific, actionable SEO improvements. Include:
-1. Title optimization (exact character counts and suggestions)
-2. Meta description improvements (with character counts)
-3. Content structure recommendations
-4. Internal linking opportunities with specific anchor text
-5. Image optimization suggestions
-6. Call-to-action improvements
-7. Content gap analysis and additional topics to cover
-8. Keyword targeting recommendations
+Provide specific, actionable SEO improvements that align with the business goals and target audience. Focus on:
 
-Respond in JSON format with actionable suggestions:
+1. **Title & Meta Optimization**: Industry-specific keywords, local SEO (if applicable), character count optimization
+2. **Content Strategy**: Business-relevant topics, customer pain points, service/product focused content
+3. **CTA Optimization**: Conversion-focused improvements based on business type and target audience
+4. **Semantic SEO**: Related keywords, topic clusters, user intent matching
+5. **Technical SEO**: Image optimization, internal linking, page structure
+6. **Local SEO**: Location-based optimization (if applicable)
+7. **User Experience**: Content structure, readability, engagement elements
+8. **Competitive Advantage**: Unique value proposition, differentiators
+
+For CTA improvements specifically:
+- Analyze current CTA effectiveness based on quality metrics provided
+- Suggest improvements for action verbs, urgency, benefits, and personalization
+- Recommend strategic placement and design enhancements
+- Align CTA messaging with business goals and target audience needs
+
+Respond in JSON format with highly specific, actionable suggestions:
 {"suggestions": ["specific suggestion 1", "specific suggestion 2", ...]}
 
-Make suggestions SPECIFIC and ACTIONABLE, not generic advice.`;
+Make every suggestion SPECIFIC, ACTIONABLE, and BUSINESS-FOCUSED. Include exact character counts, specific keywords, concrete examples, and measurable improvements.`;
     
     console.log('SEO Suggestions Prompt:', prompt.substring(0, 500) + '...')
     console.log(`Generating SEO suggestions for: ${url}`);
