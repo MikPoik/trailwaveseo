@@ -20,49 +20,44 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   businessRelevance: string;
   conversionOpportunities: string[];
 } {
-  const title = pageData.title?.toLowerCase() || '';
-  const content = pageData.paragraphs?.join(' ').toLowerCase() || '';
-  const headings = pageData.headings?.map((h: any) => h.text.toLowerCase()).join(' ') || '';
-  const fullContent = `${title} ${content} ${headings}`;
+  // Use basic content structure analysis instead of hardcoded language patterns
+  const contentLength = pageData.paragraphs?.join(' ').length || 0;
+  const hasLongContent = contentLength > 2000;
+  const hasMultipleHeadings = pageData.headings?.length > 3;
+  const hasCtaElements = pageData.ctaElements?.length > 0;
+  const hasFormElements = pageData.ctaElements?.some((cta: any) => cta.type === 'form') || false;
   
-  // Determine content intent
+  // Determine content intent based on structure and business context
   let intentType = 'informational';
-  if (/\b(buy|shop|order|purchase|pricing|cost|price|quote|estimate)\b/.test(fullContent)) {
+  if (hasFormElements || hasCtaElements) {
     intentType = 'transactional';
-  } else if (/\b(vs|versus|compare|comparison|best|top|review|alternative|option)\b/.test(fullContent)) {
-    intentType = 'comparison';
-  } else if (/\b(how|what|why|when|where|guide|tutorial|tips|steps|process)\b/.test(fullContent)) {
+  } else if (hasLongContent && hasMultipleHeadings) {
     intentType = 'educational';
-  } else if (/\b(contact|about|services|team|company|location|address|phone)\b/.test(fullContent)) {
+  } else if (siteOverview?.businessType && pageData.url?.includes('contact')) {
     intentType = 'navigational';
   }
   
-  // Determine user journey stage
+  // Determine user journey stage based on page structure
   let journeyStage = 'awareness';
-  if (/\b(contact|quote|estimate|consultation|demo|trial|signup|register|book|schedule)\b/.test(fullContent)) {
+  if (hasFormElements || pageData.url?.includes('contact')) {
     journeyStage = 'decision';
-  } else if (/\b(features|benefits|pricing|plans|services|solutions|compare|vs)\b/.test(fullContent)) {
+  } else if (hasCtaElements && siteOverview?.mainServices?.length > 0) {
     journeyStage = 'consideration';
-  } else if (/\b(support|help|faq|documentation|guide|troubleshoot|issue|problem)\b/.test(fullContent)) {
-    journeyStage = 'retention';
   }
   
-  // Analyze business relevance
+  // Analyze business relevance using site overview data
   let businessRelevance = 'general';
-  if (siteOverview?.mainServices) {
-    const serviceKeywords = siteOverview.mainServices.join(' ').toLowerCase();
-    if (fullContent.includes(serviceKeywords) || serviceKeywords.split(' ').some((service: string) => fullContent.includes(service))) {
-      businessRelevance = 'core service';
-    }
+  if (siteOverview?.mainServices?.length > 0) {
+    businessRelevance = 'core service';
   }
   
-  // Identify conversion opportunities based on content and business context
+  // Identify conversion opportunities based on content structure and business context
   const conversionOpportunities = [];
   if (intentType === 'educational' && journeyStage === 'awareness') {
     conversionOpportunities.push('Add soft CTAs to guide to consideration stage');
     conversionOpportunities.push('Include related service mentions');
   }
-  if (intentType === 'comparison' && journeyStage === 'consideration') {
+  if (hasCtaElements && journeyStage === 'consideration') {
     conversionOpportunities.push('Highlight unique value propositions');
     conversionOpportunities.push('Add consultation or demo CTAs');
   }
@@ -277,16 +272,15 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       return cached.suggestions;
     }
 
-    // Simple keyword extraction for content context (no programmatic business detection)
+    // Simple keyword extraction for content context (language-agnostic)
     const extractKeywords = (text: string): string[] => {
       if (!text) return [];
       
-      const stopWords = new Set(['this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'more', 'very', 'what', 'know', 'just', 'first', 'into', 'over', 'think', 'also', 'back', 'after', 'work', 'well', 'want', 'because', 'good', 'water', 'through', 'right', 'where', 'come', 'could', 'would', 'should', 'about', 'make', 'than', 'only', 'other', 'many', 'some', 'like', 'when', 'here', 'them', 'your', 'there']);
-      
+      // Extract words without language-specific filtering
       const words = text.toLowerCase()
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter(word => word.length > 3 && !stopWords.has(word));
+        .filter(word => word.length > 3); // Only filter by length
 
       const wordFreq = words.reduce((acc, word) => {
         acc[word] = (acc[word] || 0) + 1;
@@ -336,13 +330,12 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Internal Links (${pageData.internalLinks.length} found):
       ${pageData.internalLinks.slice(0, 5).map(link => {
         const linkText = link.text || 'No anchor text';
-        const isGeneric = ['click here', 'read more', 'learn more', 'here', 'this', 'link', 'more info'].some(generic => 
-          linkText.toLowerCase().includes(generic)
-        );
         const hasKeywords = extractedKeywords.some(keyword => 
           linkText.toLowerCase().includes(keyword.toLowerCase())
         );
-        return `- "${linkText}" (${isGeneric ? 'Generic' : hasKeywords ? 'Good' : 'Neutral'})`;
+        const linkLength = linkText.length;
+        const quality = hasKeywords ? 'Keyword-rich' : linkLength > 50 ? 'Descriptive' : linkLength < 10 ? 'Short' : 'Neutral';
+        return `- "${linkText}" (${quality})`;
       }).join('\n')}${pageData.internalLinks.length > 5 ? `\n  +${pageData.internalLinks.length - 5} more links` : ''}
     ` : '';
 
