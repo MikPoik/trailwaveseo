@@ -393,32 +393,60 @@ Make suggestions SPECIFIC and ACTIONABLE, not generic advice.`;
       return [];
     }
 
-    console.log(`OpenAI response for ${url}:`, content.substring(0, 200) + '...');
+    console.log(`OpenAI response for ${url}:`, content.substring(0, 500) + '...');
 
-    // Parse the JSON response
+    // Parse the JSON response with better error handling
     let result;
     try {
       result = JSON.parse(content);
     } catch (parseError) {
       console.error(`Failed to parse OpenAI response for ${url}:`, parseError);
       console.error('Raw response:', content);
+      
+      // Try to extract suggestions from malformed JSON
+      try {
+        // Look for suggestions array in the content
+        const suggestionsMatch = content.match(/["']suggestions["']\s*:\s*\[(.*?)\]/s);
+        if (suggestionsMatch) {
+          const suggestionsStr = '[' + suggestionsMatch[1] + ']';
+          const extractedSuggestions = JSON.parse(suggestionsStr);
+          console.log(`Extracted ${extractedSuggestions.length} suggestions from malformed JSON`);
+          return extractedSuggestions.filter(s => typeof s === 'string' && s.trim());
+        }
+      } catch (extractError) {
+        console.error('Failed to extract suggestions from malformed response');
+      }
+      
       return [];
     }
 
-    // Ensure we have an array of suggestions
+    // Ensure we have an array of suggestions with better validation
     let suggestions: string[] = [];
-    if (Array.isArray(result.suggestions)) {
-      suggestions = result.suggestions;
-    } else if (result.suggestions) {
-      suggestions = [result.suggestions];
-    } else if (Array.isArray(result)) {
-      suggestions = result;
+    
+    if (result && typeof result === 'object') {
+      if (Array.isArray(result.suggestions)) {
+        suggestions = result.suggestions.filter(s => typeof s === 'string' && s.trim());
+      } else if (typeof result.suggestions === 'string') {
+        suggestions = [result.suggestions];
+      } else if (Array.isArray(result)) {
+        suggestions = result.filter(s => typeof s === 'string' && s.trim());
+      } else {
+        console.error(`Unexpected response format for ${url}:`, result);
+        console.error('Expected format: {"suggestions": ["suggestion1", "suggestion2", ...]}');
+        return [];
+      }
     } else {
-      console.error(`Unexpected response format for ${url}:`, result);
+      console.error(`Invalid response object for ${url}:`, result);
       return [];
     }
 
-    console.log(`Generated ${suggestions.length} suggestions for ${url}`);
+    // Validate suggestions
+    if (!Array.isArray(suggestions) || suggestions.length === 0) {
+      console.error(`No valid suggestions found for ${url}. Response:`, result);
+      return [];
+    }
+
+    console.log(`Generated ${suggestions.length} valid suggestions for ${url}`);
 
     // Cache successful results
     if (suggestions.length > 0) {

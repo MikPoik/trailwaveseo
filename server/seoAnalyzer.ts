@@ -243,14 +243,24 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
               description: issue.description
             })),
             paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
-            internalLinks: page.internalLinks
+            internalLinks: page.internalLinks,
+            ctaElements: page.ctaElements
           };
 
           try {
+            console.log(`Generating suggestions for page: ${page.url}`);
             const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
-            page.suggestions = suggestions || [];
+            
+            if (Array.isArray(suggestions) && suggestions.length > 0) {
+              page.suggestions = suggestions;
+              console.log(`Successfully generated ${suggestions.length} suggestions for ${page.url}`);
+            } else {
+              console.warn(`No suggestions generated for ${page.url}, using empty array`);
+              page.suggestions = [];
+            }
           } catch (error) {
             console.error(`Error generating suggestions for ${page.url}:`, error);
+            console.error('Error details:', error instanceof Error ? error.message : String(error));
             page.suggestions = [];
           }
         }
