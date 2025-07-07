@@ -1002,11 +1002,12 @@ function calculateMetrics(pages: any[]) {
   let warnings = 0;
   let criticalIssues = 0;
 
-  let titleOptimization = 0;
-  let descriptionOptimization = 0;
-  let headingsOptimization = 0;
-  let imagesOptimization = 0;
-  let linksOptimization = 0;
+  // Track optimization scores per page for accurate percentage calculation
+  let titleOptimizedPages = 0;
+  let descriptionOptimizedPages = 0;
+  let headingsOptimizedPages = 0;
+  let imagesOptimizedPages = 0;
+  let linksOptimizedPages = 0;
 
   // Analyze all pages
   pages.forEach(page => {
@@ -1019,72 +1020,106 @@ function calculateMetrics(pages: any[]) {
       } else if (issue.severity === 'info') {
         goodPractices++;
       }
-
-      // Optimize category-specific metrics
-      switch (issue.category) {
-        case 'title':
-          titleOptimization -= (issue.severity === 'critical' ? 25 : 10);
-          break;
-        case 'meta-description':
-          descriptionOptimization -= (issue.severity === 'critical' ? 25 : 10);
-          break;
-        case 'headings':
-          headingsOptimization -= (issue.severity === 'critical' ? 25 : 10);
-          break;
-        case 'images':
-          imagesOptimization -= (issue.severity === 'critical' ? 25 : 10);
-          break;
-        case 'links':
-          linksOptimization -= (issue.severity === 'critical' ? 25 : 10);
-          break;
-      }
     });
 
-    // Award points for good practices
+    // Check if page meets optimization criteria for each category
+    
+    // Title optimization check
+    let titleOptimized = false;
     if (page.title && page.title.length >= 10 && page.title.length <= 60) {
-      titleOptimization += 20;
+      titleOptimized = true;
       goodPractices++;
     }
+    // Check for title-related critical issues
+    const titleIssues = page.issues.filter((issue: SeoIssue) => 
+      issue.category === 'title' && issue.severity === 'critical'
+    );
+    if (titleIssues.length > 0) {
+      titleOptimized = false;
+    }
+    if (titleOptimized) titleOptimizedPages++;
 
+    // Meta description optimization check
+    let descriptionOptimized = false;
     if (page.metaDescription && page.metaDescription.length >= 50 && page.metaDescription.length <= 160) {
-      descriptionOptimization += 20;
+      descriptionOptimized = true;
       goodPractices++;
     }
+    // Check for meta description critical issues
+    const descriptionIssues = page.issues.filter((issue: SeoIssue) => 
+      issue.category === 'meta-description' && issue.severity === 'critical'
+    );
+    if (descriptionIssues.length > 0) {
+      descriptionOptimized = false;
+    }
+    if (descriptionOptimized) descriptionOptimizedPages++;
 
+    // Headings optimization check
+    let headingsOptimized = false;
     if (page.headings.length > 0 && page.headings.some(h => h.level === 1)) {
-      headingsOptimization += 20;
+      headingsOptimized = true;
       goodPractices++;
     }
+    // Check for headings critical issues
+    const headingsIssues = page.issues.filter((issue: SeoIssue) => 
+      issue.category === 'headings' && issue.severity === 'critical'
+    );
+    if (headingsIssues.length > 0) {
+      headingsOptimized = false;
+    }
+    if (headingsOptimized) headingsOptimizedPages++;
 
+    // Images optimization check
+    let imagesOptimized = false;
     if (page.images.length > 0 && page.images.every(img => img.alt)) {
-      imagesOptimization += 20;
+      imagesOptimized = true;
       goodPractices++;
+    } else if (page.images.length === 0) {
+      // If no images, consider it optimized (no alt text issues)
+      imagesOptimized = true;
     }
+    // Check for images critical issues
+    const imagesIssues = page.issues.filter((issue: SeoIssue) => 
+      issue.category === 'images' && issue.severity === 'critical'
+    );
+    if (imagesIssues.length > 0) {
+      imagesOptimized = false;
+    }
+    if (imagesOptimized) imagesOptimizedPages++;
 
+    // Links optimization check
+    let linksOptimized = false;
     if (page.internalLinks && page.internalLinks.length >= 3) {
-      linksOptimization += 15;
-      goodPractices++;
-    }
-
-    if (page.internalLinks && page.internalLinks.length > 0) {
       const genericTexts = ['click here', 'read more', 'learn more', 'here', 'this', 'link'];
       const hasGoodAnchorText = page.internalLinks.every(link => 
         !genericTexts.some(generic => link.text.toLowerCase().includes(generic))
       );
       if (hasGoodAnchorText) {
-        linksOptimization += 10;
+        linksOptimized = true;
         goodPractices++;
       }
+    } else if (!page.internalLinks || page.internalLinks.length === 0) {
+      // If no internal links are found, don't penalize (especially for single-page sites)
+      // But also don't consider it optimized
+      linksOptimized = false;
     }
+    // Check for links critical issues
+    const linksIssues = page.issues.filter((issue: SeoIssue) => 
+      issue.category === 'links' && issue.severity === 'critical'
+    );
+    if (linksIssues.length > 0) {
+      linksOptimized = false;
+    }
+    if (linksOptimized) linksOptimizedPages++;
   });
 
-  // Normalize metrics to 0-100 scale
+  // Calculate optimization percentages based on how many pages meet the criteria
   const pageCount = Math.max(1, pages.length);
-  titleOptimization = Math.max(0, Math.min(100, 50 + (titleOptimization / pageCount)));
-  descriptionOptimization = Math.max(0, Math.min(100, 50 + (descriptionOptimization / pageCount)));
-  headingsOptimization = Math.max(0, Math.min(100, 50 + (headingsOptimization / pageCount)));
-  imagesOptimization = Math.max(0, Math.min(100, 50 + (imagesOptimization / pageCount)));
-  linksOptimization = Math.max(0, Math.min(100, 50 + (linksOptimization / pageCount)));
+  const titleOptimization = Math.round((titleOptimizedPages / pageCount) * 100);
+  const descriptionOptimization = Math.round((descriptionOptimizedPages / pageCount) * 100);
+  const headingsOptimization = Math.round((headingsOptimizedPages / pageCount) * 100);
+  const imagesOptimization = Math.round((imagesOptimizedPages / pageCount) * 100);
+  const linksOptimization = Math.round((linksOptimizedPages / pageCount) * 100);
 
   return {
     goodPractices,
