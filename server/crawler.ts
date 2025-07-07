@@ -101,10 +101,14 @@ export async function crawlWebsite(
   const baseUrlObj = new URL(normalizedStartUrl);
   const baseDomain = baseUrlObj.hostname;
   
+  // Always start from the root/homepage for better context
+  const rootUrl = `${baseUrlObj.protocol}//${baseDomain}`;
+  const normalizedRootUrl = normalizeUrl(rootUrl);
+  
   // Parse robots.txt to respect crawling rules
   const disallowedPaths = await parseRobotsTxt(baseDomain);
   
-  const discoveredUrls = new Set<string>([normalizedStartUrl]);
+  const discoveredUrls = new Set<string>([normalizedRootUrl]);
   const crawledUrls = new Set<string>();
   const processingSeoData = new Map<string, any>();
   
@@ -114,10 +118,16 @@ export async function crawlWebsite(
     priority: number;
   }
   
-  // Start with the initial URL at high priority
+  // Start with the root URL at highest priority
   const priorityQueue: QueueItem[] = [
-    { url: normalizedStartUrl, priority: 20 }
+    { url: normalizedRootUrl, priority: 25 }
   ];
+  
+  // If the original start URL is different from root, add it with high priority too
+  if (normalizedStartUrl !== normalizedRootUrl) {
+    discoveredUrls.add(normalizedStartUrl);
+    priorityQueue.push({ url: normalizedStartUrl, priority: 20 });
+  }
   
   // Function to crawl a single URL
   const crawlUrl = async (item: QueueItem): Promise<void> => {

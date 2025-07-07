@@ -126,6 +126,22 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Ensure we don't have duplicate URLs in the pages array
     pages = [...new Set(pages)];
 
+    // Always ensure homepage/root is analyzed first for better context
+    const rootUrl = `https://${domain}`;
+    const normalizedRootUrl = rootUrl.endsWith('/') ? rootUrl.slice(0, -1) : rootUrl;
+    
+    // Remove any existing homepage variants from the array
+    pages = pages.filter(page => {
+      const normalizedPage = page.endsWith('/') ? page.slice(0, -1) : page;
+      return normalizedPage !== normalizedRootUrl && 
+             normalizedPage !== `${normalizedRootUrl}/index.html` &&
+             normalizedPage !== `${normalizedRootUrl}/index.php` &&
+             normalizedPage !== `${normalizedRootUrl}/home`;
+    });
+    
+    // Add homepage at the beginning
+    pages.unshift(normalizedRootUrl);
+
     // Analyze pages in parallel with a concurrency limit
     const analyzedPages = [];
     const totalPages = pages.length;
