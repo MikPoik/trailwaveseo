@@ -29,14 +29,6 @@ export interface SeoIssue {
   description: string;
 }
 
-export interface CtaElement {
-  type: 'button' | 'link' | 'form';
-  text: string;
-  href?: string;
-  position: 'header' | 'content' | 'footer' | 'sidebar';
-  attributes?: Record<string, string>;
-}
-
 export interface PageAnalysis {
   url: string;
   pageName?: string;
@@ -46,7 +38,6 @@ export interface PageAnalysis {
   headings: Heading[];
   images: Image[];
   internalLinks?: InternalLink[];
-  ctaElements?: CtaElement[];
   canonical: string | null;
   robotsMeta: string | null;
   issues: SeoIssue[];

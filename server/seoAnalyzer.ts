@@ -244,8 +244,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
               description: issue.description
             })),
             paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
-            internalLinks: page.internalLinks,
-            ctaElements: page.ctaElements
+            internalLinks: page.internalLinks
           };
 
           try {
@@ -476,98 +475,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       }
     });
 
-    // Extract CTA elements (buttons, form submits, prominent links)
-    const ctaElements: Array<{
-      type: 'button' | 'link' | 'form';
-      text: string;
-      href?: string;
-      position: 'header' | 'content' | 'footer' | 'sidebar';
-      attributes?: Record<string, string>;
-    }> = [];
-
-    // Extract buttons
-    $('button, input[type="submit"], input[type="button"]').each((_, el) => {
-      const $el = $(el);
-      const text = $el.text().trim() || $el.attr('value') || $el.attr('aria-label') || '';
-      if (text) {
-        const position = $el.closest('header, nav').length ? 'header' : 
-                        $el.closest('footer').length ? 'footer' : 
-                        $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
-        
-        ctaElements.push({
-          type: 'button',
-          text,
-          position,
-          attributes: {
-            class: $el.attr('class') || '',
-            id: $el.attr('id') || ''
-          }
-        });
-      }
-    });
-
-    // Extract prominent links (likely CTAs) - basic structural detection only
-    $('a').each((_, el) => {
-      const $el = $(el);
-      const text = $el.text().trim();
-      const href = $el.attr('href');
-      
-      if (text && href) {
-        const classList = $el.attr('class') || '';
-        
-        // Basic structural CTA detection (language-agnostic)
-        const hasCtaClass = /\b(btn|button|cta|call-to-action|primary|secondary|action)\b/i.test(classList);
-        const isVisuallyProminent = /\b(large|big|prominent|hero|main|primary|featured|highlight)\b/i.test(classList) ||
-                                   $el.closest('.hero, .banner, .header, .main, .primary, .featured, .highlight, .cta-section').length > 0;
-        const isNavigation = $el.closest('nav, .navigation, .menu, .navbar, .breadcrumb').length > 0;
-        
-        // Simple detection: if it has CTA styling or is visually prominent and not navigation
-        const isLikelyCTA = (hasCtaClass || isVisuallyProminent) && !isNavigation;
-        
-        if (isLikelyCTA) {
-          const position = $el.closest('header, nav').length ? 'header' : 
-                          $el.closest('footer').length ? 'footer' : 
-                          $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
-          
-          ctaElements.push({
-            type: 'link',
-            text,
-            href,
-            position,
-            attributes: {
-              class: classList,
-              id: $el.attr('id') || '',
-              'aria-label': $el.attr('aria-label') || '',
-              title: $el.attr('title') || ''
-            }
-          });
-        }
-      }
-    });
-
-    // Extract forms as potential CTAs
-    $('form').each((_, el) => {
-      const $el = $(el);
-      const submitButton = $el.find('input[type="submit"], button[type="submit"], button:not([type])').first();
-      const submitText = submitButton.text().trim() || submitButton.attr('value') || 'Submit';
-      
-      if (submitText) {
-        const position = $el.closest('header, nav').length ? 'header' : 
-                        $el.closest('footer').length ? 'footer' : 
-                        $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
-        
-        ctaElements.push({
-          type: 'form',
-          text: submitText,
-          position,
-          attributes: {
-            action: $el.attr('action') || '',
-            method: $el.attr('method') || 'GET',
-            class: $el.attr('class') || ''
-          }
-        });
-      }
-    });
+    // CTA extraction removed as requested
 
     // Collect SEO issues
     const issues: SeoIssue[] = [];
@@ -674,15 +582,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
-    // CTA optimization opportunities
-    if (ctaElements.length === 0) {
-      issues.push({
-        category: 'conversion',
-        severity: 'info',
-        title: 'No Call-to-Action Elements Found',
-        description: 'Consider adding clear call-to-action buttons or links to improve user engagement and conversions.'
-      });
-    }
+    // CTA analysis removed as requested
 
     // Title and meta description optimization opportunities
     if (title && !title.includes('|') && !title.includes('-')) {
@@ -764,23 +664,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       }
     }
 
-    // CTA analysis issues
-    if (ctaElements.length === 0) {
-      issues.push({
-        category: 'links',
-        severity: 'warning',
-        title: 'No Call-to-Action Elements Found',
-        description: 'This page has no clear call-to-action elements (buttons, forms, or prominent links), which may hurt conversion rates.'
-      });
-    } else if (ctaElements.length > 5) {
-      // Only check for too many CTAs - let AI handle text quality analysis
-      issues.push({
-        category: 'links',
-        severity: 'info',
-        title: 'Too Many Call-to-Action Elements',
-        description: `This page has ${ctaElements.length} CTA elements, which might dilute user focus. Consider prioritizing the most important actions.`
-      });
-    }
+    // CTA analysis issues removed as requested
 
     // Get page name from URL for display
     const urlObj = new URL(url);
@@ -857,7 +741,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       headings,
       images,
       internalLinks: settings.analyzeLinkStructure ? internalLinks : undefined,
-      ctaElements,
       canonical,
       robotsMeta,
       paragraphs,

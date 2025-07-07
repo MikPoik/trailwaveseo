@@ -24,8 +24,8 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   const contentLength = pageData.paragraphs?.join(' ').length || 0;
   const hasLongContent = contentLength > 2000;
   const hasMultipleHeadings = pageData.headings?.length > 3;
-  const hasCtaElements = pageData.ctaElements?.length > 0;
-  const hasFormElements = pageData.ctaElements?.some((cta: any) => cta.type === 'form') || false;
+  const hasCtaElements = false; // CTA analysis disabled
+  const hasFormElements = false; // CTA analysis disabled
   
   // Determine content intent based on structure and business context
   let intentType = 'informational';
@@ -54,16 +54,16 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   // Identify conversion opportunities based on content structure and business context
   const conversionOpportunities = [];
   if (intentType === 'educational' && journeyStage === 'awareness') {
-    conversionOpportunities.push('Add soft CTAs to guide to consideration stage');
     conversionOpportunities.push('Include related service mentions');
+    conversionOpportunities.push('Add clear next steps for users');
   }
-  if (hasCtaElements && journeyStage === 'consideration') {
+  if (journeyStage === 'consideration') {
     conversionOpportunities.push('Highlight unique value propositions');
-    conversionOpportunities.push('Add consultation or demo CTAs');
+    conversionOpportunities.push('Provide detailed service information');
   }
   if (journeyStage === 'decision') {
     conversionOpportunities.push('Strengthen trust signals and testimonials');
-    conversionOpportunities.push('Optimize primary conversion CTAs');
+    conversionOpportunities.push('Provide clear contact information');
   }
   
   return {
@@ -362,29 +362,8 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .join('\n')}
     ` : '';
 
-    // Analyze CTA elements with enhanced business context
-    const ctaAnalysis = pageData.ctaElements && pageData.ctaElements.length > 0 ? `
-      Call-to-Action Elements Analysis (${pageData.ctaElements.length} found):
-      ${pageData.ctaElements.map((cta: any) => {
-        let analysis = `- ${cta.type.toUpperCase()}: "${cta.text}" (${cta.position})`;
-        
-        if (cta.prominence) {
-          const prominenceIndicators = [];
-          if (cta.prominence.hasCtaClass) prominenceIndicators.push('CTA styling');
-          if (cta.prominence.isVisuallyProminent) prominenceIndicators.push('visual prominence');
-          if (cta.prominence.isInProminentSection) prominenceIndicators.push('strategic placement');
-          
-          if (prominenceIndicators.length > 0) {
-            analysis += ` [Design: ${prominenceIndicators.join(', ')}]`;
-          }
-        }
-        
-        // Add text length and positioning context for AI to analyze in any language
-        analysis += ` [Text length: ${cta.text.length} chars]`;
-        
-        return analysis;
-      }).join('\n')}
-    ` : 'Call-to-Action Elements: None found';
+    // CTA analysis removed as requested
+    const ctaAnalysis = 'Call-to-Action Analysis: Disabled';
 
     // Analyze paragraph content quality
     const paragraphAnalysis = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
@@ -413,9 +392,7 @@ CONTENT OVERVIEW:
 - Paragraphs: ${pageData.paragraphs?.length || 0} found
 - Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text)
 - Internal Links: ${pageData.internalLinks?.length || 0} found
-- CTA Elements: ${pageData.ctaElements?.length || 0} found
-
-${ctaAnalysis}
+- CTA Elements: Analysis disabled
 
 ${paragraphAnalysis}
 
@@ -448,18 +425,18 @@ Provide specific, actionable SEO improvements that align with the business goals
 
 1. **Title & Meta Optimization**: Industry-specific keywords, local SEO (if applicable), character count optimization
 2. **Content Strategy**: Business-relevant topics, customer pain points, service/product focused content
-3. **CTA Optimization**: Conversion-focused improvements based on business type and target audience
+3. **Content Structure**: Improve content organization and readability
 4. **Semantic SEO**: Related keywords, topic clusters, user intent matching
 5. **Technical SEO**: Image optimization, internal linking, page structure
 6. **Local SEO**: Location-based optimization (if applicable)
 7. **User Experience**: Content structure, readability, engagement elements
 8. **Competitive Advantage**: Unique value proposition, differentiators
 
-For CTA improvements specifically:
-- Analyze current CTA effectiveness based on quality metrics provided
-- Suggest improvements for action verbs, urgency, benefits, and personalization
-- Recommend strategic placement and design enhancements
-- Align CTA messaging with business goals and target audience needs
+For content improvements specifically:
+- Analyze current content structure and organization
+- Suggest improvements for readability and user engagement
+- Recommend strategic content placement and flow
+- Align content messaging with business goals and target audience needs
 
 Respond in JSON format with highly specific, actionable suggestions:
 {"suggestions": ["specific suggestion 1", "specific suggestion 2", ...]}
