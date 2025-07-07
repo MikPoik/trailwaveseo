@@ -225,43 +225,55 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         const siteOverview = await analyzeSiteOverview(siteStructure, additionalInfo);
         console.log(`Business context detected - Industry: ${siteOverview.industry}, Type: ${siteOverview.businessType}, Target: ${siteOverview.targetAudience}`);
 
-        // Generate suggestions for each page with full site structure and business context
-        for (const page of analyzedPages) {
-          const pageData = {
-            url: page.url,
-            title: page.title,
-            metaDescription: page.metaDescription,
-            metaKeywords: page.metaKeywords,
-            headings: page.headings,
-            images: page.images.map(img => ({
-              src: img.src,
-              alt: img.alt
-            })),
-            issues: page.issues.map(issue => ({
-              category: issue.category,
-              severity: issue.severity,
-              title: issue.title,
-              description: issue.description
-            })),
-            paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
-            internalLinks: page.internalLinks
-          };
+        // Generate suggestions in batches to reduce API calls and improve efficiency
+        const batchSize = 3;
+        for (let i = 0; i < analyzedPages.length; i += batchSize) {
+          const batch = analyzedPages.slice(i, i + batchSize);
+          
+          // Process batch in parallel with delay between batches
+          const batchPromises = batch.map(async (page) => {
+            const pageData = {
+              url: page.url,
+              title: page.title,
+              metaDescription: page.metaDescription,
+              metaKeywords: page.metaKeywords,
+              headings: page.headings,
+              images: page.images.map(img => ({
+                src: img.src,
+                alt: img.alt
+              })),
+              issues: page.issues.map(issue => ({
+                category: issue.category,
+                severity: issue.severity,
+                title: issue.title,
+                description: issue.description
+              })),
+              paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
+              internalLinks: page.internalLinks
+            };
 
-          try {
-            console.log(`Generating suggestions for page: ${page.url}`);
-            const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
-            
-            if (Array.isArray(suggestions) && suggestions.length > 0) {
-              page.suggestions = suggestions;
-              console.log(`Successfully generated ${suggestions.length} suggestions for ${page.url}`);
-            } else {
-              console.warn(`No suggestions generated for ${page.url}, using empty array`);
+            try {
+              console.log(`Generating suggestions for page: ${page.url}`);
+              const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
+              
+              if (Array.isArray(suggestions) && suggestions.length > 0) {
+                page.suggestions = suggestions;
+                console.log(`Successfully generated ${suggestions.length} suggestions for ${page.url}`);
+              } else {
+                console.warn(`No suggestions generated for ${page.url}, using empty array`);
+                page.suggestions = [];
+              }
+            } catch (error) {
+              console.error(`Error generating suggestions for ${page.url}:`, error);
               page.suggestions = [];
             }
-          } catch (error) {
-            console.error(`Error generating suggestions for ${page.url}:`, error);
-            console.error('Error details:', error instanceof Error ? error.message : String(error));
-            page.suggestions = [];
+          });
+
+          await Promise.all(batchPromises);
+          
+          // Add delay between batches to avoid rate limits (except for last batch)
+          if (i + batchSize < analyzedPages.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
 

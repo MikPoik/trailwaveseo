@@ -73,7 +73,7 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
     conversionOpportunities
   };
 }
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
 // Define interface for content duplication analysis results
 export interface ContentDuplicationAnalysis {
@@ -267,10 +267,10 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       }))
       .digest('hex');
 
-    // Check cache first - but be less aggressive (skip if forceRefresh is true)
+    // Consistent cache checking approach
     if (!forceRefresh) {
       const cached = seoSuggestionsCache.get(contentFingerprint);
-      if (cached && Date.now() - cached.timestamp < (CACHE_DURATION / 4)) { // Reduce cache time to 6 hours
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
         console.log(`Using cached SEO suggestions for ${url}`);
         return cached.suggestions;
       }
@@ -381,73 +381,39 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       - Content readability: ${pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'}
     ` : 'Content Structure: No paragraph content found';
 
-    // Build a more focused prompt
+    // Build a focused, streamlined prompt
     const seoIssuesList = pageData.issues.map((issue: any) => `${issue.title} (${issue.severity})`).join(', ') || 'No major issues found';
     
-    const prompt = `You are an SEO expert with expertise in conversion optimization and business strategy. Analyze this webpage and provide 8-12 specific, actionable SEO improvement suggestions based on the business context.
+    const prompt = `Analyze this webpage and provide 8-10 specific SEO improvements.
 
-WEBPAGE ANALYSIS:
-URL: ${url}
-Title: "${pageData.title || 'MISSING'}" (${pageData.title?.length || 0} characters)
-Meta Description: "${pageData.metaDescription || 'MISSING'}" (${pageData.metaDescription?.length || 0} characters)
-H1 Heading: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
+PAGE: ${url}
+Title: "${pageData.title || 'MISSING'}" (${pageData.title?.length || 0} chars)
+Meta: "${pageData.metaDescription || 'MISSING'}" (${pageData.metaDescription?.length || 0} chars)
+H1: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
+Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.length || 0} paragraphs
+Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
+Links: ${pageData.internalLinks?.length || 0} internal
+Keywords: ${extractedKeywords.slice(0, 5).join(', ') || 'None found'}
 
-CONTENT OVERVIEW:
-- Content Keywords: ${extractedKeywords.slice(0, 8).join(', ') || 'No clear keywords found'}
-- Content Length: ~${pageContent.split(/\s+/).length} words
-- Paragraphs: ${pageData.paragraphs?.length || 0} found
-- Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt text)
-- Internal Links: ${pageData.internalLinks?.length || 0} found
-- CTA Elements: Analysis disabled
-
-${paragraphAnalysis}
-
-${internalLinkingOpportunities}
-
-DETECTED ISSUES:
-${seoIssuesList}
+ISSUES: ${seoIssuesList}
 
 ${siteOverview && siteOverview.industry !== 'Unknown' ? `
-BUSINESS CONTEXT:
-- Industry: ${siteOverview.industry}
-- Business Type: ${siteOverview.businessType}
-- Target Audience: ${siteOverview.targetAudience}
-- Main Services: ${siteOverview.mainServices.join(', ') || 'General'}
-${siteOverview.location ? `- Location: ${siteOverview.location}` : ''}
-${additionalInfo ? `- Additional Context: ${additionalInfo}` : ''}
-
-CONTENT STRATEGY ANALYSIS:
-- Content Intent: ${contentIntent.intentType} (${contentIntent.businessRelevance})
-- User Journey Stage: ${contentIntent.journeyStage}
-- Conversion Opportunities: ${contentIntent.conversionOpportunities.join(', ') || 'None identified'}
+BUSINESS: ${siteOverview.industry} | ${siteOverview.businessType} | Target: ${siteOverview.targetAudience}
+Services: ${siteOverview.mainServices.slice(0, 3).join(', ') || 'General'}${siteOverview.location ? ` | Location: ${siteOverview.location}` : ''}
 ` : ''}
 
-CONTENT SAMPLE:
-${pageData.paragraphs && pageData.paragraphs.length > 0 ? 
-  pageData.paragraphs.slice(0, 3).join(' ').substring(0, 1000) + (pageData.paragraphs.slice(0, 3).join(' ').length > 1000 ? '...' : '') : 'No content available'}
+${internalLinkingOpportunities ? `LINK OPPORTUNITIES: ${siteStructure?.allPages.length || 0} pages available for internal linking` : ''}
 
-TASK:
-Provide specific, actionable SEO improvements that align with the business goals and target audience. Focus on:
+CONTENT SAMPLE: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? pageData.paragraphs.slice(0, 2).join(' ').substring(0, 500) + '...' : 'No content'}
 
-1. **Title & Meta Optimization**: Industry-specific keywords, local SEO (if applicable), character count optimization
-2. **Content Strategy**: Business-relevant topics, customer pain points, service/product focused content
-3. **Content Structure**: Improve content organization and readability
-4. **Semantic SEO**: Related keywords, topic clusters, user intent matching
-5. **Technical SEO**: Image optimization, internal linking, page structure
-6. **Local SEO**: Location-based optimization (if applicable)
-7. **User Experience**: Content structure, readability, engagement elements
-8. **Competitive Advantage**: Unique value proposition, differentiators
+Provide specific, actionable improvements focusing on:
+- Title/meta optimization with exact character counts
+- Content structure and keyword integration
+- Technical SEO (images, internal links)
+- Business-relevant content suggestions
+- Local SEO if location-based
 
-For content improvements specifically:
-- Analyze current content structure and organization
-- Suggest improvements for readability and user engagement
-- Recommend strategic content placement and flow
-- Align content messaging with business goals and target audience needs
-
-Respond in JSON format with highly specific, actionable suggestions:
-{"suggestions": ["specific suggestion 1", "specific suggestion 2", ...]}
-
-Make every suggestion SPECIFIC, ACTIONABLE, and BUSINESS-FOCUSED. Include exact character counts, specific keywords, concrete examples, and measurable improvements.`;
+Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
     
     console.log('SEO Suggestions Prompt:', prompt.substring(0, 500) + '...')
     console.log(`Generating SEO suggestions for: ${url}`);
@@ -474,54 +440,24 @@ Make every suggestion SPECIFIC, ACTIONABLE, and BUSINESS-FOCUSED. Include exact 
 
     console.log(`OpenAI response for ${url}:`, content.substring(0, 500) + '...');
 
-    // Parse the JSON response with better error handling
-    let result;
-    try {
-      result = JSON.parse(content);
-    } catch (parseError) {
-      console.error(`Failed to parse OpenAI response for ${url}:`, parseError);
-      console.error('Raw response:', content);
-      
-      // Try to extract suggestions from malformed JSON
-      try {
-        // Look for suggestions array in the content
-        const suggestionsMatch = content.match(/["']suggestions["']\s*:\s*\[(.*?)\]/s);
-        if (suggestionsMatch) {
-          const suggestionsStr = '[' + suggestionsMatch[1] + ']';
-          const extractedSuggestions = JSON.parse(suggestionsStr);
-          console.log(`Extracted ${extractedSuggestions.length} suggestions from malformed JSON`);
-          return extractedSuggestions.filter(s => typeof s === 'string' && s.trim());
-        }
-      } catch (extractError) {
-        console.error('Failed to extract suggestions from malformed response');
-      }
-      
-      return [];
-    }
-
-    // Ensure we have an array of suggestions with better validation
+    // Simplified JSON parsing and validation
     let suggestions: string[] = [];
-    
-    if (result && typeof result === 'object') {
-      if (Array.isArray(result.suggestions)) {
-        suggestions = result.suggestions.filter(s => typeof s === 'string' && s.trim());
-      } else if (typeof result.suggestions === 'string') {
-        suggestions = [result.suggestions];
-      } else if (Array.isArray(result)) {
-        suggestions = result.filter(s => typeof s === 'string' && s.trim());
+    try {
+      const result = JSON.parse(content);
+      
+      if (result?.suggestions && Array.isArray(result.suggestions)) {
+        suggestions = result.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0);
       } else {
-        console.error(`Unexpected response format for ${url}:`, result);
-        console.error('Expected format: {"suggestions": ["suggestion1", "suggestion2", ...]}');
+        console.error(`Invalid response format for ${url}. Expected: {"suggestions": [...]}`);
         return [];
       }
-    } else {
-      console.error(`Invalid response object for ${url}:`, result);
+    } catch (parseError) {
+      console.error(`Failed to parse OpenAI response for ${url}:`, parseError);
       return [];
     }
 
-    // Validate suggestions
-    if (!Array.isArray(suggestions) || suggestions.length === 0) {
-      console.error(`No valid suggestions found for ${url}. Response:`, result);
+    if (suggestions.length === 0) {
+      console.warn(`No valid suggestions generated for ${url}`);
       return [];
     }
 
