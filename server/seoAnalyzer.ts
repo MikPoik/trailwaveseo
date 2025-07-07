@@ -1,3 +1,138 @@
+
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import { parseSitemap } from './sitemap';
+import { crawlWebsite } from './crawler';
+import { generateSeoSuggestions, generateBatchImageAltText, analyzeContentRepetition, analyzeSiteOverview } from './openai';
+import { storage } from './storage';
+import { EventEmitter } from 'events';
+import { Heading, Image, SeoIssue, SeoCategory, ContentRepetitionAnalysis } from '../client/src/lib/types';
+
+// Content quality analysis helper functions
+function calculateReadabilityScore(sentences: string[]): number {
+  if (sentences.length === 0) return 0;
+  
+  const totalWords = sentences.reduce((count, sentence) => {
+    return count + sentence.split(/\s+/).filter(word => word.length > 0).length;
+  }, 0);
+  
+  const totalSyllables = sentences.reduce((count, sentence) => {
+    const words = sentence.split(/\s+/).filter(word => word.length > 0);
+    return count + words.reduce((syllableCount, word) => {
+      return syllableCount + countSyllables(word);
+    }, 0);
+  }, 0);
+  
+  // Simplified Flesch Reading Ease Score
+  const avgWordsPerSentence = totalWords / sentences.length;
+  const avgSyllablesPerWord = totalSyllables / totalWords;
+  
+  const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
+  return Math.max(0, Math.min(100, score));
+}
+
+function countSyllables(word: string): number {
+  word = word.toLowerCase();
+  if (word.length <= 3) return 1;
+  
+  const vowels = 'aeiouy';
+  let syllableCount = 0;
+  let previousWasVowel = false;
+  
+  for (let i = 0; i < word.length; i++) {
+    const isVowel = vowels.includes(word[i]);
+    if (isVowel && !previousWasVowel) {
+      syllableCount++;
+    }
+    previousWasVowel = isVowel;
+  }
+  
+  // Adjust for silent 'e'
+  if (word.endsWith('e') && syllableCount > 1) {
+    syllableCount--;
+  }
+  
+  return Math.max(1, syllableCount);
+}
+
+function extractKeywordDensity(content: string): Array<{keyword: string, count: number, density: number}> {
+  const words = content.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 3);
+  
+  const totalWords = words.length;
+  const wordCount = new Map<string, number>();
+  
+  words.forEach(word => {
+    wordCount.set(word, (wordCount.get(word) || 0) + 1);
+  });
+  
+  return Array.from(wordCount.entries())
+    .map(([keyword, count]) => ({
+      keyword,
+      count,
+      density: (count / totalWords) * 100
+    }))
+    .filter(item => item.count >= 3) // Only keywords that appear at least 3 times
+    .sort((a, b) => b.density - a.density)
+    .slice(0, 20); // Top 20 keywords
+}
+
+function calculateContentDepth(paragraphs: string[], headings: Heading[]): number {
+  let score = 0;
+  
+  // Base score from content length
+  const totalWords = paragraphs.join(' ').split(/\s+/).length;
+  score += Math.min(50, totalWords / 20); // Max 50 points for word count
+  
+  // Points for heading structure
+  const h1Count = headings.filter(h => h.level === 1).length;
+  const h2Count = headings.filter(h => h.level === 2).length;
+  const h3Count = headings.filter(h => h.level === 3).length;
+  
+  score += Math.min(20, h2Count * 3); // Max 20 points for H2s
+  score += Math.min(15, h3Count * 2); // Max 15 points for H3s
+  score += h1Count === 1 ? 10 : 0; // Bonus for single H1
+  
+  // Points for paragraph variety
+  const avgParagraphLength = paragraphs.length > 0 ? 
+    totalWords / paragraphs.length : 0;
+  
+  if (avgParagraphLength > 20 && avgParagraphLength < 80) {
+    score += 15; // Good paragraph length variety
+  }
+  
+  return Math.min(100, score);
+}
+
+function extractSemanticKeywords(content: string): string[] {
+  const text = content.toLowerCase();
+  
+  // Extract multi-word phrases (2-3 words)
+  const words = text.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(word => word.length > 2);
+  const phrases = new Map<string, number>();
+  
+  // Extract 2-word phrases
+  for (let i = 0; i < words.length - 1; i++) {
+    const phrase = `${words[i]} ${words[i + 1]}`;
+    phrases.set(phrase, (phrases.get(phrase) || 0) + 1);
+  }
+  
+  // Extract 3-word phrases
+  for (let i = 0; i < words.length - 2; i++) {
+    const phrase = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
+    phrases.set(phrase, (phrases.get(phrase) || 0) + 1);
+  }
+  
+  return Array.from(phrases.entries())
+    .filter(([phrase, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([phrase]) => phrase);
+}
+
+
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { parseSitemap } from './sitemap';
@@ -454,40 +589,107 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
-    // Extract paragraph content for context analysis
+    // Enhanced content extraction with quality metrics
     const paragraphs: string[] = [];
+    const sentences: string[] = [];
     let totalContentLength = 0;
-    const maxTotalLength = 10000;
+    const maxTotalLength = 15000; // Increased for better analysis
     const maxParagraphLength = 1000;
 
+    // Extract all text content for comprehensive analysis
+    const allTextContent = $('body').clone()
+      .find('script, style, nav, header, footer, aside, .menu, .navigation')
+      .remove()
+      .end()
+      .text()
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Extract paragraphs with enhanced metadata
     $('p').each((_, el) => {
       if (totalContentLength >= maxTotalLength) {
-        return false; // Stop processing if we've reached the limit
+        return false;
       }
 
       let paragraphText = $(el).text().trim();
       if (paragraphText.length > 0) {
-        // Truncate paragraph if it's too long
+        // Extract sentences from paragraph
+        const paragraphSentences = paragraphText.match(/[^\.!?]+[\.!?]+/g) || [];
+        sentences.push(...paragraphSentences.map(s => s.trim()));
+
         if (paragraphText.length > maxParagraphLength) {
           paragraphText = paragraphText.substring(0, maxParagraphLength) + '...';
         }
 
-        // Check if adding this paragraph would exceed total limit
         if (totalContentLength + paragraphText.length <= maxTotalLength) {
           paragraphs.push(paragraphText);
           totalContentLength += paragraphText.length;
         } else {
-          // Add partial paragraph to reach the limit
           const remainingLength = maxTotalLength - totalContentLength;
           if (remainingLength > 0) {
             paragraphs.push(paragraphText.substring(0, remainingLength) + '...');
           }
-          return false; // Stop processing
+          return false;
         }
       }
     });
 
-    // CTA extraction removed as requested
+    // Calculate content quality metrics
+    const contentMetrics = {
+      wordCount: allTextContent.split(/\s+/).filter(word => word.length > 0).length,
+      characterCount: allTextContent.length,
+      paragraphCount: paragraphs.length,
+      sentenceCount: sentences.length,
+      averageWordsPerSentence: sentences.length > 0 ? 
+        Math.round(allTextContent.split(/\s+/).length / sentences.length) : 0,
+      averageWordsPerParagraph: paragraphs.length > 0 ? 
+        Math.round(allTextContent.split(/\s+/).length / paragraphs.length) : 0,
+      readabilityScore: calculateReadabilityScore(sentences),
+      keywordDensity: extractKeywordDensity(allTextContent),
+      contentDepthScore: calculateContentDepth(paragraphs, headings),
+      semanticKeywords: extractSemanticKeywords(allTextContent)
+    };
+
+    // Extract schema markup and technical SEO elements
+    const schemaMarkup = [];
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const schema = JSON.parse($(el).html() || '{}');
+        schemaMarkup.push(schema);
+      } catch (error) {
+        // Skip invalid JSON-LD
+      }
+    });
+
+    // Extract Open Graph and Twitter Card data
+    const openGraph = {
+      title: $('meta[property="og:title"]').attr('content') || null,
+      description: $('meta[property="og:description"]').attr('content') || null,
+      image: $('meta[property="og:image"]').attr('content') || null,
+      type: $('meta[property="og:type"]').attr('content') || null,
+      url: $('meta[property="og:url"]').attr('content') || null
+    };
+
+    const twitterCard = {
+      card: $('meta[name="twitter:card"]').attr('content') || null,
+      title: $('meta[name="twitter:title"]').attr('content') || null,
+      description: $('meta[name="twitter:description"]').attr('content') || null,
+      image: $('meta[name="twitter:image"]').attr('content') || null
+    };
+
+    // Extract viewport and mobile optimization
+    const viewport = $('meta[name="viewport"]').attr('content') || null;
+    const mobileOptimized = viewport && viewport.includes('width=device-width');
+
+    // Extract language and hreflang
+    const htmlLang = $('html').attr('lang') || null;
+    const hreflangLinks = [];
+    $('link[rel="alternate"][hreflang]').each((_, el) => {
+      hreflangLinks.push({
+        hreflang: $(el).attr('hreflang'),
+        href: $(el).attr('href')
+      });
+    });
 
     // Collect SEO issues
     const issues: SeoIssue[] = [];
@@ -583,14 +785,80 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
 
     // Additional comprehensive SEO checks to ensure we find improvement opportunities
     
-    // Content length analysis
-    const contentWordCount = paragraphs.join(' ').split(/\s+/).filter(word => word.length > 0).length;
-    if (contentWordCount < 150) {
+    // Enhanced content quality analysis
+    if (contentMetrics.wordCount < 150) {
       issues.push({
         category: 'content',
         severity: 'warning',
         title: 'Content Too Short',
-        description: `Page content is only ${contentWordCount} words. Consider adding more valuable content to improve SEO performance.`
+        description: `Page content is only ${contentMetrics.wordCount} words. Consider adding more valuable content to improve SEO performance.`
+      });
+    } else if (contentMetrics.wordCount > 3000) {
+      issues.push({
+        category: 'content',
+        severity: 'info',
+        title: 'Very Long Content',
+        description: `Page has ${contentMetrics.wordCount} words. Consider breaking into multiple pages or adding a table of contents.`
+      });
+    }
+
+    // Readability analysis
+    if (contentMetrics.readabilityScore < 30) {
+      issues.push({
+        category: 'content',
+        severity: 'warning',
+        title: 'Content May Be Too Complex',
+        description: 'Content appears difficult to read. Consider shorter sentences and simpler language.'
+      });
+    }
+
+    // Paragraph structure analysis
+    if (contentMetrics.averageWordsPerParagraph > 100) {
+      issues.push({
+        category: 'content',
+        severity: 'info',
+        title: 'Long Paragraphs Detected',
+        description: 'Some paragraphs are very long. Consider breaking them into shorter, more digestible chunks.'
+      });
+    }
+
+    // Schema markup analysis
+    if (schemaMarkup.length === 0) {
+      issues.push({
+        category: 'structured-data',
+        severity: 'info',
+        title: 'Missing Structured Data',
+        description: 'No schema markup found. Adding structured data can improve search result appearance.'
+      });
+    }
+
+    // Open Graph analysis
+    if (!openGraph.title || !openGraph.description) {
+      issues.push({
+        category: 'social-media',
+        severity: 'warning',
+        title: 'Incomplete Open Graph Tags',
+        description: 'Missing Open Graph title or description. These are important for social media sharing.'
+      });
+    }
+
+    // Mobile optimization check
+    if (!mobileOptimized) {
+      issues.push({
+        category: 'mobile',
+        severity: 'critical',
+        title: 'Mobile Optimization Missing',
+        description: 'Page is missing proper viewport meta tag for mobile optimization.'
+      });
+    }
+
+    // Language declaration
+    if (!htmlLang) {
+      issues.push({
+        category: 'accessibility',
+        severity: 'warning',
+        title: 'Missing Language Declaration',
+        description: 'Page is missing lang attribute on HTML element. This is important for accessibility and SEO.'
       });
     }
 
@@ -757,7 +1025,16 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       robotsMeta,
       paragraphs,
       issues,
-      suggestions
+      suggestions,
+      // Enhanced content analysis data
+      contentMetrics,
+      schemaMarkup,
+      openGraph,
+      twitterCard,
+      viewport,
+      htmlLang,
+      hreflangLinks,
+      mobileOptimized
     };
   } catch (error) {
     console.error(`Error analyzing page ${url}:`, error);

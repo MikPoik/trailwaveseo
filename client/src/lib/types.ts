@@ -29,6 +29,34 @@ export interface SeoIssue {
   description: string;
 }
 
+export interface ContentMetrics {
+  wordCount: number;
+  characterCount: number;
+  paragraphCount: number;
+  sentenceCount: number;
+  averageWordsPerSentence: number;
+  averageWordsPerParagraph: number;
+  readabilityScore: number;
+  keywordDensity: Array<{keyword: string, count: number, density: number}>;
+  contentDepthScore: number;
+  semanticKeywords: string[];
+}
+
+export interface OpenGraphData {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  type: string | null;
+  url: string | null;
+}
+
+export interface TwitterCardData {
+  card: string | null;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+}
+
 export interface PageAnalysis {
   url: string;
   pageName?: string;
@@ -42,6 +70,14 @@ export interface PageAnalysis {
   robotsMeta: string | null;
   issues: SeoIssue[];
   suggestions: string[];
+  contentMetrics?: ContentMetrics;
+  schemaMarkup?: any[];
+  openGraph?: OpenGraphData;
+  twitterCard?: TwitterCardData;
+  viewport?: string | null;
+  htmlLang?: string | null;
+  hreflangLinks?: Array<{hreflang: string, href: string}>;
+  mobileOptimized?: boolean;
 }
 
 export interface WebsiteAnalysisMetrics {

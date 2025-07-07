@@ -381,10 +381,28 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       - Content readability: ${pageData.paragraphs.length > 8 ? 'Long-form content' : 'Short-form content'}
     ` : 'Content Structure: No paragraph content found';
 
-    // Build a focused, streamlined prompt
+    // Build enhanced prompt with content quality metrics
     const seoIssuesList = pageData.issues.map((issue: any) => `${issue.title} (${issue.severity})`).join(', ') || 'No major issues found';
     
-    const prompt = `Analyze this webpage and provide 8-10 specific SEO improvements.
+    const contentQuality = pageData.contentMetrics ? `
+CONTENT QUALITY:
+- Words: ${pageData.contentMetrics.wordCount}
+- Readability: ${pageData.contentMetrics.readabilityScore}/100
+- Avg words/sentence: ${pageData.contentMetrics.averageWordsPerSentence}
+- Content depth: ${pageData.contentMetrics.contentDepthScore}/100
+- Top keywords: ${pageData.contentMetrics.keywordDensity?.slice(0, 5).map(k => `${k.keyword}(${k.density.toFixed(1)}%)`).join(', ') || 'None'}
+- Semantic phrases: ${pageData.contentMetrics.semanticKeywords?.slice(0, 5).join(', ') || 'None'}
+` : '';
+
+    const technicalSeo = pageData.schemaMarkup && pageData.openGraph ? `
+TECHNICAL SEO:
+- Schema markup: ${pageData.schemaMarkup.length} items
+- Open Graph: ${pageData.openGraph.title ? 'Complete' : 'Incomplete'}
+- Mobile optimized: ${pageData.mobileOptimized ? 'Yes' : 'No'}
+- Language declared: ${pageData.htmlLang || 'Missing'}
+` : '';
+    
+    const prompt = `Analyze this webpage and provide 8-12 specific SEO improvements focused on content optimization.
 
 PAGE: ${url}
 Title: "${pageData.title || 'MISSING'}" (${pageData.title?.length || 0} chars)
@@ -394,7 +412,7 @@ Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.lengt
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
 Keywords: ${extractedKeywords.slice(0, 5).join(', ') || 'None found'}
-
+${contentQuality}${technicalSeo}
 ISSUES: ${seoIssuesList}
 
 ${siteOverview && siteOverview.industry !== 'Unknown' ? `
@@ -407,12 +425,15 @@ ${internalLinkingOpportunities ? `LINK OPPORTUNITIES: ${siteStructure?.allPages.
 CONTENT SAMPLE: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? pageData.paragraphs.slice(0, 2).join(' ').substring(0, 500) + '...' : 'No content'}
 
 Provide specific, actionable improvements focusing on:
+- Content quality optimization (readability, depth, semantic richness)
 - Title/meta optimization with exact character counts
 - Content structure and keyword integration
-- Technical SEO (images, internal links)
-- Business-relevant content suggestions
-- Local SEO if location-based
+- Semantic keyword opportunities and topic clustering
+- Technical SEO (schema, mobile, accessibility)
+- Internal linking with semantic relevance
+- Business-relevant content gaps and opportunities
 
+Include specific examples, character counts, and exact recommendations.
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
     
     console.log('SEO Suggestions Prompt:', prompt.substring(0, 500) + '...')
