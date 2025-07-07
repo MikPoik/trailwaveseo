@@ -245,6 +245,8 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
   mainServices: string[];
   location?: string;
 }, additionalInfo?: string): Promise<string[]> {
+  // Manual constant to force refresh of SEO suggestions cache
+  const forceRefresh = true;
   try {
     // If no OpenAI API key is set, return empty suggestions
     if (!process.env.OPENAI_API_KEY) {
@@ -265,11 +267,15 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       }))
       .digest('hex');
 
-    // Check cache first - but be less aggressive
-    const cached = seoSuggestionsCache.get(contentFingerprint);
-    if (cached && Date.now() - cached.timestamp < (CACHE_DURATION / 4)) { // Reduce cache time to 6 hours
-      console.log(`Using cached SEO suggestions for ${url}`);
-      return cached.suggestions;
+    // Check cache first - but be less aggressive (skip if forceRefresh is true)
+    if (!forceRefresh) {
+      const cached = seoSuggestionsCache.get(contentFingerprint);
+      if (cached && Date.now() - cached.timestamp < (CACHE_DURATION / 4)) { // Reduce cache time to 6 hours
+        console.log(`Using cached SEO suggestions for ${url}`);
+        return cached.suggestions;
+      }
+    } else {
+      console.log(`Force refresh enabled, skipping cache for ${url}`);
     }
 
     // Simple keyword extraction for content context (language-agnostic)
