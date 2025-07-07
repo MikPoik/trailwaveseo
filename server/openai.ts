@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import axios from "axios";
 import crypto from "crypto";
 
-// the newest OpenAI model is "gpt-4.1 which was released 2025. do not change this unless explicitly requested by the user
+// Using gpt-4o as the OpenAI model for better reliability
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Cache for storing generated alt text to avoid regenerating for the same images
@@ -185,7 +185,7 @@ Respond in JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o",
       messages: [
         { 
           role: "system", 
@@ -486,7 +486,7 @@ Make every suggestion SPECIFIC, ACTIONABLE, and BUSINESS-FOCUSED. Include exact 
     console.log(`Generating SEO suggestions for: ${url}`);
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o",
       messages: [
         { 
           role: "system", 
@@ -649,7 +649,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o",
       messages: [
         { 
           role: "system", 
@@ -838,7 +838,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content. Always respond in JSON format." },
         { role: "user", content: prompt }

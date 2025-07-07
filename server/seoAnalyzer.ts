@@ -507,13 +507,13 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                         $el.closest('footer').length ? 'footer' : 
                         $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
         
-        // Analyze button CTA quality
+        // Analyze button CTA quality (language-agnostic)
         const ctaQuality = {
-          hasActionVerb: /\b(get|buy|start|try|download|contact|book|subscribe|join|apply|request|claim|discover|learn|explore|submit|send|register|signup)\b/i.test(text),
-          hasUrgency: /\b(now|today|instant|immediate|limited|urgent|hurry|don't miss|last chance|while supplies last)\b/i.test(text),
-          hasBenefit: /\b(free|save|discount|guarantee|risk-free|money-back|bonus|special|exclusive|premium|best|top|proven)\b/i.test(text),
-          isSpecific: text.length > 6 && !['submit', 'button', 'click', 'go', 'ok'].includes(text.toLowerCase()),
-          hasPersonalization: /\b(your|you|my|me|our|we|custom|personal|tailored)\b/i.test(text)
+          hasActionVerb: text.length > 0, // Let AI determine in any language
+          hasUrgency: false, // Let AI determine in any language
+          hasBenefit: false, // Let AI determine in any language
+          isSpecific: text.length > 3 && text.trim() !== '',
+          hasPersonalization: false // Let AI determine in any language
         };
         
         const classList = $el.attr('class') || '';
@@ -551,14 +551,14 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         const parent = $el.parent();
         const parentClass = parent.attr('class') || '';
         
-        // Enhanced CTA detection patterns
-        const ctaClassPatterns = /\b(btn|button|cta|call-to-action|primary|secondary|link-button|action|hero-button|main-button|purchase|checkout|signup|register|trial|demo|quote|consultation|booking|reserve|apply|join|membership|subscribe|newsletter|download|start|begin|launch|explore|discover|view|see|watch|play|read-more|continue|next|proceed|submit|send|contact-us|get-in-touch|request|inquiry|more-info|learn-more|find-out|details|pricing|plans|services|solutions|products|about-us|testimonials|reviews|portfolio|gallery|blog|news|events|careers|jobs|support|help|faq|resources|tools|guides|tips|free|offer|deal|sale|discount|promo|special|limited|exclusive|urgent|now|today|instant|immediate|fast|quick|easy|simple|best|top|popular|recommended|featured|new|latest|updated|improved|enhanced|advanced|professional|expert|premium|quality|trusted|reliable|secure|safe|guarantee|warranty|risk-free|money-back|satisfaction|success|results|proven|tested|verified|certified|approved|accredited)\b/i;
+        // Universal CTA detection patterns (language-agnostic)
+        const ctaClassPatterns = /\b(btn|button|cta|call-to-action|primary|secondary|link-button|action|hero-button|main-button|purchase|checkout|signup|register|trial|demo|quote|consultation|booking|reserve|apply|join|membership|subscribe|newsletter|download|start|begin|launch|explore|discover|view|see|watch|play|read-more|continue|next|proceed|submit|send|contact|get-in-touch|request|inquiry|more-info|learn-more|find-out|details|pricing|plans|services|solutions|products|testimonials|reviews|portfolio|gallery|blog|news|events|careers|jobs|support|help|faq|resources|tools|guides|tips|free|offer|deal|sale|discount|promo|special|limited|exclusive|urgent|now|today|instant|immediate|fast|quick|easy|simple|best|top|popular|recommended|featured|new|latest|updated|improved|enhanced|advanced|professional|expert|premium|quality|trusted|reliable|secure|safe|guarantee|warranty|risk-free|money-back|satisfaction|success|results|proven|tested|verified|certified|approved|accredited)\b/i;
         
-        const ctaTextPatterns = /\b(buy|shop|order|purchase|checkout|pay|subscribe|sign up|register|join|get started|start now|begin|launch|try|trial|demo|free trial|test drive|explore|discover|learn more|find out|read more|see more|view details|get details|more info|contact|contact us|get in touch|call|phone|email|message|chat|talk|speak|book|schedule|reserve|apply|request|inquiry|quote|estimate|consultation|appointment|meeting|visit|tour|download|get|obtain|access|unlock|claim|redeem|save|offer|deal|sale|discount|promo|special|limited time|act now|hurry|urgent|don't miss|last chance|while supplies last|today only|instant|immediate|fast|quick|easy|simple|effortless|hassle-free|no obligation|risk-free|money back|guarantee|warranty|satisfaction|success|results|proven|testimonials|reviews|case studies|portfolio|gallery|blog|news|events|webinar|seminar|workshop|course|training|guide|tips|resources|tools|calculator|assessment|quiz|survey|form|submit|send|go|proceed|continue|next|step|phase|stage|level|upgrade|enhance|improve|optimize|boost|increase|maximize|minimize|reduce|eliminate|solve|fix|repair|restore|protect|secure|defend|prevent|avoid|stop|start|begin|create|build|design|develop|launch|implement|execute|achieve|reach|attain|accomplish|complete|finish|end|close|finalize)\b/i;
+        // Remove language-specific text patterns - focus on structural indicators
+        const hasCtaText = false; // Will be determined by other factors
         
         // Check for CTA indicators
         const hasCtaClass = ctaClassPatterns.test(classList) || ctaClassPatterns.test(parentClass);
-        const hasCtaText = ctaTextPatterns.test(text) || ctaTextPatterns.test(ariaLabel) || ctaTextPatterns.test(title);
         
         // Check for visual prominence indicators
         const isVisuallyProminent = /\b(large|big|prominent|hero|main|primary|featured|highlight|emphasis|bold|strong|bright|colorful|standout)\b/i.test(classList) ||
@@ -567,26 +567,33 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         // Check for positioning that suggests importance
         const isInProminentSection = $el.closest('header, .header, .hero, .banner, .main-content, .sidebar, .footer').length > 0;
         
-        // Check if link appears to be a navigation vs action-oriented
-        const isNavigation = $el.closest('nav, .navigation, .menu, .navbar').length > 0 && 
-                            !hasCtaText && 
-                            /\b(home|about|services|products|contact|blog|news|gallery|portfolio)\b/i.test(text);
+        // Check if link appears to be a navigation vs action-oriented (language-agnostic)
+        const isNavigation = $el.closest('nav, .navigation, .menu, .navbar, .breadcrumb').length > 0 && 
+                            !hasCtaClass && 
+                            !isVisuallyProminent;
         
-        // Determine if this is likely a CTA
-        const isLikelyCTA = (hasCtaClass || hasCtaText || isVisuallyProminent) && !isNavigation;
+        // Universal CTA detection: focus on structural and design patterns
+        const hasActionStyling = /\b(btn|button|cta|action|primary|secondary)\b/i.test(classList);
+        const hasStrongStyling = $el.css && (/bold|600|700|800|900/.test($el.css('font-weight') || '') || 
+                                              $el.css('background-color') !== 'rgba(0, 0, 0, 0)' ||
+                                              $el.css('border') !== 'none');
+        const hasCallToActionContext = $el.closest('.cta, .call-to-action, .contact, .signup, .register, .download, .purchase, .buy').length > 0;
+        
+        // Determine if this is likely a CTA based on structural patterns
+        const isLikelyCTA = (hasCtaClass || hasActionStyling || isVisuallyProminent || hasCallToActionContext) && !isNavigation;
         
         if (isLikelyCTA) {
           const position = $el.closest('header, nav').length ? 'header' : 
                           $el.closest('footer').length ? 'footer' : 
                           $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
           
-          // Analyze CTA quality
+          // Analyze CTA quality (language-agnostic approach)
           const ctaQuality = {
-            hasActionVerb: /\b(get|buy|start|try|download|contact|book|subscribe|join|apply|request|claim|discover|learn|explore)\b/i.test(text),
-            hasUrgency: /\b(now|today|instant|immediate|limited|urgent|hurry|don't miss|last chance|while supplies last)\b/i.test(text),
-            hasBenefit: /\b(free|save|discount|guarantee|risk-free|money-back|bonus|special|exclusive|premium|best|top|proven)\b/i.test(text),
-            isSpecific: text.length > 8 && !['click here', 'read more', 'learn more', 'see more', 'find out more'].includes(text.toLowerCase()),
-            hasPersonalization: /\b(your|you|my|me|our|we|custom|personal|tailored)\b/i.test(text)
+            hasActionVerb: text.length > 0, // Let AI determine action verbs in any language
+            hasUrgency: false, // Let AI determine urgency indicators in any language
+            hasBenefit: false, // Let AI determine benefit indicators in any language
+            isSpecific: text.length > 4 && text.trim() !== '',
+            hasPersonalization: false // Let AI determine personalization in any language
           };
           
           ctaElements.push({
@@ -623,13 +630,13 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                         $el.closest('footer').length ? 'footer' : 
                         $el.closest('aside, [class*="sidebar"]').length ? 'sidebar' : 'content';
         
-        // Analyze form CTA quality
+        // Analyze form CTA quality (language-agnostic)
         const ctaQuality = {
-          hasActionVerb: /\b(get|subscribe|join|register|signup|contact|request|apply|send|submit|book|schedule)\b/i.test(submitText),
-          hasUrgency: /\b(now|today|instant|immediate|limited|urgent|hurry|don't miss|last chance|while supplies last)\b/i.test(submitText),
-          hasBenefit: /\b(free|save|discount|guarantee|risk-free|money-back|bonus|special|exclusive|premium|newsletter|updates|info)\b/i.test(submitText),
-          isSpecific: submitText.length > 6 && submitText.toLowerCase() !== 'submit',
-          hasPersonalization: /\b(your|you|my|me|our|we|custom|personal|tailored)\b/i.test(submitText)
+          hasActionVerb: submitText.length > 0, // Let AI determine in any language
+          hasUrgency: false, // Let AI determine in any language
+          hasBenefit: false, // Let AI determine in any language
+          isSpecific: submitText.length > 3 && submitText.trim() !== '',
+          hasPersonalization: false // Let AI determine in any language
         };
         
         const formClass = $el.attr('class') || '';
