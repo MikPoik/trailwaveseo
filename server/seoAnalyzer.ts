@@ -127,19 +127,20 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     pages = [...new Set(pages)];
 
     // Always ensure homepage/root is analyzed first for better context
-    const rootUrl = `https://${domain}`;
+    const rootUrl = `https://${domain.toLowerCase()}`;
     const normalizedRootUrl = rootUrl.endsWith('/') ? rootUrl.slice(0, -1) : rootUrl;
     
-    // Remove any existing homepage variants from the array
+    // Remove any existing homepage variants from the array (case-insensitive)
     pages = pages.filter(page => {
-      const normalizedPage = page.endsWith('/') ? page.slice(0, -1) : page;
-      return normalizedPage !== normalizedRootUrl && 
-             normalizedPage !== `${normalizedRootUrl}/index.html` &&
-             normalizedPage !== `${normalizedRootUrl}/index.php` &&
-             normalizedPage !== `${normalizedRootUrl}/home`;
+      const normalizedPage = (page.endsWith('/') ? page.slice(0, -1) : page).toLowerCase();
+      const rootUrlLower = normalizedRootUrl.toLowerCase();
+      return normalizedPage !== rootUrlLower && 
+             normalizedPage !== `${rootUrlLower}/index.html` &&
+             normalizedPage !== `${rootUrlLower}/index.php` &&
+             normalizedPage !== `${rootUrlLower}/home`;
     });
     
-    // Add homepage at the beginning
+    // Add homepage at the beginning (using lowercase domain)
     pages.unshift(normalizedRootUrl);
 
     // Analyze pages in parallel with a concurrency limit
