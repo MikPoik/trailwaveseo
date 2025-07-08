@@ -427,34 +427,37 @@ ${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
 }).join('\n\n')}
 ` : 'PARAGRAPH CONTENT: No paragraph content available';
 
-    // Analyze CTA elements on the page
-    const ctaAnalysis = pageData.ctaElements && pageData.ctaElements.length > 0 ? `
-CTA ELEMENTS ANALYSIS:
-Total CTA elements found: ${pageData.ctaElements.length}
+    // Filter out CTA elements with empty text
+    const ctaElementsWithText = pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.text && cta.text.trim() !== '') : [];
 
-Buttons (${pageData.ctaElements.filter((cta: any) => cta.type === 'button').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'button').map((cta: any) => 
+    // Analyze CTA elements on the page
+    const ctaAnalysis = ctaElementsWithText && ctaElementsWithText.length > 0 ? `
+CTA ELEMENTS ANALYSIS:
+Total CTA elements found: ${ctaElementsWithText.length}
+
+Buttons (${ctaElementsWithText.filter((cta: any) => cta.type === 'button').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'button').map((cta: any) => 
   `- "${cta.text}" (${cta.element}, class: "${cta.attributes.class}", type: "${cta.attributes.type}")`
 ).join('\n') || '- No buttons found'}
 
-Input Buttons (${pageData.ctaElements.filter((cta: any) => cta.type === 'input_button').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'input_button').map((cta: any) => 
+Input Buttons (${ctaElementsWithText.filter((cta: any) => cta.type === 'input_button').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'input_button').map((cta: any) => 
   `- "${cta.text}" (${cta.element}, class: "${cta.attributes.class}", type: "${cta.attributes.type}")`
 ).join('\n') || '- No input buttons found'}
 
-Forms (${pageData.ctaElements.filter((cta: any) => cta.type === 'form').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'form').map((cta: any) => 
+Forms (${ctaElementsWithText.filter((cta: any) => cta.type === 'form').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'form').map((cta: any) => 
   `- ${cta.text} (method: "${cta.attributes.method}", action: "${cta.attributes.action}", class: "${cta.attributes.class}")`
 ).join('\n') || '- No forms found'}
 
-Button-like Links (${pageData.ctaElements.filter((cta: any) => cta.type === 'link_button').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'link_button').map((cta: any) => 
+Button-like Links (${ctaElementsWithText.filter((cta: any) => cta.type === 'link_button').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'link_button').map((cta: any) => 
   `- "${cta.text}" (href: "${cta.attributes.href}", class: "${cta.attributes.class}")`
 ).join('\n') || '- No button-like links found'}
 
 CTA Quality Assessment:
-- Average CTA text length: ${pageData.ctaElements.length > 0 ? Math.round(pageData.ctaElements.reduce((sum: number, cta: any) => sum + cta.text.length, 0) / pageData.ctaElements.length) : 0} characters
-- CTA placement distribution: ${pageData.ctaElements.length > 0 ? 'Available for analysis' : 'No CTAs to analyze'}
+- Average CTA text length: ${ctaElementsWithText.length > 0 ? Math.round(ctaElementsWithText.reduce((sum: number, cta: any) => sum + cta.text.length, 0) / ctaElementsWithText.length) : 0} characters
+- CTA placement distribution: ${ctaElementsWithText.length > 0 ? 'Available for analysis' : 'No CTAs to analyze'}
 ` : `
 CTA ELEMENTS ANALYSIS:
 - No CTA elements (buttons, forms, or button-like links) found on this page
@@ -475,7 +478,7 @@ Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.lengt
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
 Keywords: ${pageData.contentMetrics?.keywordDensity?.slice(0, 5).map(k => k.keyword).join(', ') || 'None'}
-CTAs: ${pageData.ctaElements ? pageData.ctaElements.length : 0} total (${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'button' || cta.type === 'input_button' || cta.type === 'link_button').length : 0} buttons, ${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'form').length : 0} forms)
+CTAs: ${ctaElementsWithText ? ctaElementsWithText.length : 0} total (${ctaElementsWithText ? ctaElementsWithText.filter((cta: any) => cta.type === 'button' || cta.type === 'input_button' || cta.type === 'link_button').length : 0} buttons, ${ctaElementsWithText ? ctaElementsWithText.filter((cta: any) => cta.type === 'form').length : 0} forms)
 HEADING STRUCTURE:
 ${contentQuality}${headingStructure}
 ISSUES: ${seoIssuesList}
