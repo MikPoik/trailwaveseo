@@ -728,10 +728,10 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          
          // Check if class contains button-related keywords
          const hasButtonClass = classes.includes('button') || 
-                               classes.includes('btn') || 
-                               classes.includes('sqs-block-button') ||
-                               classes.includes('wp-block-button') ||
-                               classes.includes('wp-element-button') ||
+                               //classes.includes('btn') || 
+                               //classes.includes('sqs-block-button') ||
+                               //classes.includes('wp-block-button') ||
+                               //classes.includes('wp-element-button') ||
                                role === 'button';
          
          if (hasButtonClass && linkText) {
