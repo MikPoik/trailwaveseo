@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { analyzeSite, cancelAnalysis } from "./seoAnalyzer";
 import { parseSitemap } from "./sitemap";
 import { crawlWebsite } from "./crawler";
-import { generateSeoSuggestions } from "./openai";
+import { generateSeoSuggestions, analyzeContentRepetition } from "./openai";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { EventEmitter } from "events";
