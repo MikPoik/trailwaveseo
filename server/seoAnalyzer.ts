@@ -409,7 +409,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
                 description: issue.description
               })),
               paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
-              internalLinks: page.internalLinks
+              internalLinks: page.internalLinks,
+              ctaElements: page.ctaElements
             };
 
             try {
