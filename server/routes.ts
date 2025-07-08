@@ -696,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const controller = new AbortController();
 
       // Reanalyze the specific page
-      const updatedPageAnalysis = await analyzePage(pageUrl, settings, controller.signal, false, analysis.pages, undefined);
+      const updatedPageAnalysis = await analyzePage(pageUrl, settings, controller.signal, false, analysis.pages);
 
       if (!updatedPageAnalysis) {
         return res.status(500).json({ error: "Failed to reanalyze page" });
