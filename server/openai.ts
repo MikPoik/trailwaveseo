@@ -404,7 +404,7 @@ CONTENT QUALITY:
     // Include up to 5 paragraphs for better context (max 1000 chars each)
     const paragraphContent = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
 PARAGRAPH CONTENT (for context):
-${pageData.paragraphs.slice(0, 5).map((paragraph: string, index: number) => {
+${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
   const truncatedParagraph = paragraph.length > 1000 ? paragraph.substring(0, 1000) + '...' : paragraph;
   return `Paragraph ${index + 1}: ${truncatedParagraph}`;
 }).join('\n\n')}

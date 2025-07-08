@@ -832,15 +832,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
-    // Open Graph analysis
-    if (!openGraph.title || !openGraph.description) {
-      issues.push({
-        category: 'social-media',
-        severity: 'warning',
-        title: 'Incomplete Open Graph Tags',
-        description: 'Missing Open Graph title or description. These are important for social media sharing.'
-      });
-    }
 
     // Mobile optimization check
     if (!mobileOptimized) {
@@ -862,7 +853,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
-    // CTA analysis removed as requested
 
     // Title and meta description optimization opportunities
     if (title && !title.includes('|') && !title.includes('-')) {
