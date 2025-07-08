@@ -26,7 +26,7 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   const hasMultipleHeadings = pageData.headings?.length > 3;
   const hasCtaElements = false; // CTA analysis disabled
   const hasFormElements = false; // CTA analysis disabled
-  
+
   // Determine content intent based on structure and business context
   let intentType = 'informational';
   if (hasFormElements || hasCtaElements) {
@@ -36,7 +36,7 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   } else if (siteOverview?.businessType && pageData.url?.includes('contact')) {
     intentType = 'navigational';
   }
-  
+
   // Determine user journey stage based on page structure
   let journeyStage = 'awareness';
   if (hasFormElements || pageData.url?.includes('contact')) {
@@ -44,13 +44,13 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   } else if (hasCtaElements && siteOverview?.mainServices?.length > 0) {
     journeyStage = 'consideration';
   }
-  
+
   // Analyze business relevance using site overview data
   let businessRelevance = 'general';
   if (siteOverview?.mainServices?.length > 0) {
     businessRelevance = 'core service';
   }
-  
+
   // Identify conversion opportunities based on content structure and business context
   const conversionOpportunities = [];
   if (intentType === 'educational' && journeyStage === 'awareness') {
@@ -65,7 +65,7 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
     conversionOpportunities.push('Strengthen trust signals and testimonials');
     conversionOpportunities.push('Provide clear contact information');
   }
-  
+
   return {
     intentType,
     journeyStage,
@@ -199,7 +199,7 @@ Respond in JSON format:
     }
 
     const result = JSON.parse(content);
-    
+
     return {
       businessType: result.businessType || 'Unknown',
       industry: result.industry || 'Unknown', 
@@ -281,7 +281,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     // Simple keyword extraction for content context (language-agnostic)
     const extractKeywords = (text: string): string[] => {
       if (!text) return [];
-      
+
       // Extract words without language-specific filtering
       const words = text.toLowerCase()
         .replace(/[^\w\s]/g, ' ')
@@ -308,10 +308,10 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     ].join(' ');
 
     const extractedKeywords = extractKeywords(pageContent);
-    
+
     // Analyze content intent and business alignment
     const contentIntent = analyzeContentIntent(pageData, siteOverview);
-    
+
     // Use AI-generated business context from site overview analysis
     const businessContext = siteOverview ? {
       industry: siteOverview.industry,
@@ -345,6 +345,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       }).join('\n')}${pageData.internalLinks.length > 5 ? `\n  +${pageData.internalLinks.length - 5} more links` : ''}
     ` : '';
 
+    const pageUrl = url;
     // Build optimized site structure information with better page display
     const internalLinkingOpportunities = siteStructure ? `
       Site Structure (${siteStructure.allPages.length} pages):
@@ -366,14 +367,15 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .slice(0, 6)
         .map(item => `- "${item.page.title || 'Untitled'}" (${item.page.url}) - Related topics: ${item.commonKeywords.slice(0, 3).join(', ')} ${item.isAlreadyLinked ? '[Already linked]' : '[Link opportunity]'}`)
         .join('\n')}
-        
+
       Available pages for internal linking:
-      ${siteStructure.allPages
-        .filter(page => page.url !== url)
-        .slice(0, 8)
-        .map(page => `- "${page.title || 'Untitled'}" (${page.url})`)
-        .join('\n')}${siteStructure.allPages.length > 9 ? `\n  +${siteStructure.allPages.length - 9} more pages available` : ''}
+      ${siteStructure.allPages.filter(p => p.url !== pageUrl).map(page => 
+  `      - "${page.title || 'Untitled'}" (${page.url})`
+).join('\n')}${siteStructure.allPages.length > 9 ? `\n  +${siteStructure.allPages.length - 9} more pages available` : ''}
     ` : '';
+
+    // Debug: Log CTA elements for troubleshooting
+    console.log(`CTA Elements for ${pageUrl}:`, pageData.ctaElements ? pageData.ctaElements.length : 'undefined');
 
     // Analyze paragraph content quality
     const paragraphAnalysis = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
@@ -387,7 +389,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
 
     // Build enhanced prompt with content quality metrics
     const seoIssuesList = pageData.issues.map((issue: any) => `${issue.title} (${issue.severity})`).join(', ') || 'No major issues found';
-    
+
     const contentQuality = pageData.contentMetrics ? `
 CONTENT QUALITY:
 - Words: ${pageData.contentMetrics.wordCount}
@@ -462,7 +464,7 @@ CTA ELEMENTS ANALYSIS:
     const additionalInfoSection = additionalInfo ? `
 ADDITIONAL BUSINESS CONTEXT: ${additionalInfo}
 ` : '';
-    
+
     const prompt = `Analyze this webpage and provide 8-12 specific SEO improvements focused on content optimization.
 
 PAGE: ${url}
@@ -472,8 +474,9 @@ H1: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
 Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.length || 0} paragraphs
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
-CTAs: ${pageData.ctaElements?.length || 0} total (${pageData.ctaElements?.filter((cta: any) => cta.type === 'button').length || 0} buttons, ${pageData.ctaElements?.filter((cta: any) => cta.type === 'form').length || 0} forms)
-Keywords: ${extractedKeywords.slice(0, 5).join(', ') || 'None found'}
+Keywords: ${pageData.contentMetrics?.keywordDensity?.slice(0, 5).map(k => k.keyword).join(', ') || 'None'}
+CTAs: ${pageData.ctaElements ? pageData.ctaElements.length : 0} total (${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'button' || cta.type === 'input_button' || cta.type === 'link_button').length : 0} buttons, ${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'form').length : 0} forms)
+HEADING STRUCTURE:
 ${contentQuality}${headingStructure}
 ISSUES: ${seoIssuesList}
 
@@ -484,8 +487,8 @@ Services: ${siteOverview.mainServices.slice(0, 3).join(', ') || 'General'}${site
 ${additionalInfoSection}
 ${internalLinkingOpportunities}
 ${ctaAnalysis}
-${paragraphContent}
 
+${paragraphContent}
 Provide specific, actionable improvements focusing on:
 - Content quality optimization (readability, depth, semantic richness)
 - Title/meta optimization with exact character counts
@@ -497,7 +500,7 @@ Provide specific, actionable improvements focusing on:
 
 Include specific examples, character counts, exact recommendations, and CTA improvements.
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
-    
+
     console.log('SEO Suggestions Prompt:', prompt)
     console.log(`Generating SEO suggestions for: ${url}`);
 
@@ -527,7 +530,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
     let suggestions: string[] = [];
     try {
       const result = JSON.parse(content);
-      
+
       if (result?.suggestions && Array.isArray(result.suggestions)) {
         suggestions = result.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0);
       } else {
@@ -875,3 +878,4 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     };
   }
 }
+// The code has been modified to include CTA analysis in the main prompt.
