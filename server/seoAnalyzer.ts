@@ -474,7 +474,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       pagesCount: analyzedPages.length,
       metrics,
       pages: analyzedPages,
-      contentRepetitionAnalysis
+      contentRepetitionAnalysis,
+      siteOverview: settings.useAI && !isCompetitor ? siteOverview : undefined
     };
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
@@ -524,7 +525,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
  * @param signal AbortSignal for cancellation
  * @param isCompetitor Whether this is a competitor analysis (to skip alt text generation)
  */
-export async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[], additionalInfo?: string) {
+export async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[], additionalInfo?: string, savedSiteOverview?: any) {
   try {
     // Fetch page content
     const response = await axios.get(url, {
@@ -1188,7 +1189,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
           };
 
           console.log(`Generating suggestions for single page reanalysis: ${url}`);
-          suggestions = await generateSeoSuggestions(url, pageData, siteStructure, undefined, additionalInfo);
+          suggestions = await generateSeoSuggestions(url, pageData, siteStructure, savedSiteOverview, additionalInfo);
           console.log(`Generated ${suggestions.length} suggestions for reanalyzed page: ${url}`);
         }
 
