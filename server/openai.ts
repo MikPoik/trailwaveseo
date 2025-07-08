@@ -401,6 +401,24 @@ CONTENT QUALITY:
 - Semantic phrases: ${pageData.contentMetrics.semanticKeywords?.slice(0, 5).join(', ') || 'None'}
 ` : '';
 
+    // Extract and organize heading structure
+    const headingStructure = pageData.headings && pageData.headings.length > 0 ? `
+HEADING STRUCTURE:
+H1 Headings (${pageData.headings.filter((h: any) => h.level === 1).length}):
+${pageData.headings.filter((h: any) => h.level === 1).map((h: any) => `- "${h.text}"`).join('\n') || '- No H1 headings found'}
+
+H2 Headings (${pageData.headings.filter((h: any) => h.level === 2).length}):
+${pageData.headings.filter((h: any) => h.level === 2).map((h: any) => `- "${h.text}"`).join('\n') || '- No H2 headings found'}
+
+H3 Headings (${pageData.headings.filter((h: any) => h.level === 3).length}):
+${pageData.headings.filter((h: any) => h.level === 3).map((h: any) => `- "${h.text}"`).join('\n') || '- No H3 headings found'}
+
+All Headings Overview: ${pageData.headings.map((h: any) => `H${h.level}: "${h.text}"`).join(' | ')}
+` : `
+HEADING STRUCTURE:
+- No headings found on this page
+`;
+
     // Include up to 5 paragraphs for better context (max 1000 chars each)
     const paragraphContent = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
 PARAGRAPH CONTENT (for context):
@@ -424,7 +442,7 @@ Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.lengt
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
 Keywords: ${extractedKeywords.slice(0, 5).join(', ') || 'None found'}
-${contentQuality}
+${contentQuality}${headingStructure}
 ISSUES: ${seoIssuesList}
 
 ${siteOverview && siteOverview.industry !== 'Unknown' ? `
