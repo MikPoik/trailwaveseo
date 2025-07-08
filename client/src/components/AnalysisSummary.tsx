@@ -649,7 +649,8 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       ))}
                     </ul>
                   </div>
-                </CardContent>
+                </div>
+              </CardContent>
             </Card>
           ) : (
             <Card>
