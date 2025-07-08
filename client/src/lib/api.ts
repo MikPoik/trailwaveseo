@@ -61,12 +61,12 @@ export async function saveCompetitorAnalysis(analysisId: number, competitorData:
   try {
     console.log(`Saving competitor analysis for ID ${analysisId}, data size: ${JSON.stringify(competitorData).length} bytes`);
     const response = await apiRequest('POST', `/api/analysis/${analysisId}/save-competitor`, competitorData);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to save competitor analysis: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    
+
     const result = await response.json();
     console.log(`Successfully saved competitor analysis for ID ${analysisId}`);
     return result;
@@ -75,3 +75,36 @@ export async function saveCompetitorAnalysis(analysisId: number, competitorData:
     throw error;
   }
 }
+
+export const runContentDuplicationAnalysis = async (analysisId: number) => {
+  const response = await fetch(`/api/analysis/${analysisId}/content-duplication`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to run content duplication analysis');
+  }
+
+  return response.json();
+};
+
+export const reanalyzePage = async (analysisId: number, pageUrl: string) => {
+  const response = await fetch(`/api/analysis/${analysisId}/reanalyze-page`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ pageUrl }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to reanalyze page');
+  }
+
+  return response.json();
+};

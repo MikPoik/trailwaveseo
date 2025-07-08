@@ -29,16 +29,16 @@ interface AnalysisSummaryProps {
 
 const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
-  const [activeTab, setActiveTab] = useState("overview");
   const [isRunningContentDuplication, setIsRunningContentDuplication] = useState(false);
-  const { toast } = useToast();
+  const [updatedAnalysis, setUpdatedAnalysis] = useState(analysis);
   const queryClient = useQueryClient();
-  
+  const { toast } = useToast();
+
   // If analysis has competitor data stored in the database, initialize it in the cache
   useEffect(() => {
     if (analysis.id && analysis.competitorAnalysis) {
       console.log('Found existing competitor analysis data:', analysis.competitorAnalysis);
-      
+
       // Set the competitor analysis data in the query cache
       const cacheKey = [`competitor-analysis-${analysis.id || analysis.domain}`];
       queryClient.setQueryData(cacheKey, analysis.competitorAnalysis);
@@ -272,7 +272,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     <div className="ml-4">
                       <h4 className="text-sm font-medium text-green-800">Good Practices</h4>
                       <div className="mt-1 text-3xl font-semibold text-green-600">
-                        {analysis.metrics.goodPractices}
+                        {updatedAnalysis.metrics.goodPractices}
                       </div>
                       <p className="mt-1 text-sm text-green-700">SEO elements that meet best practices</p>
                     </div>
@@ -287,7 +287,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     <div className="ml-4">
                       <h4 className="text-sm font-medium text-yellow-800">Warnings</h4>
                       <div className="mt-1 text-3xl font-semibold text-yellow-600">
-                        {analysis.metrics.warnings}
+                        {updatedAnalysis.metrics.warnings}
                       </div>
                       <p className="mt-1 text-sm text-yellow-700">Issues that should be improved</p>
                     </div>
@@ -302,7 +302,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     <div className="ml-4">
                       <h4 className="text-sm font-medium text-red-800">Critical Issues</h4>
                       <div className="mt-1 text-3xl font-semibold text-red-600">
-                        {analysis.metrics.criticalIssues}
+                        {updatedAnalysis.metrics.criticalIssues}
                       </div>
                       <p className="mt-1 text-sm text-red-700">Urgent SEO problems to fix</p>
                     </div>
@@ -636,7 +636,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   <p className="text-gray-500 max-w-md mb-6">
                     Run an analysis to detect duplicate or similar content across your website's titles, meta descriptions, and headings.
                   </p>
-                  
+
                   {analysis.pages.length < 2 ? (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
                       <h4 className="text-sm font-medium text-amber-800 mb-2">Requirements:</h4>

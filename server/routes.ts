@@ -660,6 +660,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reanalyze a single page from an existing analysis
+  app.post("/api/analysis/:id/reanalyze-page", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const analysisId = parseInt(req.params.id);
+      const { pageUrl } = req.body;
+
+      if (isNaN(analysisId)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+
+      if (!pageUrl) {
+        return res.status(400).json({ error: "Page URL is required" });
+      }
+
+      // Get the existing analysis
+      const analysis = await storage.getAnalysisById(analysisId);
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      // Check if the analysis belongs to the authenticated user
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to modify this analysis" });
+      }
+
+      // Get user settings
+      const settings = await storage.getSettings(userId);
+
+      // Import the analyzePage function from seoAnalyzer
+      const { analyzePage } = await import('./seoAnalyzer');
+      
+      // Create abort controller for this specific reanalysis
+      const controller = new AbortController();
+
+      // Reanalyze the specific page
+      const updatedPageAnalysis = await analyzePage(pageUrl, settings, controller.signal, false, analysis.pages);
+
+      if (!updatedPageAnalysis) {
+        return res.status(500).json({ error: "Failed to reanalyze page" });
+      }
+
+      // Update the analysis with the new page data
+      const updatedAnalysis = await storage.updatePageInAnalysis(analysisId, pageUrl, updatedPageAnalysis);
+
+      if (!updatedAnalysis) {
+        return res.status(500).json({ error: "Failed to update analysis with new page data" });
+      }
+
+      res.json({
+        message: "Page reanalyzed successfully",
+        updatedPage: updatedPageAnalysis,
+        analysis: updatedAnalysis
+      });
+
+    } catch (error) {
+      console.error("Error reanalyzing page:", error);
+      res.status(500).json({ 
+        error: "Failed to reanalyze page",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

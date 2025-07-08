@@ -2,18 +2,37 @@ import { useState } from "react";
 import { PageAnalysis, IssueType } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PageAnalysisCardProps {
   page: PageAnalysis;
+  analysisId?: number;
+  onReanalyze?: (pageUrl: string, updatedPage: PageAnalysis) => void;
 }
 
-const PageAnalysisCard = ({ page }: PageAnalysisCardProps) => {
+const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleReanalyze = async () => {
+    if (!analysisId || !onReanalyze) return;
+
+    setIsReanalyzing(true);
+    try {
+      const { reanalyzePage } = await import('@/lib/api');
+      const result = await reanalyzePage(analysisId, page.url);
+      onReanalyze(page.url, result.updatedPage);
+    } catch (error) {
+      console.error('Failed to reanalyze page:', error);
+    } finally {
+      setIsReanalyzing(false);
+    }
   };
 
   const getStatusColor = () => {
@@ -74,8 +93,32 @@ const PageAnalysisCard = ({ page }: PageAnalysisCardProps) => {
             </h4>
             <span className="ml-3 text-sm text-gray-500">{page.url}</span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             {getStatusText()}
+            {analysisId && onReanalyze && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReanalyze();
+                }}
+                disabled={isReanalyzing}
+                className="h-7 px-2 text-xs"
+              >
+                {isReanalyzing ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                    Reanalyzing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Reanalyze
+                  </>
+                )}
+              </Button>
+            )}
             <div className="ml-2">
               {isExpanded ? 
                 <ChevronUp className="h-5 w-5 text-gray-400" /> : 

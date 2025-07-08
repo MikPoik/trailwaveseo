@@ -524,7 +524,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
  * @param signal AbortSignal for cancellation
  * @param isCompetitor Whether this is a competitor analysis (to skip alt text generation)
  */
-async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[], additionalInfo?: string) {
+export async function analyzePage(url: string, settings: any, signal: AbortSignal, isCompetitor: boolean = false, analyzedPages: any[], additionalInfo?: string) {
   try {
     // Fetch page content
     const response = await axios.get(url, {

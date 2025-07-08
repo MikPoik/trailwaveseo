@@ -17,6 +17,7 @@ export interface IStorage {
   saveAnalysis(analysis: any, userId?: string): Promise<Analysis>;
   updateCompetitorAnalysis(id: number, competitorData: any): Promise<Analysis | undefined>;
   updateContentRepetitionAnalysis(id: number, contentRepetitionAnalysis: any): Promise<Analysis | undefined>;
+  updatePageInAnalysis(id: number, pageUrl: string, updatedPageData: any): Promise<Analysis | undefined>;
   deleteAnalysis(id: number): Promise<boolean>;
 
   // Settings operations
@@ -192,6 +193,157 @@ export class DatabaseStorage implements IStorage {
         console.error(`Error saving content repetition analysis for ID ${id}:`, error);
         return undefined;
       }
+  }
+
+  async updatePageInAnalysis(id: number, pageUrl: string, updatedPageData: any): Promise<Analysis | undefined> {
+    // First get the current analysis
+    const analysis = await this.getAnalysisById(id);
+    if (!analysis) {
+      return undefined;
+    }
+
+    console.log(`Updating page ${pageUrl} in analysis ${id}`);
+
+    try {
+      // Find and update the specific page in the pages array
+      const updatedPages = analysis.pages.map(page => {
+        if (page.url === pageUrl) {
+          console.log(`Found page to update: ${pageUrl}`);
+          return updatedPageData;
+        }
+        return page;
+      });
+
+      // Recalculate metrics after the page update
+      const updatedMetrics = this.calculateMetricsForPages(updatedPages);
+
+      // Update the analysis with the new page data and metrics
+      const [updatedAnalysis] = await db
+        .update(analyses)
+        .set({
+          pages: updatedPages,
+          metrics: updatedMetrics
+        })
+        .where(eq(analyses.id, id))
+        .returning();
+
+      console.log(`Successfully updated page ${pageUrl} in analysis ${id}`);
+      return updatedAnalysis;
+    } catch (error) {
+      console.error(`Error updating page ${pageUrl} in analysis ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  // Helper method to recalculate metrics for updated pages
+  private calculateMetricsForPages(pages: any[]) {
+    let goodPractices = 0;
+    let warnings = 0;
+    let criticalIssues = 0;
+    let titleOptimizedPages = 0;
+    let descriptionOptimizedPages = 0;
+    let headingsOptimizedPages = 0;
+    let imagesOptimizedPages = 0;
+    let linksOptimizedPages = 0;
+
+    pages.forEach(page => {
+      // Count issues by severity
+      page.issues.forEach((issue: any) => {
+        if (issue.severity === 'critical') {
+          criticalIssues++;
+        } else if (issue.severity === 'warning') {
+          warnings++;
+        } else if (issue.severity === 'info') {
+          goodPractices++;
+        }
+      });
+
+      // Check optimization criteria
+      let titleOptimized = false;
+      if (page.title && page.title.length >= 10 && page.title.length <= 60) {
+        titleOptimized = true;
+        goodPractices++;
+      }
+      const titleIssues = page.issues.filter((issue: any) => 
+        issue.category === 'title' && issue.severity === 'critical'
+      );
+      if (titleIssues.length > 0) {
+        titleOptimized = false;
+      }
+      if (titleOptimized) titleOptimizedPages++;
+
+      let descriptionOptimized = false;
+      if (page.metaDescription && page.metaDescription.length >= 50 && page.metaDescription.length <= 160) {
+        descriptionOptimized = true;
+        goodPractices++;
+      }
+      const descriptionIssues = page.issues.filter((issue: any) => 
+        issue.category === 'meta-description' && issue.severity === 'critical'
+      );
+      if (descriptionIssues.length > 0) {
+        descriptionOptimized = false;
+      }
+      if (descriptionOptimized) descriptionOptimizedPages++;
+
+      let headingsOptimized = false;
+      if (page.headings.length > 0 && page.headings.some((h: any) => h.level === 1)) {
+        headingsOptimized = true;
+        goodPractices++;
+      }
+      const headingsIssues = page.issues.filter((issue: any) => 
+        issue.category === 'headings' && issue.severity === 'critical'
+      );
+      if (headingsIssues.length > 0) {
+        headingsOptimized = false;
+      }
+      if (headingsOptimized) headingsOptimizedPages++;
+
+      let imagesOptimized = false;
+      if (page.images.length > 0 && page.images.every((img: any) => img.alt)) {
+        imagesOptimized = true;
+        goodPractices++;
+      } else if (page.images.length === 0) {
+        imagesOptimized = true;
+      }
+      const imagesIssues = page.issues.filter((issue: any) => 
+        issue.category === 'images' && issue.severity === 'critical'
+      );
+      if (imagesIssues.length > 0) {
+        imagesOptimized = false;
+      }
+      if (imagesOptimized) imagesOptimizedPages++;
+
+      let linksOptimized = false;
+      if (page.internalLinks && page.internalLinks.length >= 3) {
+        const genericTexts = ['click here', 'read more', 'learn more', 'here', 'this', 'link'];
+        const hasGoodAnchorText = page.internalLinks.every((link: any) => 
+          !genericTexts.some(generic => link.text.toLowerCase().includes(generic))
+        );
+        if (hasGoodAnchorText) {
+          linksOptimized = true;
+          goodPractices++;
+        }
+      }
+      const linksIssues = page.issues.filter((issue: any) => 
+        issue.category === 'links' && issue.severity === 'critical'
+      );
+      if (linksIssues.length > 0) {
+        linksOptimized = false;
+      }
+      if (linksOptimized) linksOptimizedPages++;
+    });
+
+    const pageCount = Math.max(1, pages.length);
+    return {
+      goodPractices,
+      warnings,
+      criticalIssues,
+      titleOptimization: Math.round((titleOptimizedPages / pageCount) * 100),
+      descriptionOptimization: Math.round((descriptionOptimizedPages / pageCount) * 100),
+      headingsOptimization: Math.round((headingsOptimizedPages / pageCount) * 100),
+      imagesOptimization: Math.round((imagesOptimizedPages / pageCount) * 100),
+      linksOptimization: Math.round((linksOptimizedPages / pageCount) * 100)
+    };
   }
 
   async deleteAnalysis(id: number): Promise<boolean> {
