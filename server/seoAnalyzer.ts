@@ -728,25 +728,84 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
     });
 
      // Extract CTA elements (buttons, forms, etc.)
-     const ctaElements: string[] = [];
+     const ctaElements: Array<{
+         type: string;
+         text: string;
+         element: string;
+         attributes: Record<string, string>;
+     }> = [];
 
      // Extract links with "button" class or role (including complex class names)
      $('a[class*="button"], a[role="button"]').each((_, el) => {
          const linkText = $(el).text().trim();
+         const href = $(el).attr('href') || '';
          const classes = $(el).attr('class') || '';
-         ctaElements.push(`Link button: ${linkText} (classes: ${classes})`);
+         const role = $(el).attr('role') || '';
+         
+         ctaElements.push({
+             type: 'link_button',
+             text: linkText,
+             element: 'a',
+             attributes: {
+                 href: href,
+                 class: classes,
+                 role: role
+             }
+         });
      });
 
-     // Extract form submit buttons
-     $('button[type="submit"], input[type="submit"]').each((_, el) => {
-         const buttonText = $(el).val()?.toString().trim() || $(el).text().trim();
-         ctaElements.push(`Submit button: ${buttonText}`);
+     // Extract regular buttons
+     $('button').each((_, el) => {
+         const buttonText = $(el).text().trim();
+         const type = $(el).attr('type') || 'button';
+         const classes = $(el).attr('class') || '';
+         
+         ctaElements.push({
+             type: 'button',
+             text: buttonText,
+             element: 'button',
+             attributes: {
+                 type: type,
+                 class: classes
+             }
+         });
+     });
+
+     // Extract input buttons (submit, button)
+     $('input[type="submit"], input[type="button"]').each((_, el) => {
+         const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || '';
+         const type = $(el).attr('type') || '';
+         const classes = $(el).attr('class') || '';
+         
+         ctaElements.push({
+             type: 'input_button',
+             text: buttonText,
+             element: 'input',
+             attributes: {
+                 type: type,
+                 class: classes
+             }
+         });
      });
 
      // Extract form elements
      $('form').each((_, el) => {
-         const formId = $(el).attr('id') || 'No ID';
-         ctaElements.push(`Form: ${formId}`);
+         const formId = $(el).attr('id') || '';
+         const action = $(el).attr('action') || '';
+         const method = $(el).attr('method') || 'GET';
+         const classes = $(el).attr('class') || '';
+         
+         ctaElements.push({
+             type: 'form',
+             text: formId ? `Form with ID: ${formId}` : 'Form without ID',
+             element: 'form',
+             attributes: {
+                 id: formId,
+                 action: action,
+                 method: method,
+                 class: classes
+             }
+         });
      });
 
     // Calculate content quality metrics
