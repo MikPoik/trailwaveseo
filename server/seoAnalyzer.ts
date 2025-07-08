@@ -735,27 +735,38 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          attributes: Record<string, string>;
      }> = [];
 
-     // Extract links with "button" class or role (including complex class names)
-     // This covers patterns like:
-     // - sqs-block-button-element, sqs-button-element
-     // - wp-block-button__link, wp-element-button
-     // - Generic button classes
-     $('a[class*="button"], a[class*="btn"], a[role="button"]').each((_, el) => {
-         const linkText = $(el).text().trim();
-         const href = $(el).attr('href') || '';
+     // Debug: Log HTML snippet to see what we're working with
+     console.log(`Analyzing CTAs for ${url}`);
+     console.log(`HTML contains ${$('a').length} total links, ${$('button').length} buttons, ${$('input').length} inputs, ${$('form').length} forms`);
+
+     // Extract ALL links first and filter by class content
+     $('a').each((_, el) => {
          const classes = $(el).attr('class') || '';
+         const href = $(el).attr('href') || '';
+         const linkText = $(el).text().trim();
          const role = $(el).attr('role') || '';
          
-         ctaElements.push({
-             type: 'link_button',
-             text: linkText,
-             element: 'a',
-             attributes: {
-                 href: href,
-                 class: classes,
-                 role: role
-             }
-         });
+         // Check if class contains button-related keywords
+         const hasButtonClass = classes.includes('button') || 
+                               classes.includes('btn') || 
+                               classes.includes('sqs-block-button') ||
+                               classes.includes('wp-block-button') ||
+                               classes.includes('wp-element-button') ||
+                               role === 'button';
+         
+         if (hasButtonClass && linkText) {
+             console.log(`Found button-like link: "${linkText}" with classes: "${classes}"`);
+             ctaElements.push({
+                 type: 'link_button',
+                 text: linkText,
+                 element: 'a',
+                 attributes: {
+                     href: href,
+                     class: classes,
+                     role: role
+                 }
+             });
+         }
      });
 
      // Extract regular buttons
@@ -764,6 +775,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          const type = $(el).attr('type') || 'button';
          const classes = $(el).attr('class') || '';
          
+         console.log(`Found button: "${buttonText}" with classes: "${classes}"`);
          ctaElements.push({
              type: 'button',
              text: buttonText,
@@ -776,45 +788,55 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
      });
 
      // Extract input buttons (submit, button, image)
-     $('input[type="submit"], input[type="button"], input[type="image"]').each((_, el) => {
-         const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || $(el).attr('alt') || '';
+     $('input').each((_, el) => {
          const type = $(el).attr('type') || '';
-         const classes = $(el).attr('class') || '';
-         
-         ctaElements.push({
-             type: 'input_button',
-             text: buttonText,
-             element: 'input',
-             attributes: {
-                 type: type,
-                 class: classes
-             }
-         });
+         if (type === 'submit' || type === 'button' || type === 'image') {
+             const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || $(el).attr('alt') || '';
+             const classes = $(el).attr('class') || '';
+             
+             console.log(`Found input button: "${buttonText}" type: "${type}" with classes: "${classes}"`);
+             ctaElements.push({
+                 type: 'input_button',
+                 text: buttonText,
+                 element: 'input',
+                 attributes: {
+                     type: type,
+                     class: classes
+                 }
+             });
+         }
      });
 
      // Extract elements with data attributes that indicate buttons
-     $('[data-sqsp-button], [data-button], [data-btn]').each((_, el) => {
-         const tagName = $(el).prop('tagName').toLowerCase();
-         const buttonText = $(el).text().trim();
-         const classes = $(el).attr('class') || '';
+     $('*').each((_, el) => {
+         const attrs = $(el)[0]?.attribs || {};
+         const hasDataButton = Object.keys(attrs).some(attr => 
+             attr.startsWith('data-') && 
+             (attr.includes('button') || attr.includes('btn') || attr.includes('sqsp-button'))
+         );
          
-         // Skip if already captured as a link or button
-         if (tagName === 'a' || tagName === 'button' || tagName === 'input') {
-             return;
-         }
-         
-         ctaElements.push({
-             type: 'data_button',
-             text: buttonText,
-             element: tagName,
-             attributes: {
-                 class: classes,
-                 'data-attributes': Object.keys($(el)[0].attribs || {})
-                     .filter(attr => attr.startsWith('data-'))
-                     .map(attr => `${attr}="${$(el).attr(attr)}"`)
-                     .join(', ')
+         if (hasDataButton) {
+             const tagName = $(el).prop('tagName')?.toLowerCase() || '';
+             const buttonText = $(el).text().trim();
+             const classes = $(el).attr('class') || '';
+             
+             // Skip if already captured as a link or button
+             if (tagName !== 'a' && tagName !== 'button' && tagName !== 'input' && buttonText) {
+                 console.log(`Found data-button element: "${buttonText}" tagName: "${tagName}" with classes: "${classes}"`);
+                 ctaElements.push({
+                     type: 'data_button',
+                     text: buttonText,
+                     element: tagName,
+                     attributes: {
+                         class: classes,
+                         'data-attributes': Object.keys(attrs)
+                             .filter(attr => attr.startsWith('data-'))
+                             .map(attr => `${attr}="${$(el).attr(attr)}"`)
+                             .join(', ')
+                     }
+                 });
              }
-         });
+         }
      });
 
      // Extract form elements
@@ -824,6 +846,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          const method = $(el).attr('method') || 'GET';
          const classes = $(el).attr('class') || '';
          
+         console.log(`Found form: ID="${formId}" action="${action}" method="${method}" classes="${classes}"`);
          ctaElements.push({
              type: 'form',
              text: formId ? `Form with ID: ${formId}` : 'Form without ID',
@@ -836,6 +859,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
              }
          });
      });
+
+     console.log(`Total CTA elements found for ${url}: ${ctaElements.length}`);
 
     // Calculate content quality metrics
     const contentMetrics = {
