@@ -35,6 +35,25 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  useEffect(() => {
+    setUpdatedAnalysis(analysis);
+  }, [analysis]);
+
+  const handlePageReanalyze = (pageUrl: string, updatedPage: PageAnalysis) => {
+    // Update the analysis with the reanalyzed page
+    setUpdatedAnalysis(prev => ({
+      ...prev,
+      pages: prev.pages.map(page => 
+        page.url === pageUrl ? updatedPage : page
+      )
+    }));
+
+    toast({
+      title: "Page Reanalyzed",
+      description: `Successfully reanalyzed ${pageUrl}`,
+    });
+  };
+
   // If analysis has competitor data stored in the database, initialize it in the cache
   useEffect(() => {
     if (analysis.id && analysis.competitorAnalysis) {
@@ -396,9 +415,14 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
           <div className="mt-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Page-by-Page Analysis</h3>
 
-            {analysis.pages.slice(0, displayedPages).map((page, index) => (
-              <PageAnalysisCard key={index} page={page} />
-            ))}
+            {updatedAnalysis.pages.slice(0, displayedPages).map((page, index) => (
+                <PageAnalysisCard 
+                  key={index} 
+                  page={page} 
+                  analysisId={updatedAnalysis.id}
+                  onReanalyze={handlePageReanalyze}
+                />
+              ))}
 
             {displayedPages < analysis.pages.length && (
               <div className="flex justify-center mt-4">
@@ -625,8 +649,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       ))}
                     </ul>
                   </div>
-                </div>
-              </CardContent>
+                </CardContent>
             </Card>
           ) : (
             <Card>
