@@ -511,22 +511,51 @@ Provide specific, actionable improvements focusing on:
 Include specific examples, character counts, exact recommendations, and CTA improvements.
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
 
-    console.log('SEO Suggestions Prompt:', prompt)
     console.log(`Generating SEO suggestions for: ${url}`);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
-      messages: [
-        { 
-          role: "system", 
-          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in JSON format only. Write in the same language as the website's content is."
-        },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.4,
-      max_tokens: 1500
-    });
+    // Retry mechanism with exponential backoff
+    const maxRetries = 3;
+    let response: any = null;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Attempt ${attempt}/${maxRetries} for ${url}`);
+        
+        response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { 
+              role: "system", 
+              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format only with proper escaping of quotes and special characters. Write in the same language as the website's content is."
+            },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.4,
+          max_tokens: 1500
+        });
+        
+        // If we get here, the request succeeded
+        break;
+        
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Attempt ${attempt} failed for ${url}:`, error);
+        
+        if (attempt < maxRetries) {
+          // Exponential backoff: wait 1s, 2s, 4s
+          const delay = Math.pow(2, attempt - 1) * 1000;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    if (!response) {
+      console.error(`All ${maxRetries} attempts failed for ${url}. Last error:`, lastError);
+      return [];
+    }
 
     const content = response.choices[0].message.content;
     if (!content) {
@@ -534,11 +563,19 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
       return [];
     }
 
+    // Validate that content looks like JSON before parsing
+    const trimmedContent = content.trim();
+    if (!trimmedContent.startsWith('{') || (!trimmedContent.endsWith('}') && !trimmedContent.endsWith(']'))) {
+      console.error(`OpenAI response for ${url} doesn't appear to be valid JSON. Content: ${trimmedContent.substring(0, 200)}...`);
+      return [];
+    }
+
     console.log(`OpenAI response for ${url}:`, content.substring(0, 500) + '...');
 
-    // Simplified JSON parsing and validation
+    // Enhanced JSON parsing with retry logic and fallback
     let suggestions: string[] = [];
     try {
+      // First attempt to parse the response as-is
       const result = JSON.parse(content);
 
       if (result?.suggestions && Array.isArray(result.suggestions)) {
@@ -549,7 +586,40 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
       }
     } catch (parseError) {
       console.error(`Failed to parse OpenAI response for ${url}:`, parseError);
-      return [];
+      
+      // Try to fix common JSON issues and retry parsing
+      try {
+        // Remove any trailing commas and fix incomplete JSON
+        let fixedContent = content.trim();
+        
+        // Remove trailing comma before closing brace/bracket
+        fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
+        
+        // If JSON is incomplete, try to complete it
+        if (!fixedContent.endsWith('}') && !fixedContent.endsWith(']')) {
+          // Find the last complete suggestion and close the JSON properly
+          const lastCompleteMatch = fixedContent.lastIndexOf('"]');
+          if (lastCompleteMatch > 0) {
+            fixedContent = fixedContent.substring(0, lastCompleteMatch + 2) + '}';
+          } else {
+            // If no complete suggestions found, return empty
+            console.warn(`Could not fix malformed JSON for ${url}, returning empty suggestions`);
+            return [];
+          }
+        }
+        
+        const fixedResult = JSON.parse(fixedContent);
+        if (fixedResult?.suggestions && Array.isArray(fixedResult.suggestions)) {
+          suggestions = fixedResult.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0);
+          console.log(`Successfully recovered ${suggestions.length} suggestions after JSON fix for ${url}`);
+        } else {
+          console.warn(`Fixed JSON still invalid format for ${url}`);
+          return [];
+        }
+      } catch (secondParseError) {
+        console.error(`Failed to fix and parse OpenAI response for ${url}:`, secondParseError);
+        return [];
+      }
     }
 
     if (suggestions.length === 0) {

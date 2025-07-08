@@ -426,7 +426,12 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
               }
             } catch (error) {
               console.error(`Error generating suggestions for ${page.url}:`, error);
+              
+              // Set empty suggestions but don't fail the entire analysis
               page.suggestions = [];
+              
+              // Log the error for monitoring but continue with other pages
+              console.log(`Continuing analysis without AI suggestions for ${page.url}`);
             }
           });
 
