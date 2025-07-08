@@ -1145,13 +1145,53 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
                                                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                                                           .join(' ');
 
-    // Generate suggestions if AI is enabled (will be enhanced later with site structure)
+    // Generate suggestions if AI is enabled
     let suggestions: string[] = [];
     if (settings.useAI) {
-      // For now, just prepare the page data - suggestions will be generated later with full context
-      // This avoids duplicate API calls to OpenAI
-
       try {
+        // For single page reanalysis, generate suggestions immediately
+        // For full site analysis, suggestions will be generated later with full context
+        const isSinglePageReanalysis = !isCompetitor && analyzedPages.length > 0;
+        
+        if (isSinglePageReanalysis) {
+          // Generate suggestions for this single page with available context
+          const pageData = {
+            url,
+            title,
+            metaDescription,
+            metaKeywords: metaKeywordsArray,
+            headings,
+            images: images.map(img => ({
+              src: img.src,
+              alt: img.alt
+            })),
+            issues: issues.map(issue => ({
+              category: issue.category,
+              severity: issue.severity,
+              title: issue.title,
+              description: issue.description
+            })),
+            paragraphs: paragraphs ? paragraphs.slice(0, 15) : [],
+            internalLinks,
+            ctaElements
+          };
+
+          // Build basic site structure from existing analyzed pages
+          const siteStructure = {
+            allPages: analyzedPages.map(page => ({
+              url: page.url,
+              title: page.title,
+              headings: page.headings,
+              metaDescription: page.metaDescription,
+              paragraphs: page.paragraphs
+            }))
+          };
+
+          console.log(`Generating suggestions for single page reanalysis: ${url}`);
+          suggestions = await generateSeoSuggestions(url, pageData, siteStructure, undefined, additionalInfo);
+          console.log(`Generated ${suggestions.length} suggestions for reanalyzed page: ${url}`);
+        }
+
         // Generate alt text for images without alt text (skip for competitor analysis)
         if (!signal.aborted && settings.analyzeImages !== false && images.length > 0 && !isCompetitor) {
           const imagesWithoutAlt = images.filter(img => !img.alt);
