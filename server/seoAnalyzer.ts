@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { parseSitemap } from './sitemap';
@@ -11,22 +10,22 @@ import { Heading, Image, SeoIssue, SeoCategory, ContentRepetitionAnalysis } from
 // Content quality analysis helper functions
 function calculateReadabilityScore(sentences: string[]): number {
   if (sentences.length === 0) return 0;
-  
+
   const totalWords = sentences.reduce((count, sentence) => {
     return count + sentence.split(/\s+/).filter(word => word.length > 0).length;
   }, 0);
-  
+
   const totalSyllables = sentences.reduce((count, sentence) => {
     const words = sentence.split(/\s+/).filter(word => word.length > 0);
     return count + words.reduce((syllableCount, word) => {
       return syllableCount + countSyllables(word);
     }, 0);
   }, 0);
-  
+
   // Simplified Flesch Reading Ease Score
   const avgWordsPerSentence = totalWords / sentences.length;
   const avgSyllablesPerWord = totalSyllables / totalWords;
-  
+
   const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
   return Math.max(0, Math.min(100, score));
 }
@@ -34,11 +33,11 @@ function calculateReadabilityScore(sentences: string[]): number {
 function countSyllables(word: string): number {
   word = word.toLowerCase();
   if (word.length <= 3) return 1;
-  
+
   const vowels = 'aeiouy';
   let syllableCount = 0;
   let previousWasVowel = false;
-  
+
   for (let i = 0; i < word.length; i++) {
     const isVowel = vowels.includes(word[i]);
     if (isVowel && !previousWasVowel) {
@@ -46,12 +45,12 @@ function countSyllables(word: string): number {
     }
     previousWasVowel = isVowel;
   }
-  
+
   // Adjust for silent 'e'
   if (word.endsWith('e') && syllableCount > 1) {
     syllableCount--;
   }
-  
+
   return Math.max(1, syllableCount);
 }
 
@@ -60,14 +59,14 @@ function extractKeywordDensity(content: string): Array<{keyword: string, count: 
     .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
     .filter(word => word.length > 3);
-  
+
   const totalWords = words.length;
   const wordCount = new Map<string, number>();
-  
+
   words.forEach(word => {
     wordCount.set(word, (wordCount.get(word) || 0) + 1);
   });
-  
+
   return Array.from(wordCount.entries())
     .map(([keyword, count]) => ({
       keyword,
@@ -81,50 +80,50 @@ function extractKeywordDensity(content: string): Array<{keyword: string, count: 
 
 function calculateContentDepth(paragraphs: string[], headings: Heading[]): number {
   let score = 0;
-  
+
   // Base score from content length
   const totalWords = paragraphs.join(' ').split(/\s+/).length;
   score += Math.min(50, totalWords / 20); // Max 50 points for word count
-  
+
   // Points for heading structure
   const h1Count = headings.filter(h => h.level === 1).length;
   const h2Count = headings.filter(h => h.level === 2).length;
   const h3Count = headings.filter(h => h.level === 3).length;
-  
+
   score += Math.min(20, h2Count * 3); // Max 20 points for H2s
   score += Math.min(15, h3Count * 2); // Max 15 points for H3s
   score += h1Count === 1 ? 10 : 0; // Bonus for single H1
-  
+
   // Points for paragraph variety
   const avgParagraphLength = paragraphs.length > 0 ? 
     totalWords / paragraphs.length : 0;
-  
+
   if (avgParagraphLength > 20 && avgParagraphLength < 80) {
     score += 15; // Good paragraph length variety
   }
-  
+
   return Math.min(100, score);
 }
 
 function extractSemanticKeywords(content: string): string[] {
   const text = content.toLowerCase();
-  
+
   // Extract multi-word phrases (2-3 words)
   const words = text.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(word => word.length > 2);
   const phrases = new Map<string, number>();
-  
+
   // Extract 2-word phrases
   for (let i = 0; i < words.length - 1; i++) {
     const phrase = `${words[i]} ${words[i + 1]}`;
     phrases.set(phrase, (phrases.get(phrase) || 0) + 1);
   }
-  
+
   // Extract 3-word phrases
   for (let i = 0; i < words.length - 2; i++) {
     const phrase = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
     phrases.set(phrase, (phrases.get(phrase) || 0) + 1);
   }
-  
+
   return Array.from(phrases.entries())
     .filter(([phrase, count]) => count >= 2)
     .sort((a, b) => b[1] - a[1])
@@ -265,7 +264,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Always ensure homepage/root is analyzed first for better context
     const rootUrl = `https://${domain.toLowerCase()}`;
     const normalizedRootUrl = rootUrl.endsWith('/') ? rootUrl.slice(0, -1) : rootUrl;
-    
+
     // Remove any existing homepage variants from the array (case-insensitive)
     pages = pages.filter(page => {
       const normalizedPage = (page.endsWith('/') ? page.slice(0, -1) : page).toLowerCase();
@@ -275,7 +274,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
              normalizedPage !== `${rootUrlLower}/index.php` &&
              normalizedPage !== `${rootUrlLower}/home`;
     });
-    
+
     // Add homepage at the beginning (using lowercase domain)
     pages.unshift(normalizedRootUrl);
 
@@ -378,7 +377,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         const batchSize = 3;
         for (let i = 0; i < analyzedPages.length; i += batchSize) {
           const batch = analyzedPages.slice(i, i + batchSize);
-          
+
           // Emit progress update for suggestion generation (80-95% progress)
           const suggestionProgress = 80 + Math.floor(((i / analyzedPages.length) * 15));
           events.emit(domain, {
@@ -390,7 +389,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             analyzedPages: analyzedPages.map(p => p.url),
             percentage: suggestionProgress
           });
-          
+
           // Process batch in parallel with delay between batches
           const batchPromises = batch.map(async (page) => {
             const pageData = {
@@ -416,7 +415,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             try {
               console.log(`Generating suggestions for page: ${page.url}`);
               const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
-              
+
               if (Array.isArray(suggestions) && suggestions.length > 0) {
                 page.suggestions = suggestions;
                 console.log(`Successfully generated ${suggestions.length} suggestions for ${page.url}`);
@@ -431,7 +430,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           });
 
           await Promise.all(batchPromises);
-          
+
           // Add delay between batches to avoid rate limits (except for last batch)
           if (i + batchSize < analyzedPages.length) {
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -554,6 +553,17 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
     const html = response.data;
     const $ = cheerio.load(html);
 
+    // Check for noindex or nofollow in meta robots
+    const metaRobots = $('meta[name="robots"], meta[name="googlebot"]').attr('content');
+    const hasNoindex = metaRobots && metaRobots.toLowerCase().includes('noindex');
+    const hasNofollow = metaRobots && metaRobots.toLowerCase().includes('nofollow');
+
+    // If the page has noindex, skip it entirely from crawling output
+    if (hasNoindex) {
+      console.log(`Skipping page with noindex directive: ${url}`);
+      return;
+    }
+
     // Extract basic SEO elements
     const title = $('title').text().trim();
     const metaDescription = $('meta[name="description"]').attr('content') || null;
@@ -598,7 +608,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         const href = $(el).attr('href');
         const linkText = $(el).text().trim();
         const title = $(el).attr('title');
-        
+
         if (href && linkText) {
           try {
             // Handle relative URLs and internal links
@@ -832,7 +842,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
     }
 
     // Additional comprehensive SEO checks to ensure we find improvement opportunities
-    
+
     // Enhanced content quality analysis
     if (contentMetrics.wordCount < 150) {
       issues.push({
@@ -917,7 +927,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       const titleWords = title.toLowerCase().split(/\s+/);
       const descWords = metaDescription.toLowerCase().split(/\s+/);
       const commonWords = titleWords.filter(word => descWords.includes(word) && word.length > 3);
-      
+
       if (commonWords.length < 2) {
         issues.push({
           category: 'keywords',
@@ -939,7 +949,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
           description: `Found ${h1Count} H1 tags. Consider using only one H1 tag per page.`
         });
       }
-      
+
       if (headings.length < 3) {
         issues.push({
           category: 'headings',
@@ -1110,7 +1120,7 @@ function calculateMetrics(pages: any[]) {
     });
 
     // Check if page meets optimization criteria for each category
-    
+
     // Title optimization check
     let titleOptimized = false;
     if (page.title && page.title.length >= 10 && page.title.length <= 60) {
