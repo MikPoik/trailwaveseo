@@ -13,17 +13,17 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 // Global event emitter for Server-Sent Events
 const analysisEvents = new EventEmitter();
 
-// Rate limiting
+// Rate limiting - increased limits for development
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // Limit each IP to 30 requests per window
+  max: 100, // Increased for development
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const crawlLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 crawl requests per window
+  max: 20, // Increased for development
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -62,8 +62,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     useAI: z.boolean().default(true),
   });
 
-  // Basic rate limiting for all API routes
-  app.use("/api", apiLimiter);
+  // Basic rate limiting for all API routes (skip in development)
+  if (process.env.NODE_ENV !== 'development') {
+    app.use("/api", apiLimiter);
+  }
 
   // Default settings endpoint
   app.get("/api/settings", isAuthenticated, async (req: any, res) => {
@@ -122,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analyze website endpoint
-  app.post("/api/analyze", isAuthenticated, crawlLimiter, async (req: any, res) => {
+  app.post("/api/analyze", isAuthenticated, process.env.NODE_ENV !== 'development' ? crawlLimiter : (req: any, res: any, next: any) => next(), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { domain, useSitemap, additionalInfo } = analyzeRequestSchema.parse(req.body);
