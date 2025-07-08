@@ -116,7 +116,9 @@ export class DatabaseStorage implements IStorage {
         pagesCount: analysis.pagesCount || analysis.pages.length,
         metrics: analysis.metrics,
         pages: analysis.pages,
-        contentRepetitionAnalysis: analysis.contentRepetitionAnalysis
+        contentRepetitionAnalysis: analysis.contentRepetitionAnalysis,
+        competitorAnalysis: analysis.competitorAnalysis,
+        siteOverview: analysis.siteOverview
       })
       .returning();
 
