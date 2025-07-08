@@ -199,7 +199,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
 
         console.log(`Found ${pages.length} content pages in sitemaps for ${domain} (after filtering media sitemaps)`);
 
-        // Emit progress update after sitemap is retrieved (10% of total progress)
+        // Emit progress update after sitemap is retrieved (5% of total progress)
         events.emit(domain, {
           status: 'in-progress',
           domain,
@@ -207,7 +207,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           pagesAnalyzed: 0,
           currentPageUrl: '',
           analyzedPages: [],
-          percentage: 10
+          percentage: 5
         });
       } catch (error) {
         console.log(`No sitemap found or error parsing sitemap for ${domain}, falling back to crawling: ${error instanceof Error ? error.message : String(error)}`);
@@ -233,8 +233,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             basicSeoData.set(seoData.url, seoData);
           }
 
-          // Emit progress update during crawling with basic SEO data (up to 20% of total progress)
-          const crawlingProgress = Math.min(20, Math.floor((crawledPages.length / settings.maxPages) * 20));
+          // Emit progress update during crawling with basic SEO data (up to 10% of total progress)
+          const crawlingProgress = Math.min(10, Math.floor((crawledPages.length / settings.maxPages) * 10));
           events.emit(domain, {
             status: 'in-progress',
             domain,
@@ -289,8 +289,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         throw new Error('Analysis cancelled');
       }
 
-      // Emit progress update for current page (20-80% of total progress for analysis)
-      const analysisProgress = 20 + Math.floor((analyzedPages.length / totalPages) * 60);
+      // Emit progress update for current page (10-40% of total progress for basic analysis)
+      const analysisProgress = 10 + Math.floor((analyzedPages.length / totalPages) * 30);
       events.emit(domain, {
         status: 'in-progress',
         domain,
@@ -306,8 +306,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor, analyzedPages, additionalInfo);
         analyzedPages.push(pageAnalysis);
 
-        // Re-emit progress to update the count (20-80% of total progress for analysis)
-        const analysisProgress = 20 + Math.floor((analyzedPages.length / totalPages) * 60);
+        // Re-emit progress to update the count (10-40% of total progress for basic analysis)
+        const analysisProgress = 10 + Math.floor((analyzedPages.length / totalPages) * 30);
         events.emit(domain, {
           status: 'in-progress',
           domain,
@@ -344,7 +344,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Enhance suggestions with site structure for internal linking (if AI is enabled)
     if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
       try {
-        // Emit progress update for AI analysis start (80% progress)
+        // Emit progress update for AI analysis start (40% progress)
         events.emit(domain, {
           status: 'in-progress',
           domain,
@@ -352,7 +352,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           pagesAnalyzed: analyzedPages.length,
           currentPageUrl: 'Generating AI-powered SEO suggestions...',
           analyzedPages: analyzedPages.map(p => p.url),
-          percentage: 80
+          percentage: 40
         });
 
         console.log(`Analyzing site overview and generating SEO suggestions for ${domain}...`);
@@ -378,8 +378,8 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
         for (let i = 0; i < analyzedPages.length; i += batchSize) {
           const batch = analyzedPages.slice(i, i + batchSize);
 
-          // Emit progress update for suggestion generation (80-95% progress)
-          const suggestionProgress = 80 + Math.floor(((i / analyzedPages.length) * 15));
+          // Emit progress update for suggestion generation (40-80% progress)
+          const suggestionProgress = 40 + Math.floor(((i / analyzedPages.length) * 40));
           events.emit(domain, {
             status: 'in-progress',
             domain,
@@ -451,7 +451,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     let contentRepetitionAnalysis: ContentRepetitionAnalysis | undefined;
     if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
       try {
-        // Emit progress update for content repetition analysis (95% progress)
+        // Emit progress update for content repetition analysis (85% progress)
         events.emit(domain, {
           status: 'in-progress',
           domain,
@@ -459,7 +459,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
           pagesAnalyzed: analyzedPages.length,
           currentPageUrl: 'Analyzing content duplication...',
           analyzedPages: analyzedPages.map(p => p.url),
-          percentage: 95
+          percentage: 85
         });
 
         console.log(`Analyzing content repetition for ${domain}...`);
@@ -471,7 +471,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       }
     }
 
-    // Emit progress update for saving analysis (98% progress)
+    // Emit progress update for saving analysis (95% progress)
     events.emit(domain, {
       status: 'in-progress',
       domain,
@@ -479,7 +479,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       pagesAnalyzed: analyzedPages.length,
       currentPageUrl: 'Saving analysis...',
       analyzedPages: analyzedPages.map(p => p.url),
-      percentage: 98
+      percentage: 95
     });
 
     // Save analysis to storage
