@@ -459,6 +459,9 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Content repetition analysis is now optional and run separately
     let contentRepetitionAnalysis: ContentRepetitionAnalysis | undefined;
 
+    // Ensure siteOverview is defined in the correct scope for the final analysis object
+    // (it was declared inside the AI analysis block but needed here)
+
     // Emit progress update for saving analysis (90% progress)
     events.emit(domain, {
       status: 'in-progress',
@@ -478,7 +481,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       metrics,
       pages: analyzedPages,
       contentRepetitionAnalysis,
-      siteOverview: settings.useAI && !isCompetitor ? siteOverview : undefined
+      siteOverview: settings.useAI && !isCompetitor && siteOverview ? siteOverview : undefined
     };
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
