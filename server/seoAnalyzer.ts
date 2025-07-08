@@ -736,7 +736,11 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
      }> = [];
 
      // Extract links with "button" class or role (including complex class names)
-     $('a[class*="button"], a[role="button"]').each((_, el) => {
+     // This covers patterns like:
+     // - sqs-block-button-element, sqs-button-element
+     // - wp-block-button__link, wp-element-button
+     // - Generic button classes
+     $('a[class*="button"], a[class*="btn"], a[role="button"]').each((_, el) => {
          const linkText = $(el).text().trim();
          const href = $(el).attr('href') || '';
          const classes = $(el).attr('class') || '';
@@ -771,9 +775,9 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          });
      });
 
-     // Extract input buttons (submit, button)
-     $('input[type="submit"], input[type="button"]').each((_, el) => {
-         const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || '';
+     // Extract input buttons (submit, button, image)
+     $('input[type="submit"], input[type="button"], input[type="image"]').each((_, el) => {
+         const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || $(el).attr('alt') || '';
          const type = $(el).attr('type') || '';
          const classes = $(el).attr('class') || '';
          
@@ -784,6 +788,31 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
              attributes: {
                  type: type,
                  class: classes
+             }
+         });
+     });
+
+     // Extract elements with data attributes that indicate buttons
+     $('[data-sqsp-button], [data-button], [data-btn]').each((_, el) => {
+         const tagName = $(el).prop('tagName').toLowerCase();
+         const buttonText = $(el).text().trim();
+         const classes = $(el).attr('class') || '';
+         
+         // Skip if already captured as a link or button
+         if (tagName === 'a' || tagName === 'button' || tagName === 'input') {
+             return;
+         }
+         
+         ctaElements.push({
+             type: 'data_button',
+             text: buttonText,
+             element: tagName,
+             attributes: {
+                 class: classes,
+                 'data-attributes': Object.keys($(el)[0].attribs || {})
+                     .filter(attr => attr.startsWith('data-'))
+                     .map(attr => `${attr}="${$(el).attr(attr)}"`)
+                     .join(', ')
              }
          });
      });
