@@ -439,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         csv += row.join(',') + '\n';
       });
 
-      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.csv`);
       res.send(csv);
     } catch (error) {
