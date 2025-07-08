@@ -735,7 +735,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
                                role === 'button';
          
          if (hasButtonClass && linkText) {
-             console.log(`Found button-like link: "${linkText}" with classes: "${classes}"`);
              ctaElements.push({
                  type: 'link_button',
                  text: linkText,
@@ -755,7 +754,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          const type = $(el).attr('type') || 'button';
          const classes = $(el).attr('class') || '';
          
-         console.log(`Found button: "${buttonText}" with classes: "${classes}"`);
          ctaElements.push({
              type: 'button',
              text: buttonText,
@@ -774,7 +772,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
              const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || $(el).attr('alt') || '';
              const classes = $(el).attr('class') || '';
              
-             console.log(`Found input button: "${buttonText}" type: "${type}" with classes: "${classes}"`);
              ctaElements.push({
                  type: 'input_button',
                  text: buttonText,
@@ -802,7 +799,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
              
              // Skip if already captured as a link or button
              if (tagName !== 'a' && tagName !== 'button' && tagName !== 'input' && buttonText) {
-                 console.log(`Found data-button element: "${buttonText}" tagName: "${tagName}" with classes: "${classes}"`);
                  ctaElements.push({
                      type: 'data_button',
                      text: buttonText,
@@ -825,8 +821,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
          const action = $(el).attr('action') || '';
          const method = $(el).attr('method') || 'GET';
          const classes = $(el).attr('class') || '';
-         
-         console.log(`Found form: ID="${formId}" action="${action}" method="${method}" classes="${classes}"`);
+
          ctaElements.push({
              type: 'form',
              text: formId ? `Form with ID: ${formId}` : 'Form without ID',
