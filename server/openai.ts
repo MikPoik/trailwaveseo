@@ -427,38 +427,48 @@ ${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
 }).join('\n\n')}
 ` : 'PARAGRAPH CONTENT: No paragraph content available';
 
+    // Filter out CTA elements with empty text
+    const ctaElementsWithText = pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.text && cta.text.trim() !== '') : [];
+
+    // Debug: Log filtering results
+    console.log(`Original CTA elements: ${pageData.ctaElements ? pageData.ctaElements.length : 0}`);
+    console.log(`CTA elements with text: ${ctaElementsWithText.length}`);
+    if (ctaElementsWithText.length > 0) {
+      console.log('CTA elements with text:', ctaElementsWithText.map(cta => `${cta.type}: "${cta.text}"`));
+    }
+
     // Analyze CTA elements on the page
-    const ctaAnalysis = pageData.ctaElements && pageData.ctaElements.length > 0 ? `
+    const ctaAnalysis = ctaElementsWithText && ctaElementsWithText.length > 0 ? `
 CTA ELEMENTS ANALYSIS:
-Total CTA elements found: ${pageData.ctaElements.length}
+Total CTA elements with text: ${ctaElementsWithText.length}
 
-Buttons (${pageData.ctaElements.filter((cta: any) => cta.type === 'button').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'button').map((cta: any) => 
-  `- "${cta.text}" (${cta.element}, class: "${cta.attributes.class}", type: "${cta.attributes.type}")`
-).join('\n') || '- No buttons found'}
-
-Input Buttons (${pageData.ctaElements.filter((cta: any) => cta.type === 'input_button').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'input_button').map((cta: any) => 
-  `- "${cta.text}" (${cta.element}, class: "${cta.attributes.class}", type: "${cta.attributes.type}")`
-).join('\n') || '- No input buttons found'}
-
-Forms (${pageData.ctaElements.filter((cta: any) => cta.type === 'form').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'form').map((cta: any) => 
-  `- ${cta.text} (method: "${cta.attributes.method}", action: "${cta.attributes.action}", class: "${cta.attributes.class}")`
-).join('\n') || '- No forms found'}
-
-Button-like Links (${pageData.ctaElements.filter((cta: any) => cta.type === 'link_button').length}):
-${pageData.ctaElements.filter((cta: any) => cta.type === 'link_button').map((cta: any) => 
-  `- "${cta.text}" (href: "${cta.attributes.href}", class: "${cta.attributes.class}")`
+Button-like Links (${ctaElementsWithText.filter((cta: any) => cta.type === 'link_button').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'link_button').map((cta: any) => 
+  `- "${cta.text}"`
 ).join('\n') || '- No button-like links found'}
 
+Input Buttons (${ctaElementsWithText.filter((cta: any) => cta.type === 'input_button').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'input_button').map((cta: any) => 
+  `- "${cta.text}"`
+).join('\n') || '- No input buttons found'}
+
+Regular Buttons (${ctaElementsWithText.filter((cta: any) => cta.type === 'button').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'button').map((cta: any) => 
+  `- "${cta.text}"`
+).join('\n') || '- No buttons with text found'}
+
+Forms (${ctaElementsWithText.filter((cta: any) => cta.type === 'form').length}):
+${ctaElementsWithText.filter((cta: any) => cta.type === 'form').map((cta: any) => 
+  `- ${cta.text}`
+).join('\n') || '- No forms found'}
+
 CTA Quality Assessment:
-- Average CTA text length: ${pageData.ctaElements.length > 0 ? Math.round(pageData.ctaElements.reduce((sum: number, cta: any) => sum + cta.text.length, 0) / pageData.ctaElements.length) : 0} characters
-- CTA placement distribution: ${pageData.ctaElements.length > 0 ? 'Available for analysis' : 'No CTAs to analyze'}
+- Average CTA text length: ${ctaElementsWithText.length > 0 ? Math.round(ctaElementsWithText.reduce((sum: number, cta: any) => sum + cta.text.length, 0) / ctaElementsWithText.length) : 0} characters
+- Total actionable CTAs found: ${ctaElementsWithText.length}
 ` : `
 CTA ELEMENTS ANALYSIS:
-- No CTA elements (buttons, forms, or button-like links) found on this page
-- This may indicate missing conversion opportunities
+- No CTA elements with text found on this page
+- This may indicate missing conversion opportunities or navigation buttons without descriptive text
 `;
 
     const additionalInfoSection = additionalInfo ? `
@@ -878,4 +888,4 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     };
   }
 }
-// The code has been modified to include CTA analysis in the main prompt.
+// Refactored CTA analysis to filter for elements with text and simplify the display format.
