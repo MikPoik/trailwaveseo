@@ -880,15 +880,6 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
-    // Schema markup analysis
-    if (schemaMarkup.length === 0) {
-      issues.push({
-        category: 'structured-data',
-        severity: 'info',
-        title: 'Missing Structured Data',
-        description: 'No schema markup found. Adding structured data can improve search result appearance.'
-      });
-    }
 
 
     // Mobile optimization check
