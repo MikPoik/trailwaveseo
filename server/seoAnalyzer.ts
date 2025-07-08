@@ -447,31 +447,10 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
     // Calculate overall metrics
     const metrics = calculateMetrics(analyzedPages);
 
-    // Perform content repetition analysis
+    // Content repetition analysis is now optional and run separately
     let contentRepetitionAnalysis: ContentRepetitionAnalysis | undefined;
-    if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
-      try {
-        // Emit progress update for content repetition analysis (85% progress)
-        events.emit(domain, {
-          status: 'in-progress',
-          domain,
-          pagesFound: totalPages,
-          pagesAnalyzed: analyzedPages.length,
-          currentPageUrl: 'Analyzing content duplication...',
-          analyzedPages: analyzedPages.map(p => p.url),
-          percentage: 85
-        });
 
-        console.log(`Analyzing content repetition for ${domain}...`);
-        contentRepetitionAnalysis = await analyzeContentRepetition(analyzedPages);
-        console.log(`Content repetition analysis completed for ${domain}`);
-      } catch (error) {
-        console.error(`Error analyzing content repetition for ${domain}:`, error);
-        // Continue without content repetition analysis if it fails
-      }
-    }
-
-    // Emit progress update for saving analysis (95% progress)
+    // Emit progress update for saving analysis (90% progress)
     events.emit(domain, {
       status: 'in-progress',
       domain,
@@ -479,7 +458,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       pagesAnalyzed: analyzedPages.length,
       currentPageUrl: 'Saving analysis...',
       analyzedPages: analyzedPages.map(p => p.url),
-      percentage: 95
+      percentage: 90
     });
 
     // Save analysis to storage

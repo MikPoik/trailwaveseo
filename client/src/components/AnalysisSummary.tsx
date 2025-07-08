@@ -30,6 +30,7 @@ interface AnalysisSummaryProps {
 const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isRunningContentDuplication, setIsRunningContentDuplication] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -142,6 +143,66 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
   const loadMorePages = () => {
     setDisplayedPages(prev => prev + 5);
+  };
+
+  const runContentDuplicationAnalysis = async () => {
+    if (!analysis.id) {
+      toast({
+        title: "Error",
+        description: "Analysis ID is missing. Unable to run content duplication analysis.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (analysis.pages.length < 2) {
+      toast({
+        title: "Insufficient Data",
+        description: "Content duplication analysis requires at least 2 pages to analyze.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRunningContentDuplication(true);
+
+    try {
+      const response = await fetch(`/api/analysis/${analysis.id}/content-duplication`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to run content duplication analysis');
+      }
+
+      const result = await response.json();
+
+      // Update the analysis data with the new content repetition analysis
+      const updatedAnalysis = {
+        ...analysis,
+        contentRepetitionAnalysis: result.contentRepetitionAnalysis
+      };
+
+      // Update the query cache with the new data
+      queryClient.setQueryData(['/api/analysis', analysis.id?.toString()], updatedAnalysis);
+
+      toast({
+        title: "Content Duplication Analysis Complete",
+        description: "Content duplication analysis has been completed successfully."
+      });
+    } catch (error) {
+      console.error('Error running content duplication analysis:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to run content duplication analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRunningContentDuplication(false);
+    }
   };
 
   const getCategoryOptimizationPercentage = (category: string): number => {
@@ -570,24 +631,54 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Info className="h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Content Duplication Analysis Not Available</h3>
+                  <Copy className="h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Content Duplication Analysis</h3>
                   <p className="text-gray-500 max-w-md mb-6">
-                    Content duplication analysis is only available when AI analysis is enabled and at least two pages have been analyzed.
+                    Run an analysis to detect duplicate or similar content across your website's titles, meta descriptions, and headings.
                   </p>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
-                    <h4 className="text-sm font-medium text-amber-800 mb-2">Debug Information:</h4>
-                    <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
-                      <li>Pages analyzed: {analysis.pages.length}</li>
-                      <li>AI analysis enabled: {analysis.contentRepetitionAnalysis ? (
-                        Object.keys(analysis.contentRepetitionAnalysis).length > 0 ? "Yes" : "Yes, but no results"
-                      ) : "No"}</li>
-                    </ul>
-                  </div>
-                  <Button variant="outline" onClick={onNewAnalysis}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Run New Analysis with AI Enabled
+                  
+                  {analysis.pages.length < 2 ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
+                      <h4 className="text-sm font-medium text-amber-800 mb-2">Requirements:</h4>
+                      <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
+                        <li>Pages analyzed: {analysis.pages.length} (minimum 2 required)</li>
+                        <li>AI analysis must be enabled in settings</li>
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
+                      <h4 className="text-sm font-medium text-green-800 mb-2">Ready to analyze:</h4>
+                      <ul className="text-xs text-green-700 list-disc pl-4 space-y-1">
+                        <li>Pages available: {analysis.pages.length}</li>
+                        <li>Analysis will check for duplicate titles, descriptions, and headings</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  <Button 
+                    onClick={runContentDuplicationAnalysis} 
+                    disabled={isRunningContentDuplication || analysis.pages.length < 2}
+                    className="mb-4"
+                  >
+                    {isRunningContentDuplication ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Running Analysis...
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Run Content Duplication Analysis
+                      </>
+                    )}
                   </Button>
+
+                  {analysis.pages.length < 2 && (
+                    <Button variant="outline" onClick={onNewAnalysis}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Run New Analysis with More Pages
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
