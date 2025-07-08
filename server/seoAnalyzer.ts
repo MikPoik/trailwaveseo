@@ -385,7 +385,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
             domain,
             pagesFound: totalPages,
             pagesAnalyzed: analyzedPages.length,
-            currentPageUrl: `Generating suggestions for ${batch.map(p => p.url.split('/').pop() || 'page').join(', ')}...`,
+            currentPageUrl: `Generating suggestions for ${batch.map(p => p.url).join(', ')}...`,
             analyzedPages: analyzedPages.map(p => p.url),
             percentage: suggestionProgress
           });
