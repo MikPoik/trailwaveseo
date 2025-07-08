@@ -647,6 +647,41 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       });
     }
 
+        // Extract external links
+        const externalLinks: { href: string; text: string; title?: string }[] = [];
+        if (settings.followExternalLinks) { // Use the same setting as crawler
+            const urlObj = new URL(url);
+            const baseDomain = urlObj.hostname;
+
+            $('a[href]').each((_, el) => {
+                const href = $(el).attr('href');
+                const linkText = $(el).text().trim();
+                const title = $(el).attr('title');
+
+                if (href && linkText) {
+                    try {
+                        // Handle relative URLs and internal links
+                        let fullUrl: string;
+                        if (href.startsWith('http')) {
+                            const linkUrlObj = new URL(href);
+                            // Only include links to different domains (external)
+                            if (linkUrlObj.hostname !== baseDomain) {
+                                fullUrl = href;
+                                externalLinks.push({
+                                    href: fullUrl,
+                                    text: linkText,
+                                    title: title || undefined
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        // Skip malformed URLs
+                        console.warn(`Skipping malformed URL: ${href} on page ${url}`);
+                    }
+                }
+            });
+        }
+
     // Enhanced content extraction with quality metrics
     const paragraphs: string[] = [];
     const sentences: string[] = [];
@@ -691,6 +726,27 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
         }
       }
     });
+
+     // Extract CTA elements (buttons, forms, etc.)
+     const ctaElements: string[] = [];
+
+     // Extract links with "button" class or role
+     $('a.button, a[role="button"]').each((_, el) => {
+         const linkText = $(el).text().trim();
+         ctaElements.push(`Link button: ${linkText}`);
+     });
+
+     // Extract form submit buttons
+     $('button[type="submit"], input[type="submit"]').each((_, el) => {
+         const buttonText = $(el).val()?.toString().trim() || $(el).text().trim();
+         ctaElements.push(`Submit button: ${buttonText}`);
+     });
+
+     // Extract form elements
+     $('form').each((_, el) => {
+         const formId = $(el).attr('id') || 'No ID';
+         ctaElements.push(`Form: ${formId}`);
+     });
 
     // Calculate content quality metrics
     const contentMetrics = {
@@ -1060,6 +1116,7 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       headings,
       images,
       internalLinks: settings.analyzeLinkStructure ? internalLinks : undefined,
+      externalLinks,
       canonical,
       robotsMeta,
       paragraphs,
@@ -1073,7 +1130,8 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
       viewport,
       htmlLang,
       hreflangLinks,
-      mobileOptimized
+      mobileOptimized,
+      ctaElements
     };
   } catch (error) {
     console.error(`Error analyzing page ${url}:`, error);

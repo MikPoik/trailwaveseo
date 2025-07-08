@@ -428,6 +428,40 @@ ${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
 }).join('\n\n')}
 ` : 'PARAGRAPH CONTENT: No paragraph content available';
 
+    // Analyze CTA elements on the page
+    const ctaAnalysis = pageData.ctaElements && pageData.ctaElements.length > 0 ? `
+CTA ELEMENTS ANALYSIS:
+Total CTA elements found: ${pageData.ctaElements.length}
+
+Buttons (${pageData.ctaElements.filter((cta: any) => cta.type === 'button').length}):
+${pageData.ctaElements.filter((cta: any) => cta.type === 'button').map((cta: any) => 
+  `- "${cta.text}" (${cta.element}, class: "${cta.attributes.class}", type: "${cta.attributes.type}")`
+).join('\n') || '- No buttons found'}
+
+Input Buttons (${pageData.ctaElements.filter((cta: any) => cta.type === 'input_button').length}):
+${pageData.ctaElements.filter((cta: any) => cta.type === 'input_button').map((cta: any) => 
+  `- "${cta.text}" (${cta.element}, class: "${cta.attributes.class}", type: "${cta.attributes.type}")`
+).join('\n') || '- No input buttons found'}
+
+Forms (${pageData.ctaElements.filter((cta: any) => cta.type === 'form').length}):
+${pageData.ctaElements.filter((cta: any) => cta.type === 'form').map((cta: any) => 
+  `- ${cta.text} (method: "${cta.attributes.method}", action: "${cta.attributes.action}", class: "${cta.attributes.class}")`
+).join('\n') || '- No forms found'}
+
+Button-like Links (${pageData.ctaElements.filter((cta: any) => cta.type === 'link_button').length}):
+${pageData.ctaElements.filter((cta: any) => cta.type === 'link_button').map((cta: any) => 
+  `- "${cta.text}" (href: "${cta.attributes.href}", class: "${cta.attributes.class}")`
+).join('\n') || '- No button-like links found'}
+
+CTA Quality Assessment:
+- Average CTA text length: ${pageData.ctaElements.length > 0 ? Math.round(pageData.ctaElements.reduce((sum: number, cta: any) => sum + cta.text.length, 0) / pageData.ctaElements.length) : 0} characters
+- CTA placement distribution: ${pageData.ctaElements.length > 0 ? 'Available for analysis' : 'No CTAs to analyze'}
+` : `
+CTA ELEMENTS ANALYSIS:
+- No CTA elements (buttons, forms, or button-like links) found on this page
+- This may indicate missing conversion opportunities
+`;
+
     const additionalInfoSection = additionalInfo ? `
 ADDITIONAL BUSINESS CONTEXT: ${additionalInfo}
 ` : '';
@@ -441,6 +475,7 @@ H1: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
 Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.length || 0} paragraphs
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
+CTAs: ${pageData.ctaElements?.length || 0} total (${pageData.ctaElements?.filter((cta: any) => cta.type === 'button').length || 0} buttons, ${pageData.ctaElements?.filter((cta: any) => cta.type === 'form').length || 0} forms)
 Keywords: ${extractedKeywords.slice(0, 5).join(', ') || 'None found'}
 ${contentQuality}${headingStructure}
 ISSUES: ${seoIssuesList}
@@ -451,6 +486,7 @@ Services: ${siteOverview.mainServices.slice(0, 3).join(', ') || 'General'}${site
 ` : ''}
 ${additionalInfoSection}
 ${internalLinkingOpportunities}
+${ctaAnalysis}
 ${paragraphContent}
 
 Provide specific, actionable improvements focusing on:
@@ -459,9 +495,10 @@ Provide specific, actionable improvements focusing on:
 - Content structure and keyword integration
 - Semantic keyword opportunities and topic clustering
 - Internal linking with semantic relevance
+- CTA optimization (button text, placement, conversion opportunities)
 - Business-relevant content gaps and opportunities
 
-Include specific examples, character counts, and exact recommendations.
+Include specific examples, character counts, exact recommendations, and CTA improvements.
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
     
     console.log('SEO Suggestions Prompt:', prompt)
