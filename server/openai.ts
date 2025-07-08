@@ -180,7 +180,7 @@ Respond in JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         { 
           role: "system", 
@@ -394,13 +394,6 @@ CONTENT QUALITY:
 - Semantic phrases: ${pageData.contentMetrics.semanticKeywords?.slice(0, 5).join(', ') || 'None'}
 ` : '';
 
-    const technicalSeo = pageData.schemaMarkup && pageData.openGraph ? `
-TECHNICAL SEO:
-- Schema markup: ${pageData.schemaMarkup.length} items
-- Open Graph: ${pageData.openGraph.title ? 'Complete' : 'Incomplete'}
-- Mobile optimized: ${pageData.mobileOptimized ? 'Yes' : 'No'}
-- Language declared: ${pageData.htmlLang || 'Missing'}
-` : '';
     
     const prompt = `Analyze this webpage and provide 8-12 specific SEO improvements focused on content optimization.
 
@@ -412,7 +405,7 @@ Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.lengt
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
 Keywords: ${extractedKeywords.slice(0, 5).join(', ') || 'None found'}
-${contentQuality}${technicalSeo}
+${contentQuality}
 ISSUES: ${seoIssuesList}
 
 ${siteOverview && siteOverview.industry !== 'Unknown' ? `
@@ -429,22 +422,21 @@ Provide specific, actionable improvements focusing on:
 - Title/meta optimization with exact character counts
 - Content structure and keyword integration
 - Semantic keyword opportunities and topic clustering
-- Technical SEO (schema, mobile, accessibility)
 - Internal linking with semantic relevance
 - Business-relevant content gaps and opportunities
 
 Include specific examples, character counts, and exact recommendations.
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
     
-    console.log('SEO Suggestions Prompt:', prompt.substring(0, 500) + '...')
+    console.log('SEO Suggestions Prompt:', prompt)
     console.log(`Generating SEO suggestions for: ${url}`);
-    
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         { 
           role: "system", 
-          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in JSON format only."
+          content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in JSON format only. Write in the same language as the website's content is."
         },
         { role: "user", content: prompt }
       ],
@@ -573,7 +565,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         { 
           role: "system", 
