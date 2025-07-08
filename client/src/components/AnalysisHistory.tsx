@@ -146,8 +146,8 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
       </CardHeader>
       <CardContent>
         {analysisHistory && analysisHistory.length > 0 ? (
-          <div className="space-y-3">
-            {analysisHistory.map((analysis: any) => (
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {analysisHistory.slice(0, 5).map((analysis: any) => (
               <div
                 key={analysis.id}
                 className="flex justify-between items-center p-3 border rounded hover:bg-gray-50"
