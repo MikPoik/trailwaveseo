@@ -512,7 +512,7 @@ Include specific examples, character counts, exact recommendations, and CTA impr
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
 
     console.log(`Generating SEO suggestions for: ${url}`);
-
+    console.log(`Prompt: ${prompt}`);
     // Retry mechanism with exponential backoff
     const maxRetries = 3;
     let response: any = null;
@@ -523,7 +523,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
         console.log(`Attempt ${attempt}/${maxRetries} for ${url}`);
         
         response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4.1",
           messages: [
             { 
               role: "system", 
