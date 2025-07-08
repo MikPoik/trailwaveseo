@@ -83,7 +83,7 @@ const URLInputForm = ({
               pagesAnalyzed: data.pagesAnalyzed,
               currentPageUrl: data.currentPageUrl,
               analyzedPages: data.analyzedPages,
-              percentage: Math.floor((data.pagesAnalyzed / data.pagesFound) * 100) || 0
+              percentage: data.percentage || 0
             });
           } else if (data.status === "completed") {
             source.close();
