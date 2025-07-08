@@ -341,6 +341,9 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
       await Promise.all(batchPromises);
     }
 
+    // Initialize siteOverview variable
+    let siteOverview: any = undefined;
+
     // Enhance suggestions with site structure for internal linking (if AI is enabled)
     if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
       try {
@@ -370,7 +373,7 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
 
         // First, analyze the overall site to get business context
         console.log(`Generating business context analysis for ${domain}...`);
-        const siteOverview = await analyzeSiteOverview(siteStructure, additionalInfo);
+        siteOverview = await analyzeSiteOverview(siteStructure, additionalInfo);
         console.log(`Business context detected - Industry: ${siteOverview.industry}, Type: ${siteOverview.businessType}, Target: ${siteOverview.targetAudience}`);
 
         // Generate suggestions in batches to reduce API calls and improve efficiency
