@@ -730,10 +730,11 @@ async function analyzePage(url: string, settings: any, signal: AbortSignal, isCo
      // Extract CTA elements (buttons, forms, etc.)
      const ctaElements: string[] = [];
 
-     // Extract links with "button" class or role
-     $('a.button, a[role="button"]').each((_, el) => {
+     // Extract links with "button" class or role (including complex class names)
+     $('a[class*="button"], a[role="button"]').each((_, el) => {
          const linkText = $(el).text().trim();
-         ctaElements.push(`Link button: ${linkText}`);
+         const classes = $(el).attr('class') || '';
+         ctaElements.push(`Link button: ${linkText} (classes: ${classes})`);
      });
 
      // Extract form submit buttons
