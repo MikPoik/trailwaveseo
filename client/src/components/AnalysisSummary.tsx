@@ -31,6 +31,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   const [displayedPages, setDisplayedPages] = useState(5);
   const [isRunningContentDuplication, setIsRunningContentDuplication] = useState(false);
   const [updatedAnalysis, setUpdatedAnalysis] = useState(analysis);
+  const [activeTab, setActiveTab] = useState("overview");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
