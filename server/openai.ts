@@ -375,9 +375,6 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         .join('\n')}${siteStructure.allPages.length > 9 ? `\n  +${siteStructure.allPages.length - 9} more pages available` : ''}
     ` : '';
 
-    // CTA analysis removed as requested
-    const ctaAnalysis = 'Call-to-Action Analysis: Disabled';
-
     // Analyze paragraph content quality
     const paragraphAnalysis = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
       Content Structure Analysis:
