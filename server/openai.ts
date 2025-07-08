@@ -345,7 +345,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       }).join('\n')}${pageData.internalLinks.length > 5 ? `\n  +${pageData.internalLinks.length - 5} more links` : ''}
     ` : '';
 
-    // Build optimized site structure information
+    // Build optimized site structure information with better page display
     const internalLinkingOpportunities = siteStructure ? `
       Site Structure (${siteStructure.allPages.length} pages):
       Internal Link Opportunities:
@@ -364,8 +364,15 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
           return b.relevanceScore - a.relevanceScore;
         })
         .slice(0, 6)
-        .map(item => `- ${item.page.title || 'Untitled'} (${item.page.url}) - Topics: ${item.commonKeywords.slice(0, 3).join(', ')} ${item.isAlreadyLinked ? '[Linked]' : '[New opportunity]'}`)
+        .map(item => `- "${item.page.title || 'Untitled'}" (${item.page.url}) - Related topics: ${item.commonKeywords.slice(0, 3).join(', ')} ${item.isAlreadyLinked ? '[Already linked]' : '[Link opportunity]'}`)
         .join('\n')}
+        
+      Available pages for internal linking:
+      ${siteStructure.allPages
+        .filter(page => page.url !== url)
+        .slice(0, 8)
+        .map(page => `- "${page.title || 'Untitled'}" (${page.url})`)
+        .join('\n')}${siteStructure.allPages.length > 9 ? `\n  +${siteStructure.allPages.length - 9} more pages available` : ''}
     ` : '';
 
     // CTA analysis removed as requested
@@ -394,6 +401,18 @@ CONTENT QUALITY:
 - Semantic phrases: ${pageData.contentMetrics.semanticKeywords?.slice(0, 5).join(', ') || 'None'}
 ` : '';
 
+    // Include up to 5 paragraphs for better context (max 1000 chars each)
+    const paragraphContent = pageData.paragraphs && pageData.paragraphs.length > 0 ? `
+PARAGRAPH CONTENT (for context):
+${pageData.paragraphs.slice(0, 5).map((paragraph: string, index: number) => {
+  const truncatedParagraph = paragraph.length > 1000 ? paragraph.substring(0, 1000) + '...' : paragraph;
+  return `Paragraph ${index + 1}: ${truncatedParagraph}`;
+}).join('\n\n')}
+` : 'PARAGRAPH CONTENT: No paragraph content available';
+
+    const additionalInfoSection = additionalInfo ? `
+ADDITIONAL BUSINESS CONTEXT: ${additionalInfo}
+` : '';
     
     const prompt = `Analyze this webpage and provide 8-12 specific SEO improvements focused on content optimization.
 
@@ -412,10 +431,9 @@ ${siteOverview && siteOverview.industry !== 'Unknown' ? `
 BUSINESS: ${siteOverview.industry} | ${siteOverview.businessType} | Target: ${siteOverview.targetAudience}
 Services: ${siteOverview.mainServices.slice(0, 3).join(', ') || 'General'}${siteOverview.location ? ` | Location: ${siteOverview.location}` : ''}
 ` : ''}
-
-${internalLinkingOpportunities ? `LINK OPPORTUNITIES: ${siteStructure?.allPages.length || 0} pages available for internal linking` : ''}
-
-CONTENT SAMPLE: ${pageData.paragraphs && pageData.paragraphs.length > 0 ? pageData.paragraphs.slice(0, 2).join(' ').substring(0, 500) + '...' : 'No content'}
+${additionalInfoSection}
+${internalLinkingOpportunities}
+${paragraphContent}
 
 Provide specific, actionable improvements focusing on:
 - Content quality optimization (readability, depth, semantic richness)
