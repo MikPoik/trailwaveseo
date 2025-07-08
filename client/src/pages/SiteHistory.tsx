@@ -1,17 +1,64 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, ExternalLinkIcon } from "lucide-react";
+import { CalendarIcon, ExternalLinkIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useEffect } from "react";
+import { apiRequest } from "@/lib/queryClient";
 
 const SiteHistory = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: analysisHistory, isLoading, error } = useQuery({
     queryKey: ['/api/analysis/history'],
+  });
+
+  const { mutate: deleteAnalysis } = useMutation({
+    mutationFn: async (id: number) => {
+      try {
+        const response = await apiRequest("DELETE", `/api/analysis/${id}`);
+        
+        if (response.status >= 400) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete analysis");
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Error in delete mutation:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
+      toast({
+        title: "Analysis deleted",
+        description: "The analysis has been removed from your history",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Delete analysis error:", error);
+      
+      if (error.message?.includes("not found")) {
+        queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
+        toast({
+          title: "Analysis deleted",
+          description: "The analysis has been removed from your history",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete analysis",
+        variant: "destructive",
+      });
+    },
   });
 
   // Use useEffect to show error toast only when error changes
@@ -100,6 +147,18 @@ const SiteHistory = () => {
                                   View Details
                                 </Button>
                               </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to delete this analysis?")) {
+                                    deleteAnalysis(analysis.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
