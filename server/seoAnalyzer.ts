@@ -426,10 +426,10 @@ export async function analyzeSite(domain: string, useSitemap: boolean, events: E
               }
             } catch (error) {
               console.error(`Error generating suggestions for ${page.url}:`, error);
-              
+
               // Set empty suggestions but don't fail the entire analysis
               page.suggestions = [];
-              
+
               // Log the error for monitoring but continue with other pages
               console.log(`Continuing analysis without AI suggestions for ${page.url}`);
             }
@@ -730,7 +730,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
          const href = $(el).attr('href') || '';
          const linkText = $(el).text().trim();
          const role = $(el).attr('role') || '';
-         
+
          // Check if class contains button-related keywords
          const hasButtonClass = classes.includes('button') || 
                                //classes.includes('btn') || 
@@ -738,7 +738,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
                                //classes.includes('wp-block-button') ||
                                //classes.includes('wp-element-button') ||
                                role === 'button';
-         
+
          if (hasButtonClass && linkText) {
              ctaElements.push({
                  type: 'link_button',
@@ -758,7 +758,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
          const buttonText = $(el).text().trim();
          const type = $(el).attr('type') || 'button';
          const classes = $(el).attr('class') || '';
-         
+
          ctaElements.push({
              type: 'button',
              text: buttonText,
@@ -776,7 +776,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
          if (type === 'submit' || type === 'button' || type === 'image') {
              const buttonText = $(el).val()?.toString().trim() || $(el).attr('value') || $(el).attr('alt') || '';
              const classes = $(el).attr('class') || '';
-             
+
              ctaElements.push({
                  type: 'input_button',
                  text: buttonText,
@@ -796,12 +796,12 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
              attr.startsWith('data-') && 
              (attr.includes('button') || attr.includes('btn') || attr.includes('sqsp-button'))
          );
-         
+
          if (hasDataButton) {
              const tagName = $(el).prop('tagName')?.toLowerCase() || '';
              const buttonText = $(el).text().trim();
              const classes = $(el).attr('class') || '';
-             
+
              // Skip if already captured as a link or button
              if (tagName !== 'a' && tagName !== 'button' && tagName !== 'input' && buttonText) {
                  ctaElements.push({
