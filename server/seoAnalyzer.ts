@@ -157,7 +157,14 @@ const ongoingAnalyses = new Map();
  * @param isCompetitor Whether this is a competitor analysis (skips alt text generation)
  * @param userId Optional user ID to associate with the analysis
  */
-export async function analyzeSite(domain: string, useSitemap: boolean, events: EventEmitter, isCompetitor: boolean = false, userId?: string, additionalInfo?: string) {
+export async function analyzeSite(
+  domain: string,
+  useSitemap: boolean,
+  events: EventEmitter,
+  isCompetitor: boolean = false,
+  userId?: string,
+  additionalInfo?: string
+): Promise<number> {
   // Set up cancellation token
   const controller = new AbortController();
   ongoingAnalyses.set(domain, controller);
@@ -1159,7 +1166,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
         // For single page reanalysis, generate suggestions immediately
         // For full site analysis, suggestions will be generated later with full context
         const isSinglePageReanalysis = !isCompetitor && analyzedPages.length > 0;
-        
+
         if (isSinglePageReanalysis) {
           // Generate suggestions for this single page with available context
           const pageData = {

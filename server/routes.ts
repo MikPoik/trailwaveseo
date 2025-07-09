@@ -492,9 +492,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try {
+        // Check if user is authenticated and get their usage
+        let userId: string | undefined;
+        if (req.isAuthenticated && req.isAuthenticated()) {
+          userId = req.user.claims.sub;
+          const usage = await storage.getUserUsage(userId);
+          if (usage && usage.pagesAnalyzed >= usage.pageLimit) {
+            return res.status(403).json({ 
+              error: "Page analysis limit reached", 
+              message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
+              usage: usage
+            });
+          }
+        }
+
         // Analyze the competitor domain
         // For simplicity, we'll reuse the existing analysis flow but mark as competitor to skip alt text generation
-        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true);
+        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true, userId);
 
         // Get the competitor analysis results
         const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);
@@ -658,6 +672,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Failed to save content duplication analysis" });
         }
 
+        // Increment user's page usage count for content duplication analysis
+        // Count as 1 page since it's analyzing existing content
+        await storage.incrementUserUsage(userId, 1);
+
         res.json({ contentRepetitionAnalysis });
       } catch (error) {
         console.error(`Error analyzing content repetition for analysis ${id}:`, error);
@@ -738,6 +756,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedAnalysis) {
         return res.status(500).json({ error: "Failed to update analysis with new page data" });
       }
+
+      // Increment user's page usage count for reanalysis
+      await storage.incrementUserUsage(userId, 1);
 
       res.json({
         message: "Page reanalyzed successfully",

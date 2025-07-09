@@ -77,15 +77,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set({
-        pagesAnalyzed: sql`${users.pagesAnalyzed} + ${pageCount}`,
+    console.log(`Incrementing usage for user ${userId} by ${pageCount} pages`);
+    try {
+      // First check if user exists, if not create them
+      const existingUser = await this.getUser(userId);
+      if (!existingUser) {
+        console.log(`User ${userId} doesn't exist, creating user first`);
+        await this.createUser(userId, 'unknown@example.com'); // Email will be updated by auth
+      }
+
+      const [user] = await db
+        .update(users)
+        .set({
+          pagesAnalyzed: sql`${users.pagesAnalyzed} + ${pageCount}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      console.log(`Successfully incremented usage for user ${userId}`);
+      return user;
+    } catch (error) {
+      console.error(`Error incrementing usage for user ${userId}:`, error);
+      return undefined
+    }
+  }
+
+  async createUser(userId: string, email: string): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        email: email,
+        firstName: null,
+        lastName: null,
+        profileImageUrl: null,
         updatedAt: new Date()
       })
-      .where(eq(users.id, userId))
       .returning();
-    return user;
+    return newUser;
   }
 
   // Analysis operations
