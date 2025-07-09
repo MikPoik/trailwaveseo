@@ -36,11 +36,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await await storage.getUser(userId);
+      const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // User usage endpoint - protected by auth
+  app.get('/api/user/usage', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const usage = await storage.getUserUsage(userId);
+      if (!usage) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+      res.json(usage);
+    } catch (error) {
+      console.error("Error fetching user usage:", error);
+      res.status(500).json({ message: "Failed to fetch user usage" });
     }
   });
   // Input validation schemas
@@ -128,6 +144,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { domain, useSitemap, additionalInfo } = analyzeRequestSchema.parse(req.body);
+
+      // Check user's usage limits before starting analysis
+      const usage = await storage.getUserUsage(userId);
+      if (!usage) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (usage.pagesAnalyzed >= usage.pageLimit) {
+        return res.status(403).json({ 
+          error: "Page analysis limit reached", 
+          message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
+          usage: usage
+        });
+      }
 
       // Start analysis in the background
       analyzeSite(domain, useSitemap, analysisEvents, false, userId, additionalInfo)

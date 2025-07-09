@@ -9,6 +9,7 @@ import SiteHistory from "@/pages/SiteHistory";
 import HowItWorks from "@/pages/HowItWorks";
 import Settings from "@/pages/Settings";
 import AnalysisDetails from "@/pages/AnalysisDetails";
+import Account from "@/pages/Account";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "./hooks/useAuth";
 
@@ -63,6 +64,9 @@ function Router() {
           <Route path="/how-it-works" component={HowItWorks} />
           <Route path="/settings">
             <ProtectedRoute path="/settings" component={Settings} />
+          </Route>
+          <Route path="/account">
+            <ProtectedRoute path="/account" component={Account} />
           </Route>
           <Route component={NotFound} />
         </Switch>

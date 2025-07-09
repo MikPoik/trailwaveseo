@@ -8,6 +8,8 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number } | undefined>;
+  incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined>;
 
   // Analysis operations
   getAnalysisById(id: number): Promise<Analysis | undefined>;
@@ -62,6 +64,26 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date()
         }
       })
+      .returning();
+    return user;
+  }
+
+  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number } | undefined> {
+    const [user] = await db.select({
+      pagesAnalyzed: users.pagesAnalyzed,
+      pageLimit: users.pageLimit
+    }).from(users).where(eq(users.id, userId));
+    return user;
+  }
+
+  async incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({
+        pagesAnalyzed: sql`${users.pagesAnalyzed} + ${pageCount}`,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }
@@ -121,6 +143,12 @@ export class DatabaseStorage implements IStorage {
         siteOverview: analysis.siteOverview
       })
       .returning();
+
+    // Increment user's page usage count if userId is provided
+    if (userId) {
+      const pageCount = analysis.pagesCount || analysis.pages.length;
+      await this.incrementUserUsage(userId, pageCount);
+    }
 
     return newAnalysis;
   }

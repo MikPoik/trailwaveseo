@@ -104,12 +104,26 @@ const URLInputForm = ({
     onSuccess: (data) => {
       onAnalysisComplete(data);
     },
-    onError: (error) => {
-      toast({
-        title: "Analysis Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Handle usage limit errors specifically
+      if (error.status === 403 && error.message?.includes("limit reached")) {
+        toast({
+          title: "Usage Limit Reached",
+          description: error.message || "You have reached your page analysis limit.",
+          variant: "destructive",
+          action: (
+            <Button variant="outline" onClick={() => window.location.href = "/account"}>
+              View Account
+            </Button>
+          ),
+        });
+      } else {
+        toast({
+          title: "Analysis Failed",
+          description: error.message || "Failed to start analysis",
+          variant: "destructive",
+        });
+      }
     }
   });
 

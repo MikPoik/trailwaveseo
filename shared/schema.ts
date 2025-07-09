@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  pagesAnalyzed: integer("pages_analyzed").notNull().default(0),
+  pageLimit: integer("page_limit").notNull().default(5),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

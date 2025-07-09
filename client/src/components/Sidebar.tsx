@@ -8,7 +8,8 @@ import {
   HelpCircle,
   Settings,
   Menu,
-  Zap
+  Zap,
+  User
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,6 +48,12 @@ const Sidebar = () => {
       label: "Settings",
       icon: <Settings className="h-5 w-5 mr-3" />,
       active: location === "/settings"
+    },
+    {
+      href: "/account",
+      label: "Account",
+      icon: <User className="h-5 w-5 mr-3" />,
+      active: location === "/account"
     }
   ];
 
