@@ -504,6 +504,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               usage: usage
             });
           }
+          
+          // Also check if user has any pages remaining
+          const remainingPages = usage ? usage.pageLimit - usage.pagesAnalyzed : 0;
+          if (remainingPages <= 0) {
+            return res.status(403).json({ 
+              error: "No pages remaining", 
+              message: `You have no pages remaining in your current limit of ${usage?.pageLimit || 0} pages.`,
+              usage: usage
+            });
+          }
         }
 
         // Analyze the competitor domain
@@ -732,6 +742,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if the analysis belongs to the authenticated user
       if (analysis.userId && analysis.userId !== userId) {
         return res.status(403).json({ error: "You don't have permission to modify this analysis" });
+      }
+
+      // Check user's usage limits before reanalysis
+      const usage = await storage.getUserUsage(userId);
+      if (usage && usage.pagesAnalyzed >= usage.pageLimit) {
+        return res.status(403).json({ 
+          error: "Page analysis limit reached", 
+          message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
+          usage: usage
+        });
       }
 
       // Get user settings

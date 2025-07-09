@@ -173,6 +173,10 @@ export async function analyzeSite(
     // Get settings for this user
     const settings = await storage.getSettings(userId);
 
+    // Determine the effective maximum number of pages to analyze
+    // This is the smaller of the user's max pages setting and their remaining quota
+    const effectiveMaxPages = settings.maxPages; //  No quota checks currently
+
     // Get pages to analyze (either from sitemap or by crawling)
     let pages: string[] = [];
 
@@ -230,7 +234,7 @@ export async function analyzeSite(
 
       pages = await crawlWebsite(
         `https://${domain}`, 
-        settings.maxPages, 
+        effectiveMaxPages, 
         settings.crawlDelay, 
         settings.followExternalLinks,
         controller.signal,
@@ -241,7 +245,7 @@ export async function analyzeSite(
           }
 
           // Emit progress update during crawling with basic SEO data (up to 10% of total progress)
-          const crawlingProgress = Math.min(10, Math.floor((crawledPages.length / settings.maxPages) * 10));
+          const crawlingProgress = Math.min(10, Math.floor((crawledPages.length / effectiveMaxPages) * 10));
           events.emit(domain, {
             status: 'in-progress',
             domain,
@@ -259,8 +263,8 @@ export async function analyzeSite(
     // Limit the number of pages to analyze
     // Note: We don't need to force reaching the maximum page count
     // Just respect the smaller of: actual pages found or max setting
-    if (pages.length > settings.maxPages) {
-      pages = pages.slice(0, settings.maxPages);
+    if (pages.length > effectiveMaxPages) {
+      pages = pages.slice(0, effectiveMaxPages);
     }
 
     console.log(`Analyzing ${pages.length} pages for ${domain} (max setting: ${settings.maxPages})`);
