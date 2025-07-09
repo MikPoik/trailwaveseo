@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, BarChart3, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
+import { useEffect } from "react";
 
 interface UserUsage {
   pagesAnalyzed: number;
@@ -14,10 +15,44 @@ interface UserUsage {
 const Account = () => {
   const { user } = useAuth();
 
-  const { data: usage, isLoading } = useQuery<UserUsage>({
+  const { data: usage, isLoading, refetch } = useQuery<UserUsage>({
     queryKey: ['/api/user/usage'],
     enabled: !!user,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0, // Always consider data stale to ensure fresh data
   });
+
+  // Refetch usage when the page becomes visible (user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        refetch();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, refetch]);
+
+  // Listen for analysis completion events to refetch usage
+  useEffect(() => {
+    const handleAnalysisComplete = () => {
+      if (user) {
+        // Small delay to ensure the backend has updated the usage count
+        setTimeout(() => {
+          refetch();
+        }, 1000);
+      }
+    };
+
+    // Listen for custom events that might be dispatched when analysis completes
+    window.addEventListener('analysisComplete', handleAnalysisComplete);
+    
+    return () => {
+      window.removeEventListener('analysisComplete', handleAnalysisComplete);
+    };
+  }, [user, refetch]);
 
   if (isLoading) {
     return (

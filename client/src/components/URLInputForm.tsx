@@ -87,11 +87,16 @@ const URLInputForm = ({
             });
           } else if (data.status === "completed") {
             source.close();
-            resolve(data.analysis);
-
-              // Invalidate queries to refresh the history and recent sites
-              queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
+            if (data.analysis) {
+              // Dispatch custom event to notify other components that analysis is complete
+              window.dispatchEvent(new CustomEvent('analysisComplete', { detail: data.analysis }));
+              resolve(data.analysis);
+            } else {
+              reject(new Error("Analysis completed but no analysis data received"));
+            }
+          } else if (data.status === "error") {
+            source.close();
+            reject(new Error(data.error || "Analysis failed"));
           }
         };
 
