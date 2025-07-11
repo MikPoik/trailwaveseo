@@ -17,7 +17,7 @@ interface HeaderProps {
 
 const Header = ({ title, description }: HeaderProps) => {
   const { user, isAuthenticated, login, logout } = useAuth();
-  
+
   return (
     <div className="bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +26,7 @@ const Header = ({ title, description }: HeaderProps) => {
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">{title}</h2>
             <p className="mt-1 text-sm text-gray-500">{description}</p>
           </div>
-          
+
           <div>
             {isAuthenticated ? (
               <DropdownMenu>

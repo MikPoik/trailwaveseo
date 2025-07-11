@@ -18,7 +18,7 @@ const Sidebar = () => {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated } = useAuth();
-  
+
   const { data: recentSites = [] } = useQuery<{id: number, domain: string}[]>({
     queryKey: ['/api/analysis/recent'],
     enabled: isAuthenticated, // Only fetch recent sites if user is authenticated
@@ -61,11 +61,11 @@ const Sidebar = () => {
     <aside className="w-full md:w-64 bg-white border-r border-gray-200 md:min-h-screen">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-md bg-primary-700 flex items-center justify-center">
-            <Zap className="h-5 w-5 text-white" />
+            <div className="w-8 h-8 rounded-md bg-primary-700 flex items-center justify-center">
+              <Zap className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-primary-800">TrailWave SEO</h1>
           </div>
-          <h1 className="text-xl font-bold text-primary-800">SEO Optimizer</h1>
-        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -75,7 +75,7 @@ const Sidebar = () => {
           <Menu className="h-6 w-6" />
         </Button>
       </div>
-      
+
       <nav className={cn("p-4 space-y-1", isOpen ? "block" : "hidden md:block")}>
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
@@ -92,7 +92,7 @@ const Sidebar = () => {
             </div>
           </Link>
         ))}
-        
+
         {isAuthenticated && recentSites && recentSites.length > 0 && (
           <div className="pt-4 mt-4 border-t border-gray-200">
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
