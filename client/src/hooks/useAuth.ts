@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { getQueryFn } from "@/lib/queryClient";
 
 export function useAuth() {
   const [, setLocation] = useLocation();
 
   const { data: user, isLoading, error, refetch } = useQuery({
     queryKey: ["/api/auth/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
