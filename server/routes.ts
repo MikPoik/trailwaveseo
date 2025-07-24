@@ -1,11 +1,367 @@
 import type { Express } from "express";
-import { storage } from "../storage";
-import { analyzeSite } from "../seoAnalyzer";
-import { generateSeoSuggestions, analyzeContentRepetition } from "../openai";
-import { isAuthenticated } from "../replitAuth";
-import { analysisEvents, apiLimiter } from "./index";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { analyzeSite, cancelAnalysis } from "./seoAnalyzer";
+import { parseSitemap } from "./sitemap";
+import { crawlWebsite } from "./crawler";
+import { generateSeoSuggestions, analyzeContentRepetition } from "./openai";
+import { z } from "zod";
+import rateLimit from "express-rate-limit";
+import { EventEmitter } from "events";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
-export function registerAnalysisFeaturesRoutes(app: Express) {
+// Global event emitter for Server-Sent Events
+const analysisEvents = new EventEmitter();
+
+// Rate limiting - increased limits for development
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Increased for development
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const crawlLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Increased for development
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up Replit Auth
+  await setupAuth(app);
+
+  // Basic rate limiting for all API routes (skip in development)
+  if (process.env.NODE_ENV !== 'development') {
+    app.use("/api", apiLimiter);
+  }
+
+  // =============================================================================
+  // AUTHENTICATION ROUTES
+  // =============================================================================
+
+  // User endpoint - protected by auth
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // =============================================================================
+  // USER ROUTES
+  // =============================================================================
+
+  // User usage endpoint - protected by auth
+  app.get('/api/user/usage', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const usage = await storage.getUserUsage(userId);
+      if (!usage) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+      res.json(usage);
+    } catch (error) {
+      console.error("Error fetching user usage:", error);
+      res.status(500).json({ message: "Failed to fetch user usage" });
+    }
+  });
+
+  // =============================================================================
+  // VALIDATION SCHEMAS
+  // =============================================================================
+  // Input validation schemas
+  const analyzeRequestSchema = z.object({
+    domain: z.string().min(1).max(255),
+    useSitemap: z.boolean().default(true),
+    additionalInfo: z.string().optional(),
+  });
+
+  const settingsSchema = z.object({
+    maxPages: z.number().min(1).max(100).default(20),
+    crawlDelay: z.number().min(100).max(3000).default(500),
+    followExternalLinks: z.boolean().default(false),
+    analyzeImages: z.boolean().default(true),
+    analyzeLinkStructure: z.boolean().default(true),
+    analyzePageSpeed: z.boolean().default(true),
+    analyzeStructuredData: z.boolean().default(true),
+    analyzeMobileCompatibility: z.boolean().default(true),
+    useAI: z.boolean().default(true),
+  });
+
+  // =============================================================================
+  // SETTINGS ROUTES  
+  // =============================================================================
+
+  // Default settings endpoint
+  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getSettings(userId);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to retrieve settings" });
+    }
+  });
+
+  // Update settings endpoint
+  app.post("/api/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      console.log("Updating settings for user:", userId);
+      console.log("Settings payload:", JSON.stringify(req.body));
+
+      // Create a more flexible validation schema that only requires expected fields
+      const flexibleSettingsSchema = z.object({
+        maxPages: z.number().optional(),
+        crawlDelay: z.number().optional(),
+        followExternalLinks: z.boolean().optional(),
+        analyzeImages: z.boolean().optional(),
+        analyzeLinkStructure: z.boolean().optional(),
+        useAI: z.boolean().optional(),
+        // Optional newer fields
+        analyzePageSpeed: z.boolean().optional(),
+        analyzeStructuredData: z.boolean().optional(),
+        analyzeMobileCompatibility: z.boolean().optional(),
+      });
+
+      // Validate and parse the settings
+      const parsedSettings = flexibleSettingsSchema.parse(req.body);
+      console.log("Parsed settings:", JSON.stringify(parsedSettings));
+
+      // Update settings
+      const updatedSettings = await storage.updateSettings(parsedSettings, userId);
+      res.json(updatedSettings);
+    } catch (error: any) {
+      console.error("Settings update failed:", error);
+
+      if (error instanceof z.ZodError) {
+        console.error("Validation error:", JSON.stringify(error.errors));
+        res.status(400).json({ error: "Invalid settings format", details: error.errors });
+      } else {
+        console.error("Server error updating settings:", error);
+        res.status(500).json({ 
+          error: "Failed to update settings", 
+          message: error.message || "Unknown error",
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      }
+    }
+  });
+
+  // =============================================================================
+  // CORE ANALYSIS ROUTES
+  // =============================================================================
+
+  // Analyze website endpoint
+  app.post("/api/analyze", isAuthenticated, process.env.NODE_ENV !== 'development' ? crawlLimiter : (req: any, res: any, next: any) => next(), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { domain, useSitemap, additionalInfo } = analyzeRequestSchema.parse(req.body);
+
+      // Check user's usage limits before starting analysis
+      const usage = await storage.getUserUsage(userId);
+      if (!usage) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (usage.pagesAnalyzed >= usage.pageLimit) {
+        return res.status(403).json({ 
+          error: "Page analysis limit reached", 
+          message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
+          usage: usage
+        });
+      }
+
+      // Start analysis in the background
+      analyzeSite(domain, useSitemap, analysisEvents, false, userId, additionalInfo)
+        .catch(error => {
+          console.error(`Analysis error for ${domain}:`, error);
+          analysisEvents.emit(domain, {
+            status: 'error',
+            domain,
+            error: error.message,
+            pagesFound: 0,
+            pagesAnalyzed: 0,
+            currentPageUrl: '',
+            analyzedPages: [],
+            percentage: 0
+          });
+        });
+
+      // Return immediately with 202 Accepted
+      res.status(202).json({ 
+        message: "Analysis started", 
+        domain 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid request format", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to start analysis" });
+      }
+    }
+  });
+
+  // Cancel ongoing analysis
+  app.post("/api/analyze/cancel", async (req, res) => {
+    try {
+      const { domain } = req.body;
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+
+      cancelAnalysis(domain);
+      res.json({ message: "Analysis cancelled" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to cancel analysis" });
+    }
+  });
+
+  // Get analysis progress with Server-Sent Events
+  app.get("/api/analyze/progress", (req, res) => {
+    const domain = req.query.domain as string;
+
+    if (!domain) {
+      return res.status(400).json({ error: "Domain parameter is required" });
+    }
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Send initial update
+    res.write(`data: ${JSON.stringify({
+      status: 'in-progress',
+      domain,
+      pagesFound: 0,
+      pagesAnalyzed: 0,
+      currentPageUrl: '',
+      analyzedPages: [],
+      percentage: 0
+    })}\n\n`);
+
+    // Event handler for this specific domain
+    const progressHandler = (data: any) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+      // If analysis is completed or errored, end the connection
+      if (data.status === 'completed' || data.status === 'error') {
+        analysisEvents.removeListener(domain, progressHandler);
+        res.end();
+      }
+    };
+
+    // Register the event listener
+    analysisEvents.on(domain, progressHandler);
+
+    // Handle client disconnect
+    req.on('close', () => {
+      analysisEvents.removeListener(domain, progressHandler);
+    });
+  });
+
+  // =============================================================================
+  // ANALYSIS MANAGEMENT ROUTES
+  // =============================================================================
+
+  // Get analysis history
+  app.get("/api/analysis/history", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const history = await storage.getAnalysisHistory(userId);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to retrieve analysis history" });
+    }
+  });
+
+  // Get recent analyses (for sidebar)
+  app.get("/api/analysis/recent", async (req: any, res) => {
+    try {
+      // Only return analyses if user is authenticated
+      if (req.isAuthenticated()) {
+        const userId = req.user.claims.sub;
+        const recentAnalyses = await storage.getRecentAnalyses(5, userId);
+        res.json(recentAnalyses);
+      } else {
+        // Return empty array for anonymous users
+        res.json([]);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to retrieve recent analyses" });
+    }
+  });
+
+  // Get specific analysis by ID
+  app.get("/api/analysis/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+
+      const analysis = await storage.getAnalysisById(id);
+
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      // Check if the analysis belongs to the authenticated user
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to access this analysis" });
+      }
+
+      res.json(analysis);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to retrieve analysis" });
+    }
+  });
+
+  // Delete analysis by ID
+  app.delete("/api/analysis/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+
+      // Check if the analysis exists and belongs to the user
+      const analysis = await storage.getAnalysisById(id);
+      if (!analysis) {
+        console.log(`Analysis with ID ${id} not found for deletion`);
+        // Still return success to avoid UI errors when record is already gone
+        return res.json({ message: "Analysis already deleted" });
+      }
+
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to delete this analysis" });
+      }
+
+      const success = await storage.deleteAnalysis(id);
+
+      // Even if the deletion reports failure, we'll return success to the client
+      // This prevents UI error states when the record is actually gone
+      res.json({ message: "Analysis deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting analysis:", error);
+      res.status(500).json({ error: "Failed to delete analysis" });
+    }
+  });
+
+  // =============================================================================
+  // ANALYSIS FEATURES & EXPORT ROUTES
+  // =============================================================================
+
   // Export analysis as PDF
   app.get("/api/analysis/:id/export/pdf", isAuthenticated, async (req: any, res) => {
     try {
@@ -149,28 +505,6 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
     }
   });
 
-  // Export analysis as JSON
-  app.get("/api/analysis/:id/export/json", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid analysis ID" });
-      }
-
-      const analysis = await storage.getAnalysisById(id);
-
-      if (!analysis) {
-        return res.status(404).json({ error: "Analysis not found" });
-      }
-
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.json`);
-      res.json(analysis);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to export analysis as JSON" });
-    }
-  });
-
   // Compare with competitor
   app.post("/api/analyze/compare", apiLimiter, async (req, res) => {
     try {
@@ -189,7 +523,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         // Check if user is authenticated and get their usage
         let userId: string | undefined;
         if (req.isAuthenticated && req.isAuthenticated()) {
-          userId = (req.user as any).claims.sub;
+          userId = req.user.claims.sub;
           const usage = await storage.getUserUsage(userId);
           if (usage && usage.pagesAnalyzed >= usage.pageLimit) {
             return res.status(403).json({ 
@@ -390,6 +724,28 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
     }
   });
 
+  // Export analysis as JSON
+  app.get("/api/analysis/:id/export/json", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+
+      const analysis = await storage.getAnalysisById(id);
+
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.json`);
+      res.json(analysis);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export analysis as JSON" });
+    }
+  });
+
   // Reanalyze a single page from an existing analysis
   app.post("/api/analysis/:id/reanalyze-page", isAuthenticated, async (req: any, res) => {
     try {
@@ -430,7 +786,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
       const settings = await storage.getSettings(userId);
 
       // Import the analyzePage function from seoAnalyzer
-      const { analyzePage } = await import('../seoAnalyzer');
+      const { analyzePage } = await import('./seoAnalyzer');
       
       // Create abort controller for this specific reanalysis
       const controller = new AbortController();
@@ -466,4 +822,8 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
       });
     }
   });
+
+  const httpServer = createServer(app);
+
+  return httpServer;
 }
