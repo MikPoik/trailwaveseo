@@ -60,12 +60,15 @@ const Sidebar = () => {
   return (
     <aside className="w-full md:w-64 bg-white border-r border-gray-200 md:min-h-screen">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
         <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-md bg-primary-700 flex items-center justify-center">
               <Zap className="h-5 w-5 text-white" />
             </div>
+          
             <h1 className="text-xl font-bold text-primary-800">TrailWave SEO</h1>
           </div>
+        </Link>
         <Button
           variant="ghost"
           size="icon"
