@@ -26,10 +26,10 @@ const Sidebar = () => {
 
   const navItems = [
     {
-      href: "/",
+      href: "/dashboard",
       label: "Dashboard",
       icon: <Home className="h-5 w-5 mr-3" />,
-      active: location === "/"
+      active: location === "/dashboard"
     },
     {
       href: "/site-history",
