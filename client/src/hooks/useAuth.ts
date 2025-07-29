@@ -7,8 +7,11 @@ export function useAuth() {
   const { data: user, isLoading, error, refetch } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnMount: true,
+    staleTime: Infinity, // Cache indefinitely until manual refetch
+    gcTime: Infinity, // Keep in cache indefinitely
+    enabled: true,
   });
 
   const login = () => {
@@ -32,6 +35,7 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
+    error,
     login,
     logout,
     requireAuth,

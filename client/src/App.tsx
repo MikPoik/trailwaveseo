@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import SiteHistory from "@/pages/SiteHistory";
 import HowItWorks from "@/pages/HowItWorks";
@@ -42,34 +43,78 @@ function ProtectedRoute({ component: Component, ...rest }: { component: React.Co
 
 function Router() {
   return (
+    <div className="min-h-screen">
+      <Switch>
+        {/* Public Landing Page */}
+        <Route path="/" component={Landing} />
+        <Route path="/how-it-works" component={HowItWorks} />
+        
+        {/* Protected Application Routes */}
+        <Route path="/dashboard">
+          <AuthenticatedApp>
+            <Dashboard />
+          </AuthenticatedApp>
+        </Route>
+        <Route path="/site-history">
+          <AuthenticatedApp>
+            <SiteHistory />
+          </AuthenticatedApp>
+        </Route>
+        <Route path="/history">
+          <AuthenticatedApp>
+            <SiteHistory />
+          </AuthenticatedApp>
+        </Route>
+        <Route path="/analysis/:id">
+          {(params) => (
+            <AuthenticatedApp>
+              <AnalysisDetails />
+            </AuthenticatedApp>
+          )}
+        </Route>
+        <Route path="/settings">
+          <AuthenticatedApp>
+            <Settings />
+          </AuthenticatedApp>
+        </Route>
+        <Route path="/account">
+          <AuthenticatedApp>
+            <Account />
+          </AuthenticatedApp>
+        </Route>
+        <Route component={NotFound} />
+      </Switch>
+    </div>
+  );
+}
+
+function AuthenticatedApp({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, login } = useAuth();
+
+  if (isLoading) {
+    return <div className="p-8 flex justify-center items-center">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+        <p className="mb-4">You need to log in to access this page.</p>
+        <button 
+          onClick={() => login()}
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          Log in
+        </button>
+      </div>
+    );
+  }
+
+  return (
     <div className="min-h-screen flex flex-col md:flex-row">
       <Sidebar />
       <main className="flex-1 overflow-auto">
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/site-history">
-            <ProtectedRoute path="/site-history" component={SiteHistory} />
-          </Route>
-          <Route path="/history">
-            <ProtectedRoute path="/history" component={SiteHistory} />
-          </Route>
-          <Route path="/analysis/:id">
-            {(params) => (
-              <ProtectedRoute 
-                path={`/analysis/${params.id}`} 
-                component={AnalysisDetails} 
-              />
-            )}
-          </Route>
-          <Route path="/how-it-works" component={HowItWorks} />
-          <Route path="/settings">
-            <ProtectedRoute path="/settings" component={Settings} />
-          </Route>
-          <Route path="/account">
-            <ProtectedRoute path="/account" component={Account} />
-          </Route>
-          <Route component={NotFound} />
-        </Switch>
+        {children}
       </main>
     </div>
   );
