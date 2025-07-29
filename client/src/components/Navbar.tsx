@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavbarProps {
   onGetStarted?: () => void;
@@ -10,6 +11,7 @@ interface NavbarProps {
 
 const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
 
   const defaultGetStarted = () => {
     window.location.href = "/api/login";
@@ -30,13 +32,31 @@ const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-              How It Works
-            </Link>
-            {showGetStarted && (
-              <Button onClick={handleGetStarted} size="sm">
-                Get Started
-              </Button>
+            {!isAuthenticated && (
+              <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                How It Works
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                Dashboard
+              </Link>
+            )}
+            {isAuthenticated && user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-muted-foreground">
+                  {(user as any).name || (user as any).email}
+                </span>
+                <Button onClick={logout} variant="outline" size="sm">
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              showGetStarted && (
+                <Button onClick={handleGetStarted} size="sm">
+                  Get Started
+                </Button>
+              )
             )}
           </nav>
 
@@ -57,23 +77,52 @@ const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background/95 backdrop-blur-sm">
             <nav className="px-4 py-4 space-y-4">
-              <Link 
-                href="/how-it-works" 
-                className="block text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                How It Works
-              </Link>
-              {showGetStarted && (
-                <Button 
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    handleGetStarted();
-                  }} 
-                  className="w-full"
+              {!isAuthenticated && (
+                <Link 
+                  href="/how-it-works" 
+                  className="block text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  Get Started
-                </Button>
+                  How It Works
+                </Link>
+              )}
+              {isAuthenticated && (
+                <Link 
+                  href="/dashboard" 
+                  className="block text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              )}
+              {isAuthenticated && user ? (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    {(user as any).name || (user as any).email}
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }} 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                showGetStarted && (
+                  <Button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleGetStarted();
+                    }} 
+                    className="w-full"
+                  >
+                    Get Started
+                  </Button>
+                )
               )}
             </nav>
           </div>
