@@ -131,16 +131,6 @@ function extractSemanticKeywords(content: string): string[] {
     .map(([phrase]) => phrase);
 }
 
-
-import axios from 'axios';
-import * as cheerio from 'cheerio';
-import { parseSitemap } from './sitemap';
-import { crawlWebsite } from './crawler';
-import { generateSeoSuggestions, generateBatchImageAltText, analyzeContentRepetition, analyzeSiteOverview } from './openai';
-import { storage } from './storage';
-import { EventEmitter } from 'events';
-import { Heading, Image, SeoIssue, SeoCategory, ContentRepetitionAnalysis } from '../client/src/lib/types';
-
 // Extend the Image interface to include suggestedAlt
 interface AnalysisImage extends Image {
   suggestedAlt?: string;
@@ -173,18 +163,33 @@ export async function analyzeSite(
     // Get settings for this user
     const settings = await storage.getSettings(userId);
 
+    // Get user's current usage to determine remaining quota
+    let remainingQuota = settings.maxPages; // Default fallback
+    if (userId) {
+      const usage = await storage.getUserUsage(userId);
+      if (usage) {
+        remainingQuota = Math.max(0, usage.pageLimit - usage.pagesAnalyzed);
+        console.log(`User ${userId} has ${remainingQuota} pages remaining (${usage.pagesAnalyzed}/${usage.pageLimit})`);
+        
+        // If user has no remaining quota, stop immediately
+        if (remainingQuota <= 0) {
+          throw new Error(`Page analysis limit reached. You have analyzed ${usage.pagesAnalyzed}/${usage.pageLimit} pages.`);
+        }
+      }
+    }
+
     // Determine the effective maximum number of pages to analyze
     // This is the smaller of the user's max pages setting and their remaining quota
-    const effectiveMaxPages = settings.maxPages; //  No quota checks currently
+    const effectiveMaxPages = Math.min(settings.maxPages, remainingQuota);
 
     // Get pages to analyze (either from sitemap or by crawling)
     let pages: string[] = [];
 
     if (useSitemap) {
       try {
-        console.log(`Attempting to parse sitemap for ${domain}`);
+        console.log(`Attempting to parse sitemap for ${domain} (max pages: ${effectiveMaxPages})`);
         // First try the sitemap index, which is the standard pattern
-        pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal);
+        pages = await parseSitemap(`https://${domain}/sitemap.xml`, controller.signal, effectiveMaxPages);
 
         // If no pages found, try some common sitemap naming patterns
         if (pages.length === 0) {
@@ -198,7 +203,8 @@ export async function analyzeSite(
             }
 
             console.log(`Trying ${pattern}...`);
-            const sitemapPages = await parseSitemap(`https://${domain}/${pattern}`, controller.signal);
+            const remainingQuota = Math.max(0, effectiveMaxPages - pages.length);
+            const sitemapPages = await parseSitemap(`https://${domain}/${pattern}`, controller.signal, remainingQuota);
 
             if (sitemapPages.length > 0) {
               console.log(`Found ${sitemapPages.length} pages in ${pattern}`);
@@ -300,6 +306,12 @@ export async function analyzeSite(
         throw new Error('Analysis cancelled');
       }
 
+      // Check if we've reached the user's quota limit during analysis
+      if (userId && analyzedPages.length >= remainingQuota) {
+        console.log(`Stopping analysis - reached page quota limit of ${remainingQuota} pages`);
+        return null; // Skip this page
+      }
+
       // Emit progress update for current page (10-40% of total progress for basic analysis)
       const analysisProgress = 10 + Math.floor((analyzedPages.length / totalPages) * 30);
       events.emit(domain, {
@@ -315,7 +327,9 @@ export async function analyzeSite(
       try {
         // Analyze the page
         const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor, analyzedPages, additionalInfo);
-        analyzedPages.push(pageAnalysis);
+        if (pageAnalysis) {
+          analyzedPages.push(pageAnalysis);
+        }
 
         // Re-emit progress to update the count (10-40% of total progress for basic analysis)
         const analysisProgress = 10 + Math.floor((analyzedPages.length / totalPages) * 30);
@@ -343,6 +357,12 @@ export async function analyzeSite(
         throw new Error('Analysis cancelled');
       }
 
+      // Check if we've reached the user's quota limit
+      if (userId && analyzedPages.length >= remainingQuota) {
+        console.log(`Stopping analysis - reached page quota limit of ${remainingQuota} pages`);
+        break;
+      }
+
       const batch = pages.slice(i, i + concurrencyLimit);
       const batchPromises = batch.map((pageUrl, index) => 
         analyzeSinglePage(pageUrl, i + index)
@@ -350,6 +370,11 @@ export async function analyzeSite(
 
       // Wait for all pages in this batch to complete
       await Promise.all(batchPromises);
+
+      // Add delay between batches if more batches remain and we haven't hit the quota
+      if (i + concurrencyLimit < totalPages && (!userId || analyzedPages.length < remainingQuota)) {
+        await new Promise(resolve => setTimeout(resolve, settings.crawlDelay));
+      }
     }
 
     // Initialize siteOverview variable
@@ -496,6 +521,12 @@ export async function analyzeSite(
     };
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
+
+    // Update user's page usage count - only count successfully analyzed pages
+    if (userId && analyzedPages.length > 0) {
+      console.log(`Incrementing user ${userId} usage by ${analyzedPages.length} pages`);
+      await storage.incrementUserUsage(userId, analyzedPages.length);
+    }
 
     // Emit completed event with analysis results
     events.emit(domain, {

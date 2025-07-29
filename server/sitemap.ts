@@ -5,9 +5,10 @@ import { parseStringPromise } from 'xml2js';
  * Fetch and parse a sitemap XML file to extract URLs
  * @param sitemapUrl URL to the sitemap.xml file
  * @param signal AbortSignal for cancellation
+ * @param maxPages Maximum number of pages to return (optional)
  * @returns Array of page URLs found in the sitemap
  */
-export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Promise<string[]> {
+export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal, maxPages?: number): Promise<string[]> {
   try {
     // Skip image and video sitemaps - they're not useful for page analysis
     // Check the entire URL path for any mention of image or video
@@ -56,8 +57,16 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
         }
         
         try {
-          const urls = await parseSitemap(sitemap.loc, signal);
+          // Calculate remaining quota for this sub-sitemap
+          const remainingQuota = maxPages ? Math.max(0, maxPages - allUrls.length) : undefined;
+          const urls = await parseSitemap(sitemap.loc, signal, remainingQuota);
           allUrls.push(...urls);
+          
+          // Stop if we've reached the maximum
+          if (maxPages && allUrls.length >= maxPages) {
+            console.log(`Reached maximum pages limit (${maxPages}) during sitemap parsing`);
+            break;
+          }
         } catch (error) {
           console.error(`Error parsing sub-sitemap ${sitemap.loc}:`, error);
           // Continue with next sitemap on error
@@ -72,7 +81,7 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
         : [result.urlset.url];
       
       // Filter out URLs that might point to image or video resources
-      return urls
+      const filteredUrls = urls
         .map((url: { loc: string }) => url.loc)
         .filter(url => {
           const isMediaUrl = url.toLowerCase().includes('image') || 
@@ -86,6 +95,9 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal): Pr
           }
           return true;
         });
+
+      // Limit the number of URLs if maxPages is specified
+      return maxPages ? filteredUrls.slice(0, maxPages) : filteredUrls;
     }
     
     // Fallback for unexpected format
