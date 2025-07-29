@@ -376,9 +376,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           return res.status(500).json({ error: "Failed to save content duplication analysis" });
         }
 
-        // Increment user's page usage count for content duplication analysis
-        // Count as 1 page since it's analyzing existing content
-        await storage.incrementUserUsage(userId, 1);
+        // Note: No usage increment needed - this analyzes existing data, doesn't count as new page analysis
 
         res.json({ contentRepetitionAnalysis });
       } catch (error) {

@@ -539,11 +539,7 @@ export async function analyzeSite(
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
 
-    // Update user's page usage count - only count successfully analyzed pages
-    if (userId && analyzedPages.length > 0) {
-      console.log(`Incrementing user ${userId} usage by ${analyzedPages.length} pages`);
-      await storage.incrementUserUsage(userId, analyzedPages.length);
-    }
+    // Note: Usage is automatically incremented in saveAnalysis function
 
     // Emit completed event with analysis results
     events.emit(domain, {
