@@ -109,7 +109,9 @@ This is a full-stack web application for analyzing website SEO performance using
 
 Preferred communication style: Simple, everyday language.
 
-If you need to use OpenAI models, model "gpt-4.1" is the newest model released on 14.4.2025 grep commands to get overview of current routes and functions with these commands when needed:
+If you need to use OpenAI models, model "gpt-4.1" is the newest model released on 14.4.2025.
+
+You can use "grep" commands to get overview of current routes and functions with these commands when needed:
 
 For JavaScript/TypeScript function declarations: grep -r -n "^ *app." server/
 
@@ -121,7 +123,9 @@ For TypeScript/JavaScript methods in classes or objects: grep -r -n "^ [a-zA-Z_]
 
 For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete|patch)" server/
 
-Always test the api routes after changes with "curl" e.g. curl https://localhost:5000 ... For server routes, create modular structure with separation of concerns UI design choices should be mobile first unless stated otherwise
+- Always test the api routes after changes with "curl" e.g. curl https://localhost:5000 ... 
+- For server routes, create modular structure with separation of concerns UI design choices should be mobile first unless stated otherwise
+- Create reusable components instead of inline components
 
 ## Recent Changes
 
