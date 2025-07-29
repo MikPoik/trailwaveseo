@@ -1,4 +1,4 @@
-import Header from "@/components/Header";
+import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Search, 
@@ -12,13 +12,22 @@ import {
 
 const HowItWorks = () => {
   return (
-    <>
-      <Header 
-        title="How It Works" 
-        description="Learn how our SEO Optimizer analyzes and improves your website" 
-      />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <Navbar />
+      
+      {/* Header Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+            How It Works
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Learn how our SEO Optimizer analyzes and improves your website with AI-powered insights
+          </p>
+        </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <Card className="mb-6">
           <CardContent className="pt-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">SEO Optimizer Process</h3>
@@ -113,7 +122,7 @@ const HowItWorks = () => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 };
 

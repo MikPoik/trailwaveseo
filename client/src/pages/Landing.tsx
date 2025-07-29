@@ -14,39 +14,18 @@ import {
   Users,
   Globe
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import Navbar from "@/components/Navbar";
 
 const Landing = () => {
-  const [, setLocation] = useLocation();
-
   const handleStartAnalysis = () => {
-    // Always redirect to dashboard - authentication will be handled there
-    setLocation("/dashboard");
+    // Redirect to login endpoint which will handle authentication
+    window.location.href = "/api/login";
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-      {/* Navigation Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Search className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">TrailWave SEO</span>
-            </div>
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                How It Works
-              </Link>
-              <Button onClick={handleStartAnalysis} size="sm">
-                Get Started
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <Navbar onGetStarted={handleStartAnalysis} />
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
