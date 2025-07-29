@@ -228,12 +228,27 @@ export async function analyzeSite(
         });
       } catch (error) {
         console.log(`No sitemap found or error parsing sitemap for ${domain}, falling back to crawling: ${error instanceof Error ? error.message : String(error)}`);
+        // Clear any partial pages found during failed sitemap parsing
+        pages = [];
         // Fallback to crawling
         useSitemap = false;
       }
     }
 
     if (!useSitemap || pages.length === 0) {
+      console.log(`Falling back to crawling for ${domain} (sitemap pages found: ${pages.length})`);
+      
+      // Emit progress update indicating fallback to crawling
+      events.emit(domain, {
+        status: 'in-progress',
+        domain,
+        pagesFound: 0,
+        pagesAnalyzed: 0,
+        currentPageUrl: 'Falling back to website crawling...',
+        analyzedPages: [],
+        percentage: 3
+      });
+
       // Crawl the website to find pages
       // Collect basic SEO data during crawling to improve user experience
       const basicSeoData = new Map();
@@ -250,8 +265,8 @@ export async function analyzeSite(
             basicSeoData.set(seoData.url, seoData);
           }
 
-          // Emit progress update during crawling with basic SEO data (up to 10% of total progress)
-          const crawlingProgress = Math.min(10, Math.floor((crawledPages.length / effectiveMaxPages) * 10));
+          // Emit progress update during crawling with basic SEO data (up to 15% of total progress)
+          const crawlingProgress = 3 + Math.min(12, Math.floor((crawledPages.length / effectiveMaxPages) * 12));
           events.emit(domain, {
             status: 'in-progress',
             domain,
@@ -264,6 +279,8 @@ export async function analyzeSite(
           });
         }
       );
+      
+      console.log(`Crawling completed for ${domain}, found ${pages.length} pages`);
     }
 
     // Limit the number of pages to analyze

@@ -286,7 +286,12 @@ export async function crawlWebsite(
     }
   }
   
-  return Array.from(crawledUrls);
+  // Return all discovered URLs that were successfully crawled and can be indexed
+  // Filter out URLs with noindex directive
+  const indexableUrls = Array.from(crawledUrls);
+  console.log(`Crawling summary for ${baseDomain}: discovered ${discoveredUrls.size} URLs, successfully crawled ${indexableUrls.length} URLs`);
+  
+  return indexableUrls;
 }
 
 /**
