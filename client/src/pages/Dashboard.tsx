@@ -6,9 +6,11 @@ import AnalysisSummary from "@/components/AnalysisSummary";
 import AnalysisHistory from "@/components/AnalysisHistory";
 import { AnalysisState, WebsiteAnalysis } from "@/lib/types";
 import { useAuth } from "../hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Dashboard = () => {
   const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [analysisState, setAnalysisState] = useState<AnalysisState>("idle");
   const [analysis, setAnalysis] = useState<WebsiteAnalysis | null>(null);
   const [progressData, setProgressData] = useState({
@@ -49,6 +51,9 @@ const Dashboard = () => {
               onAnalysisComplete={(analysisResult) => {
                 setAnalysis(analysisResult);
                 setAnalysisState("completed");
+                // Invalidate queries to refresh history and recent sites
+                queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
               }}
               analysisState={analysisState}
             />
