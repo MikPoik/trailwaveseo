@@ -168,6 +168,7 @@ export async function analyzeSite(
     let userUsage = null;
     let isFreeTier = true;
     let aiSuggestionsRemaining = 0;
+    let aiSuggestionsUsed = 0;
     
     if (userId) {
       userUsage = await storage.getUserUsage(userId);
@@ -176,9 +177,9 @@ export async function analyzeSite(
         const FREE_SCANS_TOTAL = 3;
         isFreeTier = userUsage.freeScansUsed < FREE_SCANS_TOTAL && userUsage.credits <= 0;
         
-        // Calculate AI suggestions available for free users (2-3 per analysis)
+        // Calculate AI suggestions available for free users (3 pages with AI per analysis)
         if (isFreeTier) {
-          aiSuggestionsRemaining = 3; // Free users get 3 AI suggestions per analysis
+          aiSuggestionsRemaining = 3; // Free users get AI suggestions for 3 pages per analysis
         } else {
           aiSuggestionsRemaining = userUsage.credits; // Paid users: 1 credit = 1 AI suggestion
         }
@@ -201,9 +202,14 @@ export async function analyzeSite(
       }
     }
 
-    // Determine the effective maximum number of pages to analyze
-    // This is the smaller of the user's max pages setting and their remaining quota
-    const effectiveMaxPages = Math.min(settings.maxPages, remainingQuota);
+    // For free users, limit analysis to pages that can get AI suggestions to ensure consistency
+    let effectiveMaxPages = Math.min(settings.maxPages, remainingQuota);
+    
+    // If user is on free tier and AI is enabled, limit pages to AI quota to ensure all get suggestions
+    if (isFreeTier && settings.useAI && aiSuggestionsRemaining > 0) {
+      effectiveMaxPages = Math.min(effectiveMaxPages, aiSuggestionsRemaining);
+      console.log(`Free tier user: limiting analysis to ${aiSuggestionsRemaining} pages to ensure all get AI suggestions`);
+    }
 
     // Get pages to analyze (either from sitemap or by crawling)
     let pages: string[] = [];
@@ -525,6 +531,7 @@ export async function analyzeSite(
                   page.suggestions = [];
                 }
               } else {
+                // This should not happen with the new logic, but keep as fallback
                 console.log(`No AI suggestions quota remaining for ${page.url}, skipping`);
                 page.suggestions = [];
               }
