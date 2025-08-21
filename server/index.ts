@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+// Raw body parsing for Stripe webhook signature verification
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.set('trust proxy', 1); // Trust the first proxy in a chain to fix rate limiting when using X-Forwarded-For
