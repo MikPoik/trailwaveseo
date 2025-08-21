@@ -132,10 +132,16 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 ### August 21, 2025 - Implemented Freemium Monetization Model
 - **Freemium System**: Transitioned from unlimited free access to credit-based freemium model
 - **Free Tier Limits**: 3 free website scans total (one-time allocation) with basic SEO analysis only
-- **Credit System**: Premium features require credits (5 credits per additional scan, 1 credit per AI suggestion)
+- **Credit System**: Premium features require credits (5 credits per additional scan, 1 credit per page for AI suggestions)
 - **AI Limitations**: Free users get 3 AI suggestions per analysis; paid users get unlimited suggestions based on credits
 - **No Monthly Reset**: Free scans are a one-time allocation, users must purchase credits after using all 3
 - **Export Remains Free**: All export functionality (CSV, JSON) remains free for all users
+
+### August 21, 2025 - Fixed Credit Consumption System
+- **Pricing Model Update**: Changed AI suggestion pricing from 1 credit per individual suggestion to 1 credit per page
+- **User Experience Fix**: Resolved issue where users ran out of credits mid-analysis, leaving some pages without AI suggestions
+- **Predictable Costs**: Users can now calculate exact costs upfront (5 credits + 1 credit per page for AI)
+- **Better Value**: Users get all suggestions for a page (typically 10-12) for just 1 credit instead of 10-12 credits
 
 ### Freemium Implementation Details:
 - **Database Schema**: Added `credits`, `freeScansUsed` to users table (removed reset date functionality)

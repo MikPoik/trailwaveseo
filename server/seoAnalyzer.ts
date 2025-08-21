@@ -181,7 +181,7 @@ export async function analyzeSite(
         if (isFreeTier) {
           aiSuggestionsRemaining = 3; // Free users get AI suggestions for 3 pages per analysis
         } else {
-          aiSuggestionsRemaining = userUsage.credits; // Paid users: 1 credit = 1 AI suggestion
+          aiSuggestionsRemaining = userUsage.credits; // Paid users: 1 credit = 1 page with AI suggestions
         }
         
         if (userUsage.pageLimit === -1) {
@@ -517,10 +517,10 @@ export async function analyzeSite(
                   const limitedSuggestions = isFreeTier ? suggestions.slice(0, 3) : suggestions;
                   page.suggestions = limitedSuggestions;
                   
-                  // Deduct AI suggestions used (1 credit per suggestion for paid users)
+                  // Deduct AI suggestions used (1 credit per page for paid users)
                   if (!isFreeTier) {
-                    aiSuggestionsUsed += limitedSuggestions.length;
-                    aiSuggestionsRemaining -= limitedSuggestions.length;
+                    aiSuggestionsUsed += 1; // 1 credit per page regardless of number of suggestions
+                    aiSuggestionsRemaining -= 1;
                   } else {
                     aiSuggestionsRemaining -= 1; // Free users: 1 page = 1 quota unit
                   }
