@@ -2,6 +2,7 @@ import type { Express } from "express";
 import Stripe from "stripe";
 import { z } from "zod";
 import { storage } from "../storage";
+import bodyParser from "body-parser";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -112,7 +113,7 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
   });
 
   // Stripe webhook to handle successful payments
-  app.post("/api/payments/webhook", async (req, res) => {
+  app.post("/api/payments/webhook", bodyParser.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
