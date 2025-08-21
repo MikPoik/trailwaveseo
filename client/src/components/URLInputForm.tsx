@@ -115,7 +115,7 @@ const URLInputForm = ({
         if (error.needsCredits || error.message?.includes("Free scan limit")) {
           toast({
             title: "Free Scans Used Up",
-            description: "You've used all 3 free scans this month. Purchase credits to continue analyzing websites.",
+            description: "You've used all 3 free scans. Purchase credits to continue analyzing websites.",
             variant: "destructive",
             action: (
               <Button variant="outline" onClick={() => window.location.href = "/credits"}>

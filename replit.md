@@ -131,19 +131,20 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 
 ### August 21, 2025 - Implemented Freemium Monetization Model
 - **Freemium System**: Transitioned from unlimited free access to credit-based freemium model
-- **Free Tier Limits**: 3 free website scans per month with basic SEO analysis only
+- **Free Tier Limits**: 3 free website scans total (one-time allocation) with basic SEO analysis only
 - **Credit System**: Premium features require credits (5 credits per additional scan, 1 credit per AI suggestion)
 - **AI Limitations**: Free users get 3 AI suggestions per analysis; paid users get unlimited suggestions based on credits
-- **Monthly Reset**: Free scan count resets monthly for ongoing access
+- **No Monthly Reset**: Free scans are a one-time allocation, users must purchase credits after using all 3
 - **Export Remains Free**: All export functionality (CSV, JSON) remains free for all users
 
 ### Freemium Implementation Details:
-- **Database Schema**: Added `credits`, `freeScansUsed`, `freeScansResetDate` to users table
+- **Database Schema**: Added `credits`, `freeScansUsed` to users table (removed reset date functionality)
 - **Credit Packs**: $9.99 for 50 credits, $24.99 for 150 credits, $49.99 for 350 credits
 - **Analysis Limits**: Free users limited to 10 pages per scan, paid users unlimited within technical limits
-- **UI Updates**: Dashboard shows credit status and usage, Account page displays free scan tracking
-- **Error Handling**: User-friendly messages guide users to purchase credits when limits reached
+- **UI Updates**: Dashboard shows credit status and total free scan usage, Account page displays remaining free scans
+- **Error Handling**: User-friendly messages guide users to purchase credits when all free scans are exhausted
 - **Stripe Integration**: Secure payment processing for credit purchases
+- **One-Time Free Allocation**: No monthly reset - users get 3 free scans total, then must upgrade
 
 ### Previous Change (Reverted):
 - ~~**Unlimited Access**: Previously removed all scan limits for free users~~

@@ -59,7 +59,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">
-                        Free Scans: {Math.max(0, 3 - (usage.freeScansUsed || 0))} / 3 remaining
+                        Free Scans: {Math.max(0, 3 - (usage.freeScansUsed || 0))} / 3 total
                       </span>
                     </div>
                   </div>

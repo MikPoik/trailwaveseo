@@ -172,9 +172,9 @@ export async function analyzeSite(
     if (userId) {
       userUsage = await storage.getUserUsage(userId);
       if (userUsage) {
-        // Check if user is on free tier (3 free scans used, no credits)
-        const FREE_SCANS_PER_MONTH = 3;
-        isFreeTier = userUsage.freeScansUsed < FREE_SCANS_PER_MONTH && userUsage.credits <= 0;
+        // Check if user is on free tier (3 free scans total, no credits)
+        const FREE_SCANS_TOTAL = 3;
+        isFreeTier = userUsage.freeScansUsed < FREE_SCANS_TOTAL && userUsage.credits <= 0;
         
         // Calculate AI suggestions available for free users (2-3 per analysis)
         if (isFreeTier) {

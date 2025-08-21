@@ -19,27 +19,12 @@ export function registerAnalysisRoutes(app: Express) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check free scan limits
-      const now = new Date();
-      const resetDate = usage.freeScansResetDate ? new Date(usage.freeScansResetDate) : new Date();
-      const monthsSinceReset = (now.getFullYear() - resetDate.getFullYear()) * 12 + (now.getMonth() - resetDate.getMonth());
-      
-      // Reset free scans if it's been a month or more
-      if (monthsSinceReset >= 1) {
-        await storage.resetFreeScans(userId);
-        // Refresh usage data after reset
-        const refreshedUsage = await storage.getUserUsage(userId);
-        if (refreshedUsage) {
-          Object.assign(usage, refreshedUsage);
-        }
-      }
-
-      // Check if user has exceeded free scans (3 per month) and has no credits
-      const FREE_SCANS_PER_MONTH = 3;
-      if (usage.freeScansUsed >= FREE_SCANS_PER_MONTH && usage.credits <= 0) {
+      // Check if user has exceeded free scans (3 total) and has no credits
+      const FREE_SCANS_TOTAL = 3;
+      if (usage.freeScansUsed >= FREE_SCANS_TOTAL && usage.credits <= 0) {
         return res.status(403).json({ 
           error: "Free scan limit reached", 
-          message: `You have used all ${FREE_SCANS_PER_MONTH} free scans this month. Purchase credits to continue analyzing websites.`,
+          message: `You have used all ${FREE_SCANS_TOTAL} free scans. Purchase credits to continue analyzing websites.`,
           usage: usage,
           needsCredits: true
         });
@@ -55,7 +40,7 @@ export function registerAnalysisRoutes(app: Express) {
       }
 
       // Determine if this is a paid scan (user has credits or exceeded free limit)
-      const isPaidScan = usage.credits > 0 || usage.freeScansUsed >= FREE_SCANS_PER_MONTH;
+      const isPaidScan = usage.credits > 0 || usage.freeScansUsed >= FREE_SCANS_TOTAL;
       
       // Deduct credits if this is a paid scan
       if (isPaidScan && usage.credits >= 5) {

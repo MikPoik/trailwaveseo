@@ -149,10 +149,7 @@ const Account = () => {
                 className="w-full" 
               />
               <p className="text-xs text-muted-foreground">
-                {usage?.freeScansResetDate 
-                  ? `Resets ${new Date(usage.freeScansResetDate).toLocaleDateString()}`
-                  : 'Resets monthly'
-                }
+                Free scans available for new users
               </p>
             </div>
           </CardContent>
