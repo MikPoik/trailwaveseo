@@ -140,13 +140,21 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 ### Freemium Implementation Details:
 - **Database Schema**: Added `credits`, `freeScansUsed` to users table (removed reset date functionality)
 - **Credit Packs**: $9.99 for 50 credits, $24.99 for 150 credits, $49.99 for 350 credits
-- **Analysis Limits**: Free users limited to 10 pages per scan, paid users unlimited within technical limits
+- **Analysis Limits**: Free users limited to 3 pages per scan (matching AI quota), paid users unlimited within technical limits
 - **UI Updates**: Dashboard shows credit status and total free scan usage, Account page displays remaining free scans
 - **Error Handling**: User-friendly messages guide users to purchase credits when all free scans are exhausted
-- **Stripe Integration**: Secure payment processing for credit purchases
+- **Stripe Integration**: Secure payment processing with checkout sessions and webhook handling
 - **One-Time Free Allocation**: No monthly reset - users get 3 free scans total, then must upgrade
+- **AI Quota Consistency**: Fixed issue where some pages appeared analyzed but lacked suggestions
 
-### Previous Change (Reverted):
+### August 21, 2025 - Improved Stripe Payment Flow
+- **Checkout Sessions**: Replaced embedded payment forms with Stripe checkout sessions
+- **Environment Variables**: Price IDs now configurable via STRIPE_STARTER_PRICE_ID, STRIPE_PRO_PRICE_ID, STRIPE_BUSINESS_PRICE_ID
+- **Webhook Processing**: Implemented secure webhook handling for payment completion
+- **User Experience**: Users now redirected to Stripe-hosted checkout page for payment entry
+- **Security Enhancement**: Payment processing handled entirely by Stripe infrastructure
+
+### Previous Changes:
 - ~~**Unlimited Access**: Previously removed all scan limits for free users~~
 - ~~**Database Migration**: All existing users had unlimited access (`pageLimit: -1`)~~
 

@@ -1,7 +1,4 @@
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +6,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Coins, CreditCard, Check, Zap } from "lucide-react";
 
-// Load Stripe
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
 interface CreditPackage {
   id: string;
   credits: number;
-  price: number;
   name: string;
   priceDisplay: string;
 }
@@ -29,73 +19,7 @@ interface UserCredits {
   freeScansResetDate: string | null;
 }
 
-const CreditPurchaseForm = ({ selectedPackage, onSuccess }: { 
-  selectedPackage: CreditPackage | null; 
-  onSuccess: () => void;
-}) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements || !selectedPackage) {
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + "/credits",
-        },
-      });
-
-      if (error) {
-        toast({
-          title: "Payment Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Payment Successful",
-          description: `${selectedPackage.credits} credits added to your account!`,
-        });
-        onSuccess();
-      }
-    } catch (error) {
-      toast({
-        title: "Payment Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
-      <Button 
-        type="submit" 
-        disabled={!stripe || isProcessing} 
-        className="w-full"
-      >
-        {isProcessing ? "Processing..." : `Purchase ${selectedPackage?.credits} Credits`}
-      </Button>
-    </form>
-  );
-};
-
 export default function Credits() {
-  const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
-  const [clientSecret, setClientSecret] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -109,14 +33,15 @@ export default function Credits() {
     queryKey: ['/api/payments/credits'],
   });
 
-  // Create payment intent mutation
-  const createPaymentMutation = useMutation({
+  // Create checkout session mutation
+  const createCheckoutMutation = useMutation({
     mutationFn: async (packageType: string) => {
-      const response = await apiRequest("POST", "/api/payments/create-intent", { packageType });
+      const response = await apiRequest("POST", "/api/payments/create-checkout-session", { packageType });
       return response.json();
     },
     onSuccess: (data) => {
-      setClientSecret(data.clientSecret);
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
     },
     onError: (error: any) => {
       toast({
@@ -124,25 +49,17 @@ export default function Credits() {
         description: "Failed to initialize payment. Please try again.",
         variant: "destructive",
       });
-      console.error("Payment intent creation failed:", error);
+      console.error("Checkout session creation failed:", error);
     },
   });
 
   const handlePurchaseClick = (pkg: CreditPackage) => {
-    setSelectedPackage(pkg);
-    createPaymentMutation.mutate(pkg.id);
-  };
-
-  const handlePaymentSuccess = () => {
-    setSelectedPackage(null);
-    setClientSecret("");
-    queryClient.invalidateQueries({ queryKey: ['/api/payments/credits'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/user/usage'] });
+    createCheckoutMutation.mutate(pkg.id);
   };
 
   const getFreeScansRemaining = () => {
     if (!userCredits) return 0;
-    return Math.max(0, 3 - userCredits.freeScansUsed); // 3 free scans per month
+    return Math.max(0, 3 - userCredits.freeScansUsed); // 3 free scans total
   };
 
   if (packagesLoading || creditsLoading) {
@@ -195,141 +112,120 @@ export default function Credits() {
                 <div className="text-lg font-semibold">
                   {userCredits?.freeScansUsed || 0}/3
                 </div>
-                <p className="text-sm text-muted-foreground">Free Scans Used This Month</p>
+                <p className="text-sm text-muted-foreground">Total Free Scans Used</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Credit Packages */}
-        {!selectedPackage && (
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {packages?.map((pkg) => (
-              <Card key={pkg.id} className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                {pkg.id === 'pro' && (
-                  <Badge className="absolute top-4 right-4 bg-blue-600">
-                    Most Popular
-                  </Badge>
-                )}
-                {pkg.id === 'business' && (
-                  <Badge className="absolute top-4 right-4 bg-purple-600">
-                    Best Value
-                  </Badge>
-                )}
-                
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">{pkg.name}</CardTitle>
-                  <div className="space-y-2">
-                    <div className="text-4xl font-bold">{pkg.priceDisplay}</div>
-                    <div className="text-lg text-muted-foreground">
-                      {pkg.credits} Credits
-                    </div>
-                    {pkg.id === 'pro' && (
-                      <div className="text-sm text-green-600 font-medium">
-                        25% Bonus Credits
-                      </div>
-                    )}
-                    {pkg.id === 'business' && (
-                      <div className="text-sm text-green-600 font-medium">
-                        40% Bonus Credits
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">AI-powered suggestions</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Unlimited website scans</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Competitor analysis</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Priority processing</span>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    onClick={() => handlePurchaseClick(pkg)}
-                    disabled={createPaymentMutation.isPending}
-                    className="w-full"
-                    variant={pkg.id === 'pro' ? 'default' : 'outline'}
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    {createPaymentMutation.isPending ? "Setting up..." : "Purchase Credits"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Payment Form */}
-        {selectedPackage && clientSecret && (
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Complete Your Purchase
-              </CardTitle>
-              <CardDescription>
-                {selectedPackage.name} - {selectedPackage.credits} credits for {selectedPackage.priceDisplay}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <CreditPurchaseForm 
-                  selectedPackage={selectedPackage} 
-                  onSuccess={handlePaymentSuccess}
-                />
-              </Elements>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {packages?.map((pkg) => (
+            <Card key={pkg.id} className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+              {pkg.id === 'pro' && (
+                <Badge className="absolute top-4 right-4 bg-blue-600">
+                  Most Popular
+                </Badge>
+              )}
+              {pkg.id === 'business' && (
+                <Badge className="absolute top-4 right-4 bg-purple-600">
+                  Best Value
+                </Badge>
+              )}
               
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSelectedPackage(null);
-                  setClientSecret("");
-                }}
-                className="w-full mt-4"
-              >
-                Back to Packages
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-2xl">{pkg.name}</CardTitle>
+                <div className="space-y-2">
+                  <div className="text-4xl font-bold">{pkg.priceDisplay}</div>
+                  <div className="text-lg text-muted-foreground">
+                    {pkg.credits} Credits
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    ~${(Number(pkg.priceDisplay.replace('$', '')) / pkg.credits).toFixed(3)} per credit
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-sm">{Math.floor(pkg.credits / 5)} additional website scans</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-sm">{pkg.credits} AI-powered suggestions</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-sm">Unlimited pages per scan</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-sm">Advanced competitor analysis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-sm">Priority support</span>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => handlePurchaseClick(pkg)}
+                  disabled={createCheckoutMutation.isPending}
+                  className="w-full"
+                  size="lg"
+                >
+                  {createCheckoutMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Purchase Credits
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        {/* Credit Usage Information */}
-        <Card className="mt-8">
+        {/* Info Section */}
+        <Card>
           <CardHeader>
-            <CardTitle>How Credits Work</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              How Credits Work
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold mb-2">What You Get Free:</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• 3 website scans per month</li>
-                  <li>• Basic SEO analysis</li>
-                  <li>• Limited AI suggestions (2-3 per scan)</li>
-                  <li>• CSV export</li>
-                </ul>
+                <h4 className="font-semibold mb-2">Website Scans</h4>
+                <p className="text-sm text-muted-foreground">
+                  Each additional website scan costs 5 credits. Free users get 3 scans total.
+                </p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">Credit Features:</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• 1 credit = 1 AI suggestion</li>
-                  <li>• 5 credits = 1 additional scan</li>
-                  <li>• 10 credits = 1 competitor analysis</li>
-                  <li>• Unlimited page analysis</li>
-                </ul>
+                <h4 className="font-semibold mb-2">AI Suggestions</h4>
+                <p className="text-sm text-muted-foreground">
+                  AI-powered suggestions cost 1 credit each. Free users get 3 suggestions per page.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">No Expiration</h4>
+                <p className="text-sm text-muted-foreground">
+                  Credits never expire and can be used whenever you need them.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Secure Payment</h4>
+                <p className="text-sm text-muted-foreground">
+                  All payments are processed securely through Stripe with bank-level encryption.
+                </p>
               </div>
             </div>
           </CardContent>
