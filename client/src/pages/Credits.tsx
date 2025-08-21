@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Coins, CreditCard, Check, Zap } from "lucide-react";
+import { useState } from "react";
 
 interface CreditPackage {
   id: string;
@@ -22,6 +23,7 @@ interface UserCredits {
 export default function Credits() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [processingPackage, setProcessingPackage] = useState<string | null>(null);
 
   // Fetch available packages
   const { data: packages, isLoading: packagesLoading } = useQuery<CreditPackage[]>({
@@ -36,6 +38,7 @@ export default function Credits() {
   // Create checkout session mutation
   const createCheckoutMutation = useMutation({
     mutationFn: async (packageType: string) => {
+      setProcessingPackage(packageType);
       const response = await apiRequest("POST", "/api/payments/create-checkout-session", { packageType });
       return response.json();
     },
@@ -44,6 +47,7 @@ export default function Credits() {
       window.location.href = data.url;
     },
     onError: (error: any) => {
+      setProcessingPackage(null);
       toast({
         title: "Error",
         description: "Failed to initialize payment. Please try again.",
@@ -172,11 +176,11 @@ export default function Credits() {
                 
                 <Button
                   onClick={() => handlePurchaseClick(pkg)}
-                  disabled={createCheckoutMutation.isPending}
+                  disabled={processingPackage === pkg.id}
                   className="w-full"
                   size="lg"
                 >
-                  {createCheckoutMutation.isPending ? (
+                  {processingPackage === pkg.id ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Processing...
