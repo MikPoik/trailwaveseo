@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   pagesAnalyzed: integer("pages_analyzed").notNull().default(0),
-  pageLimit: integer("page_limit").notNull().default(10),
+  pageLimit: integer("page_limit").notNull().default(-1), // -1 means unlimited
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

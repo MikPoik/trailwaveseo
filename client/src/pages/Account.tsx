@@ -67,8 +67,9 @@ const Account = () => {
     );
   }
 
-  const usagePercentage = usage ? Math.round((usage.pagesAnalyzed / usage.pageLimit) * 100) : 0;
-  const remainingPages = usage ? Math.max(0, usage.pageLimit - usage.pagesAnalyzed) : 0;
+  const isUnlimited = usage ? usage.pageLimit === -1 : false;
+  const usagePercentage = usage && !isUnlimited ? Math.round((usage.pagesAnalyzed / usage.pageLimit) * 100) : 0;
+  const remainingPages = usage && !isUnlimited ? Math.max(0, usage.pageLimit - usage.pagesAnalyzed) : Infinity;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -116,11 +117,16 @@ const Account = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="text-2xl font-bold">
-                {usage?.pagesAnalyzed || 0} / {usage?.pageLimit || 5}
+                {usage?.pagesAnalyzed || 0} / {isUnlimited ? "∞" : (usage?.pageLimit || 5)}
               </div>
-              <Progress value={usagePercentage} className="w-full" />
+              {!isUnlimited && <Progress value={usagePercentage} className="w-full" />}
+              {isUnlimited && (
+                <div className="w-full h-2 bg-green-100 rounded-full">
+                  <div className="h-full bg-green-500 rounded-full w-full"></div>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                Pages analyzed this month
+                Pages analyzed {isUnlimited ? "(unlimited plan)" : "this month"}
               </p>
             </div>
           </CardContent>
@@ -130,7 +136,7 @@ const Account = () => {
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Account Status</CardTitle>
-            {remainingPages > 0 ? (
+            {isUnlimited || remainingPages > 0 ? (
               <CheckCircle className="h-4 w-4 ml-auto text-green-500" />
             ) : (
               <AlertCircle className="h-4 w-4 ml-auto text-red-500" />
@@ -140,13 +146,15 @@ const Account = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant={remainingPages > 0 ? "default" : "destructive"}>
-                  {remainingPages > 0 ? "Active" : "Limit Reached"}
+                <Badge variant={isUnlimited || remainingPages > 0 ? "default" : "destructive"}>
+                  {isUnlimited ? "Unlimited" : (remainingPages > 0 ? "Active" : "Limit Reached")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Remaining</span>
-                <span className="font-semibold">{remainingPages} pages</span>
+                <span className="font-semibold">
+                  {isUnlimited ? "Unlimited" : `${remainingPages} pages`}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -166,7 +174,10 @@ const Account = () => {
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Current Plan</h4>
               <p className="text-sm text-muted-foreground">
-                You have access to analyze up to {usage?.pageLimit || 5} pages.
+                {isUnlimited 
+                  ? "You have unlimited access to analyze pages."
+                  : `You have access to analyze up to ${usage?.pageLimit || 5} pages.`
+                }
               </p>
             </div>
             <div className="space-y-2">

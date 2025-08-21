@@ -168,12 +168,18 @@ export async function analyzeSite(
     if (userId) {
       const usage = await storage.getUserUsage(userId);
       if (usage) {
-        remainingQuota = Math.max(0, usage.pageLimit - usage.pagesAnalyzed);
-        console.log(`User ${userId} has ${remainingQuota} pages remaining (${usage.pagesAnalyzed}/${usage.pageLimit})`);
-        
-        // If user has no remaining quota, stop immediately
-        if (remainingQuota <= 0) {
-          throw new Error(`Page analysis limit reached. You have analyzed ${usage.pagesAnalyzed}/${usage.pageLimit} pages.`);
+        if (usage.pageLimit === -1) {
+          // Unlimited access - use settings.maxPages as the technical limit
+          remainingQuota = settings.maxPages;
+          console.log(`User ${userId} has unlimited access (${usage.pagesAnalyzed} pages analyzed so far)`);
+        } else {
+          remainingQuota = Math.max(0, usage.pageLimit - usage.pagesAnalyzed);
+          console.log(`User ${userId} has ${remainingQuota} pages remaining (${usage.pagesAnalyzed}/${usage.pageLimit})`);
+          
+          // If user has no remaining quota, stop immediately
+          if (remainingQuota <= 0) {
+            throw new Error(`Page analysis limit reached. You have analyzed ${usage.pagesAnalyzed}/${usage.pageLimit} pages.`);
+          }
         }
       }
     }
@@ -324,9 +330,17 @@ export async function analyzeSite(
       }
 
       // Check if we've reached the user's quota limit during analysis
-      if (userId && analyzedPages.length >= remainingQuota) {
-        console.log(`Stopping analysis - reached page quota limit of ${remainingQuota} pages`);
-        return null; // Skip this page
+      if (userId) {
+        const usage = await storage.getUserUsage(userId);
+        if (usage && usage.pageLimit !== -1 && analyzedPages.length >= remainingQuota) {
+          console.log(`Stopping analysis - reached page quota limit of ${remainingQuota} pages`);
+          return null; // Skip this page
+        }
+        // For unlimited users, only stop if we hit the technical limit (settings.maxPages)
+        if (usage && usage.pageLimit === -1 && analyzedPages.length >= settings.maxPages) {
+          console.log(`Stopping analysis - reached technical limit of ${settings.maxPages} pages`);
+          return null; // Skip this page
+        }
       }
 
       // Emit progress update for current page (10-40% of total progress for basic analysis)

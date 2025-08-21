@@ -19,7 +19,8 @@ export function registerAnalysisRoutes(app: Express) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      if (usage.pagesAnalyzed >= usage.pageLimit) {
+      // Check if user has a specific page limit (not unlimited)
+      if (usage.pageLimit !== -1 && usage.pagesAnalyzed >= usage.pageLimit) {
         return res.status(403).json({ 
           error: "Page analysis limit reached", 
           message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,

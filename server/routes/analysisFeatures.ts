@@ -191,7 +191,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         if (req.isAuthenticated && req.isAuthenticated()) {
           userId = (req.user as any).claims.sub;
           const usage = await storage.getUserUsage(userId);
-          if (usage && usage.pagesAnalyzed >= usage.pageLimit) {
+          if (usage && usage.pageLimit !== -1 && usage.pagesAnalyzed >= usage.pageLimit) {
             return res.status(403).json({ 
               error: "Page analysis limit reached", 
               message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
@@ -199,9 +199,9 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
             });
           }
           
-          // Also check if user has any pages remaining
-          const remainingPages = usage ? usage.pageLimit - usage.pagesAnalyzed : 0;
-          if (remainingPages <= 0) {
+          // Also check if user has any pages remaining (only if not unlimited)
+          const remainingPages = usage && usage.pageLimit !== -1 ? usage.pageLimit - usage.pagesAnalyzed : Infinity;
+          if (usage && usage.pageLimit !== -1 && remainingPages <= 0) {
             return res.status(403).json({ 
               error: "No pages remaining", 
               message: `You have no pages remaining in your current limit of ${usage?.pageLimit || 0} pages.`,

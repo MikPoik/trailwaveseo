@@ -129,6 +129,21 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 
 ## Recent Changes
 
+### August 21, 2025 - Removed Gapped Scan Limits for Free Users
+- **Unlimited Page Analysis**: Removed the 5-page limit restriction for all users
+- **Database Schema Update**: Changed default `pageLimit` from `5` to `-1` (unlimited)
+- **Backend Logic Updates**: Modified quota enforcement to handle unlimited users (`pageLimit: -1`)
+- **Frontend UI Enhancement**: Updated Account page to display unlimited status with infinity symbol
+- **User Migration**: Updated all existing users in database to have unlimited access
+- **Technical Limits**: Users still respect the technical `maxPages` setting from user settings for performance
+
+### Changes Made:
+- **Schema**: `users.pageLimit` default changed to `-1` (unlimited indicator)
+- **API Routes**: Updated `analysis.ts` and `analysisFeatures.ts` to skip limits for unlimited users
+- **SEO Analyzer**: Modified quota checks to handle unlimited access properly
+- **Account UI**: Enhanced display to show "∞" symbol and "Unlimited" status for free users
+- **Database**: Updated all 12 existing users to have unlimited access
+
 ### July 24, 2025 - Modular Route Structure Refactoring
 - Refactored monolithic `server/routes.ts` (800+ lines) into modular structure with separation of concerns
 - Created dedicated route modules:
