@@ -11,6 +11,7 @@ import { registerSettingsRoutes } from "./settings";
 import { registerAnalysisRoutes } from "./analysis";
 import { registerAnalysisManagementRoutes } from "./analysisManagement";
 import { registerAnalysisFeaturesRoutes } from "./analysisFeatures";
+import { registerPaymentRoutes } from "./payments";
 
 // Global event emitter for Server-Sent Events
 export const analysisEvents = new EventEmitter();
@@ -46,6 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerAnalysisRoutes(app);
   registerAnalysisManagementRoutes(app);
   registerAnalysisFeaturesRoutes(app);
+  await registerPaymentRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

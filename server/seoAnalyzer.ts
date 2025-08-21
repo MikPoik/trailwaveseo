@@ -163,24 +163,41 @@ export async function analyzeSite(
     // Get settings for this user
     const settings = await storage.getSettings(userId);
 
-    // Get user's current usage to determine remaining quota
+    // Get user's current usage to determine remaining quota and AI limitations
     let remainingQuota = settings.maxPages; // Default fallback
+    let userUsage = null;
+    let isFreeTier = true;
+    let aiSuggestionsRemaining = 0;
+    
     if (userId) {
-      const usage = await storage.getUserUsage(userId);
-      if (usage) {
-        if (usage.pageLimit === -1) {
+      userUsage = await storage.getUserUsage(userId);
+      if (userUsage) {
+        // Check if user is on free tier (3 free scans used, no credits)
+        const FREE_SCANS_PER_MONTH = 3;
+        isFreeTier = userUsage.freeScansUsed < FREE_SCANS_PER_MONTH && userUsage.credits <= 0;
+        
+        // Calculate AI suggestions available for free users (2-3 per analysis)
+        if (isFreeTier) {
+          aiSuggestionsRemaining = 3; // Free users get 3 AI suggestions per analysis
+        } else {
+          aiSuggestionsRemaining = userUsage.credits; // Paid users: 1 credit = 1 AI suggestion
+        }
+        
+        if (userUsage.pageLimit === -1) {
           // Unlimited access - use settings.maxPages as the technical limit
           remainingQuota = settings.maxPages;
-          console.log(`User ${userId} has unlimited access (${usage.pagesAnalyzed} pages analyzed so far)`);
+          console.log(`User ${userId} has unlimited access (${userUsage.pagesAnalyzed} pages analyzed so far)`);
         } else {
-          remainingQuota = Math.max(0, usage.pageLimit - usage.pagesAnalyzed);
-          console.log(`User ${userId} has ${remainingQuota} pages remaining (${usage.pagesAnalyzed}/${usage.pageLimit})`);
+          remainingQuota = Math.max(0, userUsage.pageLimit - userUsage.pagesAnalyzed);
+          console.log(`User ${userId} has ${remainingQuota} pages remaining (${userUsage.pagesAnalyzed}/${userUsage.pageLimit})`);
           
           // If user has no remaining quota, stop immediately
           if (remainingQuota <= 0) {
-            throw new Error(`Page analysis limit reached. You have analyzed ${usage.pagesAnalyzed}/${usage.pageLimit} pages.`);
+            throw new Error(`Page analysis limit reached. You have analyzed ${userUsage.pagesAnalyzed}/${userUsage.pageLimit} pages.`);
           }
         }
+        
+        console.log(`User ${userId} AI suggestions: ${aiSuggestionsRemaining} available (free tier: ${isFreeTier})`);
       }
     }
 
@@ -484,14 +501,31 @@ export async function analyzeSite(
             };
 
             try {
-              console.log(`Generating suggestions for page: ${page.url}`);
-              const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
+              // Check if user has remaining AI suggestions quota
+              if (aiSuggestionsRemaining > 0) {
+                console.log(`Generating suggestions for page: ${page.url} (${aiSuggestionsRemaining} AI suggestions remaining)`);
+                const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
 
-              if (Array.isArray(suggestions) && suggestions.length > 0) {
-                page.suggestions = suggestions;
-                console.log(`Successfully generated ${suggestions.length} suggestions for ${page.url}`);
+                if (Array.isArray(suggestions) && suggestions.length > 0) {
+                  // For free users, limit to 3 suggestions per page
+                  const limitedSuggestions = isFreeTier ? suggestions.slice(0, 3) : suggestions;
+                  page.suggestions = limitedSuggestions;
+                  
+                  // Deduct AI suggestions used (1 credit per suggestion for paid users)
+                  if (!isFreeTier) {
+                    aiSuggestionsUsed += limitedSuggestions.length;
+                    aiSuggestionsRemaining -= limitedSuggestions.length;
+                  } else {
+                    aiSuggestionsRemaining -= 1; // Free users: 1 page = 1 quota unit
+                  }
+                  
+                  console.log(`Successfully generated ${limitedSuggestions.length} suggestions for ${page.url}`);
+                } else {
+                  console.warn(`No suggestions generated for ${page.url}, using empty array`);
+                  page.suggestions = [];
+                }
               } else {
-                console.warn(`No suggestions generated for ${page.url}, using empty array`);
+                console.log(`No AI suggestions quota remaining for ${page.url}, skipping`);
                 page.suggestions = [];
               }
             } catch (error) {
@@ -552,6 +586,12 @@ export async function analyzeSite(
     };
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
+
+    // Deduct AI suggestion credits for paid users
+    if (!isFreeTier && aiSuggestionsUsed > 0 && userId) {
+      await storage.deductCredits(userId, aiSuggestionsUsed);
+      console.log(`Deducted ${aiSuggestionsUsed} credits for AI suggestions`);
+    }
 
     // Note: Usage is automatically incremented in saveAnalysis function
 

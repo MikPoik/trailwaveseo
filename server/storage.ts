@@ -8,8 +8,11 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number } | undefined>;
+  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; freeScansUsed: number; freeScansResetDate: Date | null } | undefined>;
   incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined>;
+  deductCredits(userId: string, credits: number): Promise<User | undefined>;
+  incrementFreeScans(userId: string): Promise<User | undefined>;
+  resetFreeScans(userId: string): Promise<User | undefined>;
 
   // Analysis operations
   getAnalysisById(id: number): Promise<Analysis | undefined>;
@@ -68,10 +71,13 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number } | undefined> {
+  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; freeScansUsed: number; freeScansResetDate: Date | null } | undefined> {
     const [user] = await db.select({
       pagesAnalyzed: users.pagesAnalyzed,
-      pageLimit: users.pageLimit
+      pageLimit: users.pageLimit,
+      credits: users.credits,
+      freeScansUsed: users.freeScansUsed,
+      freeScansResetDate: users.freeScansResetDate
     }).from(users).where(eq(users.id, userId));
     return user;
   }
@@ -115,6 +121,93 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newUser;
+  }
+
+  // Credit management methods
+  async addCredits(userId: string, credits: number): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({
+          credits: sql`${users.credits} + ${credits}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error adding credits for user ${userId}:`, error);
+      return undefined;
+    }
+  }
+
+  async deductCredits(userId: string, credits: number): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({
+          credits: sql`GREATEST(0, ${users.credits} - ${credits})`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error deducting credits for user ${userId}:`, error);
+      return undefined;
+    }
+  }
+
+  async incrementFreeScans(userId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({
+          freeScansUsed: sql`${users.freeScansUsed} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error incrementing free scans for user ${userId}:`, error);
+      return undefined;
+    }
+  }
+
+  async resetFreeScans(userId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({
+          freeScansUsed: 0,
+          freeScansResetDate: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error resetting free scans for user ${userId}:`, error);
+      return undefined;
+    }
+  }
+
+  async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({
+          stripeCustomerId: stripeCustomerId,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error updating Stripe customer ID for user ${userId}:`, error);
+      return undefined;
+    }
   }
 
   // Analysis operations

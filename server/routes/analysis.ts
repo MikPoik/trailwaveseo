@@ -19,13 +19,50 @@ export function registerAnalysisRoutes(app: Express) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check if user has a specific page limit (not unlimited)
+      // Check free scan limits
+      const now = new Date();
+      const resetDate = usage.freeScansResetDate ? new Date(usage.freeScansResetDate) : new Date();
+      const monthsSinceReset = (now.getFullYear() - resetDate.getFullYear()) * 12 + (now.getMonth() - resetDate.getMonth());
+      
+      // Reset free scans if it's been a month or more
+      if (monthsSinceReset >= 1) {
+        await storage.resetFreeScans(userId);
+        // Refresh usage data after reset
+        const refreshedUsage = await storage.getUserUsage(userId);
+        if (refreshedUsage) {
+          Object.assign(usage, refreshedUsage);
+        }
+      }
+
+      // Check if user has exceeded free scans (3 per month) and has no credits
+      const FREE_SCANS_PER_MONTH = 3;
+      if (usage.freeScansUsed >= FREE_SCANS_PER_MONTH && usage.credits <= 0) {
+        return res.status(403).json({ 
+          error: "Free scan limit reached", 
+          message: `You have used all ${FREE_SCANS_PER_MONTH} free scans this month. Purchase credits to continue analyzing websites.`,
+          usage: usage,
+          needsCredits: true
+        });
+      }
+
+      // Check if user has a specific page limit (not unlimited) - for legacy users
       if (usage.pageLimit !== -1 && usage.pagesAnalyzed >= usage.pageLimit) {
         return res.status(403).json({ 
           error: "Page analysis limit reached", 
           message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
           usage: usage
         });
+      }
+
+      // Determine if this is a paid scan (user has credits or exceeded free limit)
+      const isPaidScan = usage.credits > 0 || usage.freeScansUsed >= FREE_SCANS_PER_MONTH;
+      
+      // Deduct credits if this is a paid scan
+      if (isPaidScan && usage.credits >= 5) {
+        await storage.deductCredits(userId, 5); // 5 credits per additional scan
+      } else if (!isPaidScan) {
+        // Increment free scan usage
+        await storage.incrementFreeScans(userId);
       }
 
       // Start analysis in the background

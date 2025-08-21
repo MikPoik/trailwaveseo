@@ -110,18 +110,31 @@ const URLInputForm = ({
       onAnalysisComplete(data);
     },
     onError: (error: any) => {
-      // Handle usage limit errors specifically
-      if (error.status === 403 && error.message?.includes("limit reached")) {
-        toast({
-          title: "Usage Limit Reached",
-          description: error.message || "You have reached your page analysis limit.",
-          variant: "destructive",
-          action: (
-            <Button variant="outline" onClick={() => window.location.href = "/account"}>
-              View Account
-            </Button>
-          ),
-        });
+      // Handle freemium usage limit errors specifically
+      if (error.status === 403) {
+        if (error.needsCredits || error.message?.includes("Free scan limit")) {
+          toast({
+            title: "Free Scans Used Up",
+            description: "You've used all 3 free scans this month. Purchase credits to continue analyzing websites.",
+            variant: "destructive",
+            action: (
+              <Button variant="outline" onClick={() => window.location.href = "/credits"}>
+                Get Credits
+              </Button>
+            ),
+          });
+        } else if (error.message?.includes("limit reached")) {
+          toast({
+            title: "Usage Limit Reached",
+            description: error.message || "You have reached your page analysis limit.",
+            variant: "destructive",
+            action: (
+              <Button variant="outline" onClick={() => window.location.href = "/account"}>
+                View Account
+              </Button>
+            ),
+          });
+        }
       } else {
         toast({
           title: "Analysis Failed",

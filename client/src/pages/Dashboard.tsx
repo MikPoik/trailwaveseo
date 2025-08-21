@@ -6,11 +6,27 @@ import AnalysisSummary from "@/components/AnalysisSummary";
 import AnalysisHistory from "@/components/AnalysisHistory";
 import { AnalysisState, WebsiteAnalysis } from "@/lib/types";
 import { useAuth } from "../hooks/useAuth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Coins, AlertTriangle, Link } from "lucide-react";
+
+interface UserUsage {
+  pagesAnalyzed: number;
+  pageLimit: number;
+  credits: number;
+  freeScansUsed: number;
+  freeScansResetDate: string | null;
+}
 
 const Dashboard = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
+  
+  const { data: usage } = useQuery<UserUsage>({
+    queryKey: ['/api/user/usage'],
+    enabled: !!user,
+  });
   const [analysisState, setAnalysisState] = useState<AnalysisState>("idle");
   const [analysis, setAnalysis] = useState<WebsiteAnalysis | null>(null);
   const [progressData, setProgressData] = useState({
@@ -30,6 +46,41 @@ const Dashboard = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Freemium Usage Banner */}
+        {usage && (
+          <Card className="mb-6 border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <Coins className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium">{usage.credits || 0} Credits</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">
+                        Free Scans: {Math.max(0, 3 - (usage.freeScansUsed || 0))} / 3 remaining
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {usage.credits <= 0 && usage.freeScansUsed >= 3 && (
+                    <div className="flex items-center space-x-2 text-orange-600">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">No scans remaining</span>
+                    </div>
+                  )}
+                  <Button variant="outline" size="sm" className="text-blue-600 border-blue-300 hover:bg-blue-100">
+                    <Link className="h-3 w-3 mr-1" />
+                    <a href="/credits">Get Credits</a>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <URLInputForm 

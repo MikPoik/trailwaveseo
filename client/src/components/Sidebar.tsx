@@ -9,7 +9,8 @@ import {
   Settings,
   Menu,
   Zap,
-  User
+  User,
+  Coins
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,12 @@ const Sidebar = () => {
       label: "Account",
       icon: <User className="h-5 w-5 mr-3" />,
       active: location === "/account"
+    },
+    {
+      href: "/credits",
+      label: "Credits",
+      icon: <Coins className="h-5 w-5 mr-3" />,
+      active: location === "/credits"
     }
   ];
 

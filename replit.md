@@ -129,20 +129,25 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 
 ## Recent Changes
 
-### August 21, 2025 - Removed Gapped Scan Limits for Free Users
-- **Unlimited Page Analysis**: Removed the 5-page limit restriction for all users
-- **Database Schema Update**: Changed default `pageLimit` from `5` to `-1` (unlimited)
-- **Backend Logic Updates**: Modified quota enforcement to handle unlimited users (`pageLimit: -1`)
-- **Frontend UI Enhancement**: Updated Account page to display unlimited status with infinity symbol
-- **User Migration**: Updated all existing users in database to have unlimited access
-- **Technical Limits**: Users still respect the technical `maxPages` setting from user settings for performance
+### August 21, 2025 - Implemented Freemium Monetization Model
+- **Freemium System**: Transitioned from unlimited free access to credit-based freemium model
+- **Free Tier Limits**: 3 free website scans per month with basic SEO analysis only
+- **Credit System**: Premium features require credits (5 credits per additional scan, 1 credit per AI suggestion)
+- **AI Limitations**: Free users get 3 AI suggestions per analysis; paid users get unlimited suggestions based on credits
+- **Monthly Reset**: Free scan count resets monthly for ongoing access
+- **Export Remains Free**: All export functionality (CSV, JSON) remains free for all users
 
-### Changes Made:
-- **Schema**: `users.pageLimit` default changed to `-1` (unlimited indicator)
-- **API Routes**: Updated `analysis.ts` and `analysisFeatures.ts` to skip limits for unlimited users
-- **SEO Analyzer**: Modified quota checks to handle unlimited access properly
-- **Account UI**: Enhanced display to show "∞" symbol and "Unlimited" status for free users
-- **Database**: Updated all 12 existing users to have unlimited access
+### Freemium Implementation Details:
+- **Database Schema**: Added `credits`, `freeScansUsed`, `freeScansResetDate` to users table
+- **Credit Packs**: $9.99 for 50 credits, $24.99 for 150 credits, $49.99 for 350 credits
+- **Analysis Limits**: Free users limited to 10 pages per scan, paid users unlimited within technical limits
+- **UI Updates**: Dashboard shows credit status and usage, Account page displays free scan tracking
+- **Error Handling**: User-friendly messages guide users to purchase credits when limits reached
+- **Stripe Integration**: Secure payment processing for credit purchases
+
+### Previous Change (Reverted):
+- ~~**Unlimited Access**: Previously removed all scan limits for free users~~
+- ~~**Database Migration**: All existing users had unlimited access (`pageLimit: -1`)~~
 
 ### July 24, 2025 - Modular Route Structure Refactoring
 - Refactored monolithic `server/routes.ts` (800+ lines) into modular structure with separation of concerns

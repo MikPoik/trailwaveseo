@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { User, BarChart3, CheckCircle, AlertCircle } from "lucide-react";
+import { User, BarChart3, CheckCircle, AlertCircle, Coins, Calendar, Link } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import { useEffect } from "react";
@@ -10,6 +10,9 @@ import { useEffect } from "react";
 interface UserUsage {
   pagesAnalyzed: number;
   pageLimit: number;
+  credits: number;
+  freeScansUsed: number;
+  freeScansResetDate: string | null;
 }
 
 const Account = () => {
@@ -78,7 +81,7 @@ const Account = () => {
         description="View your current usage and account information"
       />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-8">
         {/* User Profile Card */}
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
@@ -104,6 +107,53 @@ const Account = () => {
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Credits Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Credits</CardTitle>
+            <Coins className="h-4 w-4 ml-auto text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-blue-600">
+                {usage?.credits || 0}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Available credits for premium features
+              </p>
+              <a href="/credits" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                <Link className="h-3 w-3 mr-1" />
+                Purchase Credits
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Free Scans Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Free Scans</CardTitle>
+            <Calendar className="h-4 w-4 ml-auto text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold">
+                {usage ? Math.max(0, 3 - (usage.freeScansUsed || 0)) : 3} / 3
+              </div>
+              <Progress 
+                value={usage ? ((usage.freeScansUsed || 0) / 3) * 100 : 0} 
+                className="w-full" 
+              />
+              <p className="text-xs text-muted-foreground">
+                {usage?.freeScansResetDate 
+                  ? `Resets ${new Date(usage.freeScansResetDate).toLocaleDateString()}`
+                  : 'Resets monthly'
+                }
+              </p>
             </div>
           </CardContent>
         </Card>
