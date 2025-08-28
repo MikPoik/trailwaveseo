@@ -469,6 +469,10 @@ export async function analyzeSite(
         siteOverview = await analyzeSiteOverview(siteStructure, additionalInfo);
         console.log(`Business context detected - Industry: ${siteOverview.industry}, Type: ${siteOverview.businessType}, Target: ${siteOverview.targetAudience}`);
 
+        // Pre-calculate which pages will get AI suggestions to avoid race conditions
+        const pagesWithAI = analyzedPages.slice(0, aiSuggestionsRemaining);
+        console.log(`Will generate AI suggestions for ${pagesWithAI.length} out of ${analyzedPages.length} pages`);
+
         // Generate suggestions in batches to reduce API calls and improve efficiency
         const batchSize = 3;
         for (let i = 0; i < analyzedPages.length; i += batchSize) {
@@ -510,9 +514,10 @@ export async function analyzeSite(
             };
 
             try {
-              // Check if user has remaining AI suggestions quota
-              if (aiSuggestionsRemaining > 0) {
-                console.log(`Generating suggestions for page: ${page.url} (${aiSuggestionsRemaining} AI suggestions remaining)`);
+              // Check if this page should get AI suggestions (pre-calculated)
+              const shouldGetAI = pagesWithAI.includes(page);
+              if (shouldGetAI) {
+                console.log(`Generating suggestions for page: ${page.url}`);
                 const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
 
                 if (Array.isArray(suggestions) && suggestions.length > 0) {
@@ -530,12 +535,11 @@ export async function analyzeSite(
                       console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url}`);
                     }
                     
-                    aiSuggestionsRemaining -= 1; // Trial users: 1 page = 1 quota unit
+                    aiSuggestionsUsed += 1; // Track usage for final credit calculation
                   } else {
                     // Paid users get all suggestions (8-12 typically)
                     page.suggestions = suggestions;
                     aiSuggestionsUsed += 1; // 1 credit per page regardless of number of suggestions
-                    aiSuggestionsRemaining -= 1;
                     console.log(`Successfully generated ${suggestions.length} suggestions for paid user ${page.url}`);
                   }
                 } else {
@@ -543,7 +547,6 @@ export async function analyzeSite(
                   page.suggestions = [];
                 }
               } else {
-                // This should not happen with the new logic, but keep as fallback
                 console.log(`No AI suggestions quota remaining for ${page.url}, skipping`);
                 page.suggestions = [];
               }
