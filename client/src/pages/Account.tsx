@@ -82,8 +82,8 @@ const Account = () => {
   };
 
   const getAccountStatusDisplay = () => {
-    if (!userCredits) return "Loading...";
-    return userCredits.accountStatus === "trial" ? "Trial Account" : "Paid Account";
+    if (!usage) return "Loading...";
+    return usage.accountStatus === "trial" ? "Trial Account" : "Paid Account";
   };
 
   // Refetch usage when the page becomes visible (user returns to tab)
