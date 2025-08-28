@@ -8,11 +8,10 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; freeScansUsed: number; freeScansResetDate: Date | null } | undefined>;
+  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string } | undefined>;
   incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined>;
   deductCredits(userId: string, credits: number): Promise<User | undefined>;
-  incrementFreeScans(userId: string): Promise<User | undefined>;
-  resetFreeScans(userId: string): Promise<User | undefined>;
+  setAccountStatus(userId: string, status: string): Promise<User | undefined>;
 
   // Analysis operations
   getAnalysisById(id: number): Promise<Analysis | undefined>;
@@ -71,13 +70,12 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; freeScansUsed: number; freeScansResetDate: Date | null } | undefined> {
+  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string } | undefined> {
     const [user] = await db.select({
       pagesAnalyzed: users.pagesAnalyzed,
       pageLimit: users.pageLimit,
       credits: users.credits,
-      freeScansUsed: users.freeScansUsed,
-      freeScansResetDate: users.freeScansResetDate
+      accountStatus: users.accountStatus
     }).from(users).where(eq(users.id, userId));
     return user;
   }
@@ -158,37 +156,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementFreeScans(userId: string): Promise<User | undefined> {
+  async setAccountStatus(userId: string, status: string): Promise<User | undefined> {
     try {
       const [user] = await db
         .update(users)
         .set({
-          freeScansUsed: sql`${users.freeScansUsed} + 1`,
+          accountStatus: status,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId))
         .returning();
       return user;
     } catch (error) {
-      console.error(`Error incrementing free scans for user ${userId}:`, error);
-      return undefined;
-    }
-  }
-
-  async resetFreeScans(userId: string): Promise<User | undefined> {
-    try {
-      const [user] = await db
-        .update(users)
-        .set({
-          freeScansUsed: 0,
-          freeScansResetDate: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, userId))
-        .returning();
-      return user;
-    } catch (error) {
-      console.error(`Error resetting free scans for user ${userId}:`, error);
+      console.error(`Error setting account status for user ${userId}:`, error);
       return undefined;
     }
   }
@@ -500,7 +480,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAnalysis(id: number): Promise<boolean> {
     const result = await db.delete(analyses).where(eq(analyses.id, id));
-    return result.count > 0;
+    return result.rowCount > 0;
   }
 
   // Settings operations

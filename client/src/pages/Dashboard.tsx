@@ -15,8 +15,7 @@ interface UserUsage {
   pagesAnalyzed: number;
   pageLimit: number;
   credits: number;
-  freeScansUsed: number;
-  freeScansResetDate: string | null;
+  accountStatus: string;
 }
 
 const Dashboard = () => {
@@ -46,34 +45,47 @@ const Dashboard = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Freemium Usage Banner */}
+        {/* Account Status Banner */}
         {usage && (
-          <Card className="mb-6 border-blue-200 bg-blue-50">
+          <Card className={`mb-6 ${usage.accountStatus === "trial" ? "border-purple-200 bg-purple-50" : "border-blue-200 bg-blue-50"}`}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <Coins className="h-4 w-4 text-blue-600" />
+                      <Coins className={`h-4 w-4 ${usage.accountStatus === "trial" ? "text-purple-600" : "text-blue-600"}`} />
                       <span className="text-sm font-medium">{usage.credits || 0} Credits</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">
-                        Free Scans: {Math.max(0, 3 - (usage.freeScansUsed || 0))} / 3 total
+                      <span className={`text-sm px-2 py-1 rounded-full text-xs font-medium ${
+                        usage.accountStatus === "trial" 
+                          ? "bg-purple-100 text-purple-700" 
+                          : "bg-green-100 text-green-700"
+                      }`}>
+                        {usage.accountStatus === "trial" ? "Trial Account" : "Paid Account"}
                       </span>
+                      {usage.accountStatus === "trial" && (
+                        <span className="text-sm text-gray-600">
+                          Lite scans (3 pages max, 5 suggestions per page)
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {usage.credits <= 0 && usage.freeScansUsed >= 3 && (
+                  {usage.credits < 5 && (
                     <div className="flex items-center space-x-2 text-orange-600">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="text-sm font-medium">No scans remaining</span>
+                      <span className="text-sm font-medium">Low credits</span>
                     </div>
                   )}
-                  <Button variant="outline" size="sm" className="text-blue-600 border-blue-300 hover:bg-blue-100">
+                  <Button variant="outline" size="sm" className={`border-2 ${
+                    usage.accountStatus === "trial" 
+                      ? "text-purple-600 border-purple-300 hover:bg-purple-100" 
+                      : "text-blue-600 border-blue-300 hover:bg-blue-100"
+                  }`}>
                     <Link className="h-3 w-3 mr-1" />
-                    <a href="/account">Get Credits</a>
+                    <a href="/account">{usage.accountStatus === "trial" ? "Upgrade Account" : "Get Credits"}</a>
                   </Button>
                 </div>
               </div>

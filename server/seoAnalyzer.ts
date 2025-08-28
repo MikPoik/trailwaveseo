@@ -166,49 +166,52 @@ export async function analyzeSite(
     // Get user's current usage to determine remaining quota and AI limitations
     let remainingQuota = settings.maxPages; // Default fallback
     let userUsage = null;
-    let isFreeTier = true;
+    let isTrialUser = false;
     let aiSuggestionsRemaining = 0;
     let aiSuggestionsUsed = 0;
     
     if (userId) {
       userUsage = await storage.getUserUsage(userId);
       if (userUsage) {
-        // Check if user is on free tier (3 free scans total, no credits)
-        const FREE_SCANS_TOTAL = 3;
-        isFreeTier = userUsage.freeScansUsed < FREE_SCANS_TOTAL && userUsage.credits <= 0;
+        // Check if user is on trial account
+        isTrialUser = userUsage.accountStatus === "trial";
         
-        // Calculate AI suggestions available for free users (3 pages with AI per analysis)
-        if (isFreeTier) {
-          aiSuggestionsRemaining = 3; // Free users get AI suggestions for 3 pages per analysis
+        // Calculate AI suggestions and page limits based on account status
+        if (isTrialUser) {
+          // Trial users: limit to 3 pages max, each page gets AI suggestions
+          aiSuggestionsRemaining = Math.min(3, userUsage.credits); // Trial limited to 3 pages max
+          remainingQuota = Math.min(3, settings.maxPages); // Trial: max 3 pages per scan
+          console.log(`Trial user ${userId}: limited to 3 pages per scan, ${aiSuggestionsRemaining} AI suggestions available`);
         } else {
+          // Paid users: unlimited pages (up to settings), 1 credit per page for AI suggestions
           aiSuggestionsRemaining = userUsage.credits; // Paid users: 1 credit = 1 page with AI suggestions
-        }
-        
-        if (userUsage.pageLimit === -1) {
-          // Unlimited access - use settings.maxPages as the technical limit
-          remainingQuota = settings.maxPages;
-          console.log(`User ${userId} has unlimited access (${userUsage.pagesAnalyzed} pages analyzed so far)`);
-        } else {
-          remainingQuota = Math.max(0, userUsage.pageLimit - userUsage.pagesAnalyzed);
-          console.log(`User ${userId} has ${remainingQuota} pages remaining (${userUsage.pagesAnalyzed}/${userUsage.pageLimit})`);
           
-          // If user has no remaining quota, stop immediately
-          if (remainingQuota <= 0) {
-            throw new Error(`Page analysis limit reached. You have analyzed ${userUsage.pagesAnalyzed}/${userUsage.pageLimit} pages.`);
+          if (userUsage.pageLimit === -1) {
+            // Unlimited access - use settings.maxPages as the technical limit
+            remainingQuota = settings.maxPages;
+            console.log(`Paid user ${userId} has unlimited access (${userUsage.pagesAnalyzed} pages analyzed so far)`);
+          } else {
+            remainingQuota = Math.max(0, userUsage.pageLimit - userUsage.pagesAnalyzed);
+            console.log(`Paid user ${userId} has ${remainingQuota} pages remaining (${userUsage.pagesAnalyzed}/${userUsage.pageLimit})`);
+            
+            // If user has no remaining quota, stop immediately
+            if (remainingQuota <= 0) {
+              throw new Error(`Page analysis limit reached. You have analyzed ${userUsage.pagesAnalyzed}/${userUsage.pageLimit} pages.`);
+            }
           }
         }
         
-        console.log(`User ${userId} AI suggestions: ${aiSuggestionsRemaining} available (free tier: ${isFreeTier})`);
+        console.log(`User ${userId} AI suggestions: ${aiSuggestionsRemaining} available (trial: ${isTrialUser})`);
       }
     }
 
-    // For free users, limit analysis to pages that can get AI suggestions to ensure consistency
+    // Set effective max pages based on user type
     let effectiveMaxPages = Math.min(settings.maxPages, remainingQuota);
     
-    // If user is on free tier and AI is enabled, limit pages to AI quota to ensure all get suggestions
-    if (isFreeTier && settings.useAI && aiSuggestionsRemaining > 0) {
-      effectiveMaxPages = Math.min(effectiveMaxPages, aiSuggestionsRemaining);
-      console.log(`Free tier user: limiting analysis to ${aiSuggestionsRemaining} pages to ensure all get AI suggestions`);
+    // For trial users, ensure we don't analyze more pages than we can provide AI suggestions for
+    if (isTrialUser && settings.useAI && aiSuggestionsRemaining > 0) {
+      effectiveMaxPages = Math.min(effectiveMaxPages, 3); // Trial users: max 3 pages
+      console.log(`Trial user: limiting analysis to 3 pages maximum`);
     }
 
     // Get pages to analyze (either from sitemap or by crawling)
@@ -513,19 +516,26 @@ export async function analyzeSite(
                 const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
 
                 if (Array.isArray(suggestions) && suggestions.length > 0) {
-                  // For free users, limit to 3 suggestions per page
-                  const limitedSuggestions = isFreeTier ? suggestions.slice(0, 3) : suggestions;
-                  page.suggestions = limitedSuggestions;
-                  
-                  // Deduct AI suggestions used (1 credit per page for paid users)
-                  if (!isFreeTier) {
+                  // For trial users, limit to 5 suggestions per page and add teaser
+                  if (isTrialUser) {
+                    const limitedSuggestions = suggestions.slice(0, 5);
+                    page.suggestions = limitedSuggestions;
+                    
+                    // Add teaser if there are more suggestions available
+                    if (suggestions.length > 5) {
+                      const remainingSuggestions = suggestions.length - 5;
+                      page.suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
+                    }
+                    
+                    aiSuggestionsRemaining -= 1; // Trial users: 1 page = 1 quota unit
+                    console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url} (${remainingSuggestions || 0} more available)`);
+                  } else {
+                    // Paid users get all suggestions (8-12 typically)
+                    page.suggestions = suggestions;
                     aiSuggestionsUsed += 1; // 1 credit per page regardless of number of suggestions
                     aiSuggestionsRemaining -= 1;
-                  } else {
-                    aiSuggestionsRemaining -= 1; // Free users: 1 page = 1 quota unit
+                    console.log(`Successfully generated ${suggestions.length} suggestions for paid user ${page.url}`);
                   }
-                  
-                  console.log(`Successfully generated ${limitedSuggestions.length} suggestions for ${page.url}`);
                 } else {
                   console.warn(`No suggestions generated for ${page.url}, using empty array`);
                   page.suggestions = [];

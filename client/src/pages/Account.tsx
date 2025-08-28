@@ -15,8 +15,7 @@ interface UserUsage {
   pagesAnalyzed: number;
   pageLimit: number;
   credits: number;
-  freeScansUsed: number;
-  freeScansResetDate: string | null;
+  accountStatus: string;
 }
 
 interface CreditPackage {
@@ -28,8 +27,7 @@ interface CreditPackage {
 
 interface UserCredits {
   credits: number;
-  freeScansUsed: number;
-  freeScansResetDate: string | null;
+  accountStatus: string;
 }
 
 const Account = () => {
@@ -83,9 +81,9 @@ const Account = () => {
     createCheckoutMutation.mutate(pkg.id);
   };
 
-  const getFreeScansRemaining = () => {
-    if (!userCredits) return 0;
-    return Math.max(0, 3 - userCredits.freeScansUsed); // 3 free scans total
+  const getAccountStatusDisplay = () => {
+    if (!userCredits) return "Loading...";
+    return userCredits.accountStatus === "trial" ? "Trial Account" : "Paid Account";
   };
 
   // Refetch usage when the page becomes visible (user returns to tab)
@@ -191,23 +189,21 @@ const Account = () => {
           </CardContent>
         </Card>
 
-        {/* Free Scans Card */}
+        {/* Account Status Card */}
         <Card>
           <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Free Scans</CardTitle>
-            <Calendar className="h-4 w-4 ml-auto text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Account Status</CardTitle>
+            <UserIcon className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                {usage ? Math.max(0, 3 - (usage.freeScansUsed || 0)) : 3} / 3
+              <div className={`text-2xl font-bold ${usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
+                {getAccountStatusDisplay()}
               </div>
-              <Progress 
-                value={usage ? ((usage.freeScansUsed || 0) / 3) * 100 : 0} 
-                className="w-full" 
-              />
               <p className="text-xs text-muted-foreground">
-                Free scans available for new users
+                {usage?.accountStatus === "trial" 
+                  ? "Lite scans: 3 pages max, 5 suggestions per page" 
+                  : "Full scans: unlimited pages, all suggestions"}
               </p>
             </div>
           </CardContent>
@@ -257,7 +253,7 @@ const Account = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-primary">
                     {userCredits?.credits || usage?.credits || 0}
@@ -265,16 +261,14 @@ const Account = () => {
                   <p className="text-sm text-muted-foreground">Available Credits</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {getFreeScansRemaining()}
+                  <div className={`text-3xl font-bold ${usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
+                    {getAccountStatusDisplay()}
                   </div>
-                  <p className="text-sm text-muted-foreground">Free Scans Remaining</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold">
-                    {userCredits?.freeScansUsed || usage?.freeScansUsed || 0}/3
-                  </div>
-                  <p className="text-sm text-muted-foreground">Total Free Scans Used</p>
+                  <p className="text-sm text-muted-foreground">
+                    {usage?.accountStatus === "trial" 
+                      ? "Lite scans: 3 pages max" 
+                      : "Full scans: unlimited"}
+                  </p>
                 </div>
               </div>
             </CardContent>

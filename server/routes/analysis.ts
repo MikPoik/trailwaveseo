@@ -19,12 +19,11 @@ export function registerAnalysisRoutes(app: Express) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check if user has exceeded free scans (3 total) and has no credits
-      const FREE_SCANS_TOTAL = 3;
-      if (usage.freeScansUsed >= FREE_SCANS_TOTAL && usage.credits <= 0) {
+      // Check if user has enough credits to start a scan (5 credits minimum)
+      if (usage.credits < 5) {
         return res.status(403).json({ 
-          error: "Free scan limit reached", 
-          message: `You have used all ${FREE_SCANS_TOTAL} free scans. Purchase credits to continue analyzing websites.`,
+          error: "Insufficient credits", 
+          message: `You need at least 5 credits to start a website scan. You currently have ${usage.credits} credits.`,
           usage: usage,
           needsCredits: true
         });
@@ -39,16 +38,8 @@ export function registerAnalysisRoutes(app: Express) {
         });
       }
 
-      // Determine if this is a paid scan (user has credits or exceeded free limit)
-      const isPaidScan = usage.credits > 0 || usage.freeScansUsed >= FREE_SCANS_TOTAL;
-      
-      // Deduct credits if this is a paid scan
-      if (isPaidScan && usage.credits >= 5) {
-        await storage.deductCredits(userId, 5); // 5 credits per additional scan
-      } else if (!isPaidScan) {
-        // Increment free scan usage
-        await storage.incrementFreeScans(userId);
-      }
+      // Deduct 5 credits for starting the scan
+      await storage.deductCredits(userId, 5);
 
       // Start analysis in the background
       analyzeSite(domain, useSitemap, analysisEvents, false, userId, additionalInfo)

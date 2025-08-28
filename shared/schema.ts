@@ -22,9 +22,8 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   pagesAnalyzed: integer("pages_analyzed").notNull().default(0),
   pageLimit: integer("page_limit").notNull().default(-1), // -1 means unlimited
-  credits: integer("credits").notNull().default(0),
-  freeScansUsed: integer("free_scans_used").notNull().default(0),
-  freeScansResetDate: timestamp("free_scans_reset_date").defaultNow(),
+  credits: integer("credits").notNull().default(15), // New users get 15 starter credits
+  accountStatus: varchar("account_status").notNull().default("trial"), // "trial" or "paid"
   stripeCustomerId: varchar("stripe_customer_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

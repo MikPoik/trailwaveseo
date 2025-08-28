@@ -147,6 +147,10 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
             // Add credits to user account
             await storage.addCredits(userId, creditsToAdd);
             console.log(`Added ${creditsToAdd} credits to user ${userId}`);
+            
+            // Change account status to "paid" on first purchase
+            await storage.setAccountStatus(userId, "paid");
+            console.log(`Updated account status to 'paid' for user ${userId}`);
           } catch (error) {
             console.error('Error adding credits to user:', error);
           }
