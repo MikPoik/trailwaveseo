@@ -173,33 +173,7 @@ const Account = () => {
           </CardContent>
         </Card>
 
-        {/* Status Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Account Status</CardTitle>
-            {isUnlimited || remainingPages > 0 ? (
-              <CheckCircle className="h-4 w-4 ml-auto text-green-500" />
-            ) : (
-              <AlertCircle className="h-4 w-4 ml-auto text-red-500" />
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant={isUnlimited || remainingPages > 0 ? "default" : "destructive"}>
-                  {isUnlimited ? "Unlimited" : (remainingPages > 0 ? "Active" : "Limit Reached")}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Remaining</span>
-                <span className="font-semibold">
-                  {isUnlimited ? "Unlimited" : `${remainingPages} pages`}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Detailed Usage Information */}
