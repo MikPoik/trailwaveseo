@@ -73,7 +73,7 @@ const Dashboard = () => {
                   )}
                   <Button variant="outline" size="sm" className="text-blue-600 border-blue-300 hover:bg-blue-100">
                     <Link className="h-3 w-3 mr-1" />
-                    <a href="/credits">Get Credits</a>
+                    <a href="/account">Get Credits</a>
                   </Button>
                 </div>
               </div>

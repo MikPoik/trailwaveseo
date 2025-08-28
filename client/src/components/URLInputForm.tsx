@@ -118,7 +118,7 @@ const URLInputForm = ({
             description: "You've used all 3 free scans. Purchase credits to continue analyzing websites.",
             variant: "destructive",
             action: (
-              <Button variant="outline" onClick={() => window.location.href = "/credits"}>
+              <Button variant="outline" onClick={() => window.location.href = "/account"}>
                 Get Credits
               </Button>
             ),

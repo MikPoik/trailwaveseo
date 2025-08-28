@@ -56,12 +56,6 @@ const Sidebar = () => {
       icon: <User className="h-5 w-5 mr-3" />,
       active: location === "/account"
     },
-    {
-      href: "/credits",
-      label: "Credits",
-      icon: <Coins className="h-5 w-5 mr-3" />,
-      active: location === "/credits"
-    }
   ];
 
   return (

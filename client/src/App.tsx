@@ -11,7 +11,6 @@ import HowItWorks from "@/pages/HowItWorks";
 import Settings from "@/pages/Settings";
 import AnalysisDetails from "@/pages/AnalysisDetails";
 import Account from "@/pages/Account";
-import Credits from "@/pages/Credits";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "./hooks/useAuth";
 
@@ -81,11 +80,6 @@ function Router() {
         <Route path="/account">
           <AuthenticatedApp>
             <Account />
-          </AuthenticatedApp>
-        </Route>
-        <Route path="/credits">
-          <AuthenticatedApp>
-            <Credits />
           </AuthenticatedApp>
         </Route>
         <Route component={NotFound} />
