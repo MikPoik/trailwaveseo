@@ -525,10 +525,12 @@ export async function analyzeSite(
                     if (suggestions.length > 5) {
                       const remainingSuggestions = suggestions.length - 5;
                       page.suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
+                      console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url} (${remainingSuggestions} more available)`);
+                    } else {
+                      console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url}`);
                     }
                     
                     aiSuggestionsRemaining -= 1; // Trial users: 1 page = 1 quota unit
-                    console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url} (${remainingSuggestions || 0} more available)`);
                   } else {
                     // Paid users get all suggestions (8-12 typically)
                     page.suggestions = suggestions;
@@ -605,6 +607,7 @@ export async function analyzeSite(
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
 
     // Deduct AI suggestion credits for paid users
+    const isFreeTier = isTrialUser; // Trial users are considered free tier
     if (!isFreeTier && aiSuggestionsUsed > 0 && userId) {
       await storage.deductCredits(userId, aiSuggestionsUsed);
       console.log(`Deducted ${aiSuggestionsUsed} credits for AI suggestions`);
