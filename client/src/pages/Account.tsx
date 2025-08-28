@@ -164,16 +164,10 @@ const Account = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="text-2xl font-bold">
-                {usage?.pagesAnalyzed || 0} / {isUnlimited ? "∞" : (usage?.pageLimit || 5)}
+                {usage?.pagesAnalyzed || 0}
               </div>
-              {!isUnlimited && <Progress value={usagePercentage} className="w-full" />}
-              {isUnlimited && (
-                <div className="w-full h-2 bg-green-100 rounded-full">
-                  <div className="h-full bg-green-500 rounded-full w-full"></div>
-                </div>
-              )}
               <p className="text-xs text-muted-foreground">
-                Pages analyzed {isUnlimited ? "(unlimited plan)" : "this month"}
+                Total pages analyzed
               </p>
             </div>
           </CardContent>
