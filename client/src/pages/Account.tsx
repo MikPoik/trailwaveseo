@@ -234,68 +234,7 @@ const Account = () => {
         
       </div>
 
-      {/* Detailed Usage Information */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Usage Details</CardTitle>
-          <CardDescription>
-            Your page analysis usage for the current period
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Current Plan</h4>
-              <p className="text-sm text-muted-foreground">
-                {isUnlimited 
-                  ? "You have unlimited access to analyze pages."
-                  : `You have access to analyze up to ${usage?.pageLimit || 5} pages.`
-                }
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Usage Progress</h4>
-              <div className="flex items-center space-x-2">
-                <Progress value={usagePercentage} className="flex-1" />
-                <span className="text-sm font-medium">{usagePercentage}%</span>
-              </div>
-            </div>
-          </div>
-
-          {remainingPages === 0 && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-800">
-                    Usage Limit Reached
-                  </h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    You have analyzed all {usage?.pageLimit} pages in your current plan. 
-                    To analyze more pages, please contact support or wait for your usage to reset.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {remainingPages > 0 && remainingPages <= 2 && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-blue-800">
-                    Running Low on Pages
-                  </h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    You have {remainingPages} page{remainingPages === 1 ? '' : 's'} remaining in your current plan.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      
 
       {/* Purchase Credits Section */}
       <Card className="mt-6">
