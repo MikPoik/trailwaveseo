@@ -1,9 +1,41 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { analyzeSite } from "../seoAnalyzer";
-import { generateSeoSuggestions, analyzeContentRepetition } from "../openai";
+import { generateSeoSuggestions, analyzeContentRepetition, generateCompetitorInsights } from "../openai";
 import { isAuthenticated } from "../replitAuth";
 import { analysisEvents, apiLimiter } from "./index";
+
+// Helper function for basic competitor recommendations (fallback when AI isn't available)
+function generateBasicCompetitorRecommendations(metrics: any): string[] {
+  const recommendations: string[] = [];
+  
+  if (metrics.titleOptimization.difference < 0) {
+    recommendations.push("Your competitor has better optimized page titles. Consider reviewing and improving your title tags.");
+  }
+
+  if (metrics.descriptionOptimization.difference < 0) {
+    recommendations.push("Your competitor has better optimized meta descriptions. Focus on writing more compelling and keyword-rich descriptions.");
+  }
+
+  if (metrics.headingsOptimization.difference < 0) {
+    recommendations.push("Your competitor has better heading structure. Ensure you use a logical heading hierarchy with relevant keywords.");
+  }
+
+  if (metrics.imagesOptimization.difference < 0) {
+    recommendations.push("Your competitor has better optimized images. Make sure all your images have descriptive alt text.");
+  }
+
+  if (metrics.criticalIssues.difference < 0) {
+    recommendations.push("You have more critical issues than your competitor. Prioritize fixing these issues to improve your SEO performance.");
+  }
+
+  // Add generic recommendations if no specific issues found
+  if (recommendations.length === 0) {
+    recommendations.push("Your site performs comparably to the competitor. Focus on content quality and user experience improvements.");
+  }
+
+  return recommendations;
+}
 
 export function registerAnalysisFeaturesRoutes(app: Express) {
   // Export analysis as PDF
@@ -264,25 +296,42 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           recommendations: []
         };
 
-        // Generate recommendations based on the comparison
-        if (comparison.metrics.titleOptimization.difference < 0) {
-          comparison.recommendations.push("Your competitor has better optimized page titles. Consider reviewing and improving your title tags.");
-        }
-
-        if (comparison.metrics.descriptionOptimization.difference < 0) {
-          comparison.recommendations.push("Your competitor has better optimized meta descriptions. Focus on writing more compelling and keyword-rich descriptions.");
-        }
-
-        if (comparison.metrics.headingsOptimization.difference < 0) {
-          comparison.recommendations.push("Your competitor has better heading structure. Ensure you use a logical heading hierarchy with relevant keywords.");
-        }
-
-        if (comparison.metrics.imagesOptimization.difference < 0) {
-          comparison.recommendations.push("Your competitor has better optimized images. Make sure all your images have descriptive alt text.");
-        }
-
-        if (comparison.metrics.criticalIssues.difference < 0) {
-          comparison.recommendations.push("You have more critical issues than your competitor. Prioritize fixing these issues to improve your SEO performance.");
+        // Generate AI-powered strategic recommendations based on competitive analysis
+        try {
+          // Check if user has credits for AI competitor insights (costs 2 credits)
+          const aiInsightsCost = 2;
+          let aiInsights: string[] = [];
+          
+          if (userId) {
+            const userUsage = await storage.getUserUsage(userId);
+            const isTrialUser = userUsage?.accountStatus === "trial";
+            
+            if (isTrialUser) {
+              // Trial users get basic rule-based recommendations
+              aiInsights = generateBasicCompetitorRecommendations(comparison.metrics);
+              console.log(`Trial user ${userId}: using basic competitor recommendations`);
+            } else {
+              // Paid users get AI-powered insights if they have credits
+              const creditResult = await storage.atomicDeductCredits(userId, aiInsightsCost);
+              if (creditResult.success) {
+                aiInsights = await generateCompetitorInsights(mainAnalysis, competitorAnalysis);
+                console.log(`Generated ${aiInsights.length} AI-powered competitor insights for user ${userId} (${aiInsightsCost} credits used)`);
+              } else {
+                // Fallback to basic recommendations if insufficient credits
+                aiInsights = generateBasicCompetitorRecommendations(comparison.metrics);
+                console.log(`Insufficient credits for AI competitor insights, using basic recommendations for user ${userId}`);
+              }
+            }
+          } else {
+            // Unauthenticated users get basic recommendations
+            aiInsights = generateBasicCompetitorRecommendations(comparison.metrics);
+          }
+          
+          comparison.recommendations = aiInsights;
+        } catch (aiError) {
+          console.error("Error generating AI competitor insights:", aiError);
+          // Fallback to basic recommendations on AI error
+          comparison.recommendations = generateBasicCompetitorRecommendations(comparison.metrics);
         }
 
         res.json(comparison);

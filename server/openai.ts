@@ -646,6 +646,195 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
 }
 
 /**
+ * Generate AI-powered competitor analysis insights
+ * @param mainAnalysis Main site analysis data
+ * @param competitorAnalysis Competitor site analysis data
+ * @returns Array of strategic competitive recommendations
+ */
+export async function generateCompetitorInsights(
+  mainAnalysis: any,
+  competitorAnalysis: any
+): Promise<string[]> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OpenAI API key not set, skipping AI competitor insights");
+      return [];
+    }
+
+    // Extract key competitive intelligence data
+    const mainSite = {
+      domain: mainAnalysis.domain,
+      pages: mainAnalysis.pages.length,
+      avgTitleLength: mainAnalysis.pages.reduce((sum: number, page: any) => 
+        sum + (page.title?.length || 0), 0) / mainAnalysis.pages.length,
+      avgDescLength: mainAnalysis.pages.reduce((sum: number, page: any) => 
+        sum + (page.metaDescription?.length || 0), 0) / mainAnalysis.pages.length,
+      topKeywords: extractTopKeywords(mainAnalysis.pages),
+      contentTopics: extractContentTopics(mainAnalysis.pages),
+      headingStrategy: analyzeHeadingStrategy(mainAnalysis.pages),
+      contentDepth: analyzeContentDepth(mainAnalysis.pages),
+      linkingStrategy: analyzeLinkingStrategy(mainAnalysis.pages),
+      ctaApproach: analyzeCtaApproach(mainAnalysis.pages)
+    };
+
+    const competitorSite = {
+      domain: competitorAnalysis.domain,
+      pages: competitorAnalysis.pages.length,
+      avgTitleLength: competitorAnalysis.pages.reduce((sum: number, page: any) => 
+        sum + (page.title?.length || 0), 0) / competitorAnalysis.pages.length,
+      avgDescLength: competitorAnalysis.pages.reduce((sum: number, page: any) => 
+        sum + (page.metaDescription?.length || 0), 0) / competitorAnalysis.pages.length,
+      topKeywords: extractTopKeywords(competitorAnalysis.pages),
+      contentTopics: extractContentTopics(competitorAnalysis.pages),
+      headingStrategy: analyzeHeadingStrategy(competitorAnalysis.pages),
+      contentDepth: analyzeContentDepth(competitorAnalysis.pages),
+      linkingStrategy: analyzeLinkingStrategy(competitorAnalysis.pages),
+      ctaApproach: analyzeCtaApproach(competitorAnalysis.pages)
+    };
+
+    const prompt = `Analyze these two websites and provide strategic competitive intelligence for SEO improvement.
+
+MAIN SITE: ${mainSite.domain}
+- Pages analyzed: ${mainSite.pages}
+- Avg title length: ${Math.round(mainSite.avgTitleLength)} chars
+- Avg description length: ${Math.round(mainSite.avgDescLength)} chars
+- Top keywords: ${mainSite.topKeywords.join(', ')}
+- Content topics: ${mainSite.contentTopics.join(', ')}
+- Heading strategy: ${mainSite.headingStrategy}
+- Content depth: ${mainSite.contentDepth}
+- Linking approach: ${mainSite.linkingStrategy}
+- CTA strategy: ${mainSite.ctaApproach}
+
+COMPETITOR: ${competitorSite.domain}
+- Pages analyzed: ${competitorSite.pages}
+- Avg title length: ${Math.round(competitorSite.avgTitleLength)} chars
+- Avg description length: ${Math.round(competitorSite.avgDescLength)} chars
+- Top keywords: ${competitorSite.topKeywords.join(', ')}
+- Content topics: ${competitorSite.contentTopics.join(', ')}
+- Heading strategy: ${competitorSite.headingStrategy}
+- Content depth: ${competitorSite.contentDepth}
+- Linking approach: ${competitorSite.linkingStrategy}
+- CTA strategy: ${competitorSite.ctaApproach}
+
+COMPETITIVE ANALYSIS REQUEST:
+Provide 6-10 specific, actionable recommendations focusing on:
+1. Content strategy gaps and opportunities
+2. Keyword positioning improvements based on competitor success
+3. Content depth and quality enhancements
+4. Title/meta optimization with specific length and keyword suggestions
+5. Heading structure improvements based on competitor patterns
+6. Internal linking strategy enhancements
+7. Conversion optimization opportunities from CTA analysis
+
+Be specific with examples, numbers, and actionable steps. Focus on what the main site can learn from the competitor's approach.
+
+Respond in JSON: {"insights": ["insight 1", "insight 2", ...]}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert competitive SEO analyst. Provide strategic insights based on content analysis differences between two websites. Be specific with actionable recommendations, exact numbers, and concrete examples. Focus on what can be learned from the competitor's successful strategies."
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 1000
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      console.error("No content returned from OpenAI for competitor analysis");
+      return [];
+    }
+
+    const result = JSON.parse(content);
+    const insights = result.insights || [];
+
+    console.log(`Generated ${insights.length} competitive insights comparing ${mainSite.domain} vs ${competitorSite.domain}`);
+    return insights;
+
+  } catch (error) {
+    console.error("Error generating competitor insights with OpenAI:", error);
+    return [];
+  }
+}
+
+// Helper functions for competitive analysis
+function extractTopKeywords(pages: any[]): string[] {
+  const allKeywords: string[] = [];
+  pages.forEach(page => {
+    if (page.contentMetrics?.keywordDensity) {
+      allKeywords.push(...page.contentMetrics.keywordDensity.slice(0, 3).map((k: any) => k.keyword));
+    }
+  });
+  
+  // Get most frequent keywords across all pages
+  const keywordCounts = allKeywords.reduce((acc, keyword) => {
+    acc[keyword] = (acc[keyword] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  return Object.entries(keywordCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 8)
+    .map(([keyword]) => keyword);
+}
+
+function extractContentTopics(pages: any[]): string[] {
+  const topics = new Set<string>();
+  pages.forEach(page => {
+    // Extract topics from H1 and H2 headings
+    page.headings?.forEach((heading: any) => {
+      if (heading.level <= 2 && heading.text) {
+        // Extract meaningful words from headings (simple topic extraction)
+        const words = heading.text.toLowerCase()
+          .replace(/[^\w\s]/g, ' ')
+          .split(/\s+/)
+          .filter(word => word.length > 4);
+        words.forEach(word => topics.add(word));
+      }
+    });
+  });
+  return Array.from(topics).slice(0, 10);
+}
+
+function analyzeHeadingStrategy(pages: any[]): string {
+  const h1Count = pages.reduce((sum, page) => sum + (page.headings?.filter((h: any) => h.level === 1).length || 0), 0);
+  const h2Count = pages.reduce((sum, page) => sum + (page.headings?.filter((h: any) => h.level === 2).length || 0), 0);
+  const avgH1PerPage = h1Count / pages.length;
+  const avgH2PerPage = h2Count / pages.length;
+  
+  return `${avgH1PerPage.toFixed(1)} H1s per page, ${avgH2PerPage.toFixed(1)} H2s per page`;
+}
+
+function analyzeContentDepth(pages: any[]): string {
+  const avgParagraphs = pages.reduce((sum, page) => sum + (page.paragraphs?.length || 0), 0) / pages.length;
+  const avgWordCount = pages.reduce((sum, page) => {
+    const wordCount = page.paragraphs?.join(' ').split(/\s+/).length || 0;
+    return sum + wordCount;
+  }, 0) / pages.length;
+  
+  return `${Math.round(avgWordCount)} words avg, ${avgParagraphs.toFixed(1)} paragraphs per page`;
+}
+
+function analyzeLinkingStrategy(pages: any[]): string {
+  const avgInternalLinks = pages.reduce((sum, page) => sum + (page.internalLinks?.length || 0), 0) / pages.length;
+  const totalUniqueLinks = new Set(pages.flatMap(page => page.internalLinks?.map((link: any) => link.href) || [])).size;
+  
+  return `${avgInternalLinks.toFixed(1)} internal links per page, ${totalUniqueLinks} unique destinations`;
+}
+
+function analyzeCtaApproach(pages: any[]): string {
+  const avgCtas = pages.reduce((sum, page) => sum + (page.ctaElements?.length || 0), 0) / pages.length;
+  const buttonTypes = new Set(pages.flatMap(page => page.ctaElements?.map((cta: any) => cta.type) || []));
+  
+  return `${avgCtas.toFixed(1)} CTAs per page, types: ${Array.from(buttonTypes).join(', ') || 'none'}`;
+}
+
+/**
  * Generate alt text suggestions for images using OpenAI vision
  * @param imageUrl URL of the image to analyze
  * @param pageContext Context from the page where the image appears
