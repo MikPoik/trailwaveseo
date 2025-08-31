@@ -527,7 +527,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           messages: [
             { 
               role: "system", 
-              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions (title 10-60, meta description 50-160 chars), specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format only with proper escaping of quotes and special characters. Write in the same language as the website's content is."
+              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format only with proper escaping of quotes and special characters. Write in the same language as the website's content is."
             },
             { role: "user", content: prompt }
           ],
@@ -692,7 +692,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
         responseType: 'arraybuffer',
         timeout: 5000, // 5-second timeout
         headers: {
-          'User-Agent': 'SEO-Optimizer-Bot/1.0 (+https://trailwaveseo.com/bot)',
+          'User-Agent': 'SEO-Optimizer-Bot/1.0 (+https://seooptimizer.com/bot)',
         }
       });
 
@@ -718,7 +718,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       messages: [
         { 
           role: "system", 
@@ -907,7 +907,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content. Always respond in JSON format." },
         { role: "user", content: prompt }

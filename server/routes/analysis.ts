@@ -19,6 +19,16 @@ export function registerAnalysisRoutes(app: Express) {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Check if user has enough credits to start a scan (5 credits minimum)
+      if (usage.credits < 5) {
+        return res.status(403).json({ 
+          error: "Insufficient credits", 
+          message: `You need at least 5 credits to start a website scan. You currently have ${usage.credits} credits.`,
+          usage: usage,
+          needsCredits: true
+        });
+      }
+
       // Check if user has a specific page limit (not unlimited) - for legacy users
       if (usage.pageLimit !== -1 && usage.pagesAnalyzed >= usage.pageLimit) {
         return res.status(403).json({ 
@@ -27,6 +37,9 @@ export function registerAnalysisRoutes(app: Express) {
           usage: usage
         });
       }
+
+      // Deduct 5 credits for starting the scan
+      await storage.deductCredits(userId, 5);
 
       // Start analysis in the background
       analyzeSite(domain, useSitemap, analysisEvents, false, userId, additionalInfo)
