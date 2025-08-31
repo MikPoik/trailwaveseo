@@ -523,7 +523,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
         console.log(`Attempt ${attempt}/${maxRetries} for ${url}`);
         
         response = await openai.chat.completions.create({
-          model: "gpt-5", //Newest model as of August 2025
+          model: "gpt-4.1",
           messages: [
             { 
               role: "system", 
@@ -532,8 +532,8 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" },
-          temperature: 1, //Temp must be 1 for reasoning model
-          max_completion_tokens: 4500
+          temperature: 0.4,
+          max_tokens: 1500
         });
         
         // If we get here, the request succeeded
@@ -718,7 +718,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini", //New model as of August 2025
+      model: "gpt-4.1-mini",
       messages: [
         { 
           role: "system", 
@@ -756,7 +756,7 @@ Respond with the same language as the website's Heading, Title, Keywords is.`
           ]
         }
       ],
-      max_completion_tokens: 1500
+      max_tokens: 100
     });
 
     const altText = response.choices[0].message.content?.trim() || "";
@@ -907,16 +907,16 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5", //New model as of August 2025
+      model: "gpt-4.1",
       messages: [
         { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content. Always respond in JSON format." },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 1, //Temp must be 1 for reasoning model
-      max_completion_tokens: 4500
+      temperature: 0.5,
+      max_tokens: 1500
     });
-    console.log(response.choices[0]);
+
     const content = response.choices[0].message.content;
     if (!content) {
       throw new Error("No content in response");
