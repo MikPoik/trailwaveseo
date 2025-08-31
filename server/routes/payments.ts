@@ -15,19 +15,22 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 // Credit packages configuration with environment variable price IDs
 const CREDIT_PACKAGES = {
   starter: { 
-    credits: 50, 
+    credits: 25, 
     name: "Starter Pack",
-    priceId: process.env.STRIPE_STARTER_PRICE_ID || 'price_starter_default'
+    priceId: process.env.STRIPE_STARTER_PRICE_ID || 'price_starter_default',
+    priceDisplay: "$4.99"
   },
   pro: { 
-    credits: 150, 
+    credits: 60, 
     name: "Pro Pack",
-    priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_pro_default'
+    priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_pro_default',
+    priceDisplay: "$9.99"
   },
   business: { 
-    credits: 350, 
+    credits: 140, 
     name: "Business Pack",
-    priceId: process.env.STRIPE_BUSINESS_PRICE_ID || 'price_business_default'
+    priceId: process.env.STRIPE_BUSINESS_PRICE_ID || 'price_business_default',
+    priceDisplay: "$19.99"
   }
 };
 
@@ -247,8 +250,7 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
   app.get("/api/payments/packages", (req, res) => {
     const packages = Object.entries(CREDIT_PACKAGES).map(([key, pkg]) => ({
       id: key,
-      ...pkg,
-      priceDisplay: `$${Math.round(pkg.credits * 0.20).toFixed(2)}` // Approx pricing
+      ...pkg
     }));
     
     res.json(packages);

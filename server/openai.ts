@@ -718,7 +718,7 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
 
     // Send request to OpenAI
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1-mini",
       messages: [
         { 
           role: "system", 
@@ -907,7 +907,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content. Always respond in JSON format." },
         { role: "user", content: prompt }
