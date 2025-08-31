@@ -514,36 +514,60 @@ export async function analyzeSite(
             };
 
             try {
-              // Check if this page should get AI suggestions (pre-calculated)
-              const shouldGetAI = pagesWithAI.includes(page);
-              if (shouldGetAI) {
-                console.log(`Generating suggestions for page: ${page.url}`);
-                const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
+              // For trial users, check pre-calculated list; for paid users, validate credits in real-time
+              let shouldGetAI = false;
+              if (isTrialUser) {
+                shouldGetAI = pagesWithAI.includes(page);
+              } else if (userId) {
+                // For paid users, atomically check and deduct 1 credit per page for AI suggestions
+                const creditResult = await storage.atomicDeductCredits(userId, 1);
+                shouldGetAI = creditResult.success;
+                if (!creditResult.success) {
+                  console.log(`Insufficient credits for AI suggestions on page ${page.url}, skipping`);
+                }
+              }
 
-                if (Array.isArray(suggestions) && suggestions.length > 0) {
-                  // For trial users, limit to 5 suggestions per page and add teaser
-                  if (isTrialUser) {
-                    const limitedSuggestions = suggestions.slice(0, 5);
-                    page.suggestions = limitedSuggestions;
-                    
-                    // Add teaser if there are more suggestions available
-                    if (suggestions.length > 5) {
-                      const remainingSuggestions = suggestions.length - 5;
-                      page.suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
-                      console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url} (${remainingSuggestions} more available)`);
+              if (shouldGetAI) {
+                try {
+                  console.log(`Generating suggestions for page: ${page.url}`);
+                  const suggestions = await generateSeoSuggestions(page.url, pageData, siteStructure, siteOverview, additionalInfo);
+
+                  if (Array.isArray(suggestions) && suggestions.length > 0) {
+                    // For trial users, limit to 5 suggestions per page and add teaser
+                    if (isTrialUser) {
+                      const limitedSuggestions = suggestions.slice(0, 5);
+                      page.suggestions = limitedSuggestions;
+                      
+                      // Add teaser if there are more suggestions available
+                      if (suggestions.length > 5) {
+                        const remainingSuggestions = suggestions.length - 5;
+                        page.suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
+                        console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url} (${remainingSuggestions} more available)`);
+                      } else {
+                        console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url}`);
+                      }
+                      
+                      aiSuggestionsUsed += 1; // Track usage for final credit calculation
                     } else {
-                      console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url}`);
+                      // Paid users get all suggestions (8-12 typically)
+                      page.suggestions = suggestions;
+                      aiSuggestionsUsed += 1; // 1 credit per page regardless of number of suggestions
+                      console.log(`Successfully generated ${suggestions.length} suggestions for paid user ${page.url}`);
                     }
-                    
-                    aiSuggestionsUsed += 1; // Track usage for final credit calculation
                   } else {
-                    // Paid users get all suggestions (8-12 typically)
-                    page.suggestions = suggestions;
-                    aiSuggestionsUsed += 1; // 1 credit per page regardless of number of suggestions
-                    console.log(`Successfully generated ${suggestions.length} suggestions for paid user ${page.url}`);
+                    console.warn(`No suggestions generated for ${page.url}, refunding credit`);
+                    // Refund the credit if no suggestions were generated (for paid users only)
+                    if (!isTrialUser && userId) {
+                      await storage.refundCredits(userId, 1, `No AI suggestions generated for ${page.url}`);
+                    }
+                    page.suggestions = [];
                   }
-                } else {
-                  console.warn(`No suggestions generated for ${page.url}, using empty array`);
+                } catch (error) {
+                  console.error(`Error generating suggestions for ${page.url}:`, error);
+                  // Refund the credit since suggestion generation failed (for paid users only)
+                  if (!isTrialUser && userId) {
+                    await storage.refundCredits(userId, 1, `AI suggestion generation failed for ${page.url}: ${error.message}`);
+                  }
                   page.suggestions = [];
                 }
               } else {
@@ -551,13 +575,8 @@ export async function analyzeSite(
                 page.suggestions = [];
               }
             } catch (error) {
-              console.error(`Error generating suggestions for ${page.url}:`, error);
-
-              // Set empty suggestions but don't fail the entire analysis
+              console.error(`Error processing AI suggestions for ${page.url}:`, error);
               page.suggestions = [];
-
-              // Log the error for monitoring but continue with other pages
-              console.log(`Continuing analysis without AI suggestions for ${page.url}`);
             }
           });
 
@@ -609,12 +628,9 @@ export async function analyzeSite(
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
 
-    // Deduct AI suggestion credits for paid users
-    const isFreeTier = isTrialUser; // Trial users are considered free tier
-    if (!isFreeTier && aiSuggestionsUsed > 0 && userId) {
-      await storage.deductCredits(userId, aiSuggestionsUsed);
-      console.log(`Deducted ${aiSuggestionsUsed} credits for AI suggestions`);
-    }
+    // Credits are now deducted atomically during AI suggestion generation
+    // This prevents race conditions and ensures accurate billing
+    console.log(`Analysis completed for ${domain}. AI suggestions generated for ${aiSuggestionsUsed} pages.`);
 
     // Note: Usage is automatically incremented in saveAnalysis function
 

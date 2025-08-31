@@ -11,6 +11,8 @@ export interface IStorage {
   getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string } | undefined>;
   incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined>;
   deductCredits(userId: string, credits: number): Promise<User | undefined>;
+  atomicDeductCredits(userId: string, credits: number): Promise<{ success: boolean; remainingCredits: number; user?: User }>;
+  refundCredits(userId: string, credits: number, reason: string): Promise<User | undefined>;
   setAccountStatus(userId: string, status: string): Promise<User | undefined>;
 
   // Analysis operations
@@ -152,6 +154,60 @@ export class DatabaseStorage implements IStorage {
       return user;
     } catch (error) {
       console.error(`Error deducting credits for user ${userId}:`, error);
+      return undefined;
+    }
+  }
+
+  // Atomic credit operations to prevent race conditions
+  async atomicDeductCredits(userId: string, credits: number): Promise<{ success: boolean; remainingCredits: number; user?: User }> {
+    try {
+      // Use a transaction-like approach by checking credits in the same query
+      const [user] = await db
+        .update(users)
+        .set({
+          credits: sql`GREATEST(0, ${users.credits} - ${credits})`,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(users.id, userId),
+          sql`${users.credits} >= ${credits}` // Only deduct if sufficient credits
+        ))
+        .returning();
+      
+      if (user) {
+        return { success: true, remainingCredits: user.credits, user };
+      } else {
+        // Get current credits to return in failure case
+        const currentUser = await this.getUser(userId);
+        return { 
+          success: false, 
+          remainingCredits: currentUser?.credits || 0 
+        };
+      }
+    } catch (error) {
+      console.error(`Error atomically deducting credits for user ${userId}:`, error);
+      const currentUser = await this.getUser(userId);
+      return { 
+        success: false, 
+        remainingCredits: currentUser?.credits || 0 
+      };
+    }
+  }
+
+  async refundCredits(userId: string, credits: number, reason: string): Promise<User | undefined> {
+    try {
+      console.log(`Refunding ${credits} credits to user ${userId} - Reason: ${reason}`);
+      const [user] = await db
+        .update(users)
+        .set({
+          credits: sql`${users.credits} + ${credits}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error refunding credits for user ${userId}:`, error);
       return undefined;
     }
   }

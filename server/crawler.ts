@@ -17,33 +17,58 @@ async function parseRobotsTxt(domain: string): Promise<Set<string>> {
 
     const lines = response.data.split("\n");
     let userAgentApplies = false;
+    let currentUserAgent = "";
 
     for (const line of lines) {
       const trimmedLine = line.trim();
+      const lowerLine = trimmedLine.toLowerCase();
 
-      // Check if this section applies to our user agent
-      if (trimmedLine.toLowerCase().startsWith("user-agent:")) {
-        const agent = trimmedLine.substring(11).trim();
+      // Check if this is a new user-agent section
+      if (lowerLine.startsWith("user-agent:")) {
+        const agent = trimmedLine.substring(lowerLine.indexOf(":") + 1).trim();
+        currentUserAgent = agent.toLowerCase();
+        
         // Apply rules for our bot or all bots (*)
-        userAgentApplies = agent === "*" || agent.includes("SEO-Optimizer-Bot");
+        // Handle both exact matches and wildcard patterns
+        userAgentApplies = agent === "*" || 
+                          currentUserAgent === "*" ||
+                          currentUserAgent.includes("seo-optimizer-bot") ||
+                          agent.toLowerCase().includes("seo-optimizer-bot") ||
+                          currentUserAgent === "seo-optimizer-bot/1.0";
+        continue;
+      }
+
+      // If we encounter a blank line, reset the current user agent context
+      if (trimmedLine === "") {
+        userAgentApplies = false;
+        currentUserAgent = "";
         continue;
       }
 
       // If in applicable section, parse disallow rules
-      if (
-        userAgentApplies &&
-        trimmedLine.toLowerCase().startsWith("disallow:")
-      ) {
-        const path = trimmedLine.substring(9).trim();
+      if (userAgentApplies && lowerLine.startsWith("disallow:")) {
+        const colonIndex = lowerLine.indexOf(":");
+        const path = trimmedLine.substring(colonIndex + 1).trim();
         if (path.length > 0) {
           disallowedPaths.add(path);
+        }
+      }
+
+      // Also handle Allow directives (robots.txt extension)
+      if (userAgentApplies && lowerLine.startsWith("allow:")) {
+        const colonIndex = lowerLine.indexOf(":");
+        const path = trimmedLine.substring(colonIndex + 1).trim();
+        if (path.length > 0) {
+          // Remove from disallowed if it was previously added
+          // This handles the case where Allow overrides a broader Disallow
+          disallowedPaths.delete(path);
         }
       }
     }
 
     return disallowedPaths;
   } catch (error) {
-    console.log(`No robots.txt found at ${domain} or error parsing it:`);
+    console.log(`No robots.txt found at ${domain} or error parsing it:`, error instanceof Error ? error.message : String(error));
     return new Set<string>();
   }
 }
