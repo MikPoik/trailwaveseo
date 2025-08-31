@@ -297,7 +297,7 @@ const Account = () => {
                       {pkg.credits} Credits
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      ~${(Number(pkg.priceDisplay.replace('$', '')) / pkg.credits).toFixed(2)}¢ per credit
+                      ~{(Number(pkg.priceDisplay.replace('$', '')) / pkg.credits * 100).toFixed(1)}¢ per credit
                     </div>
                   </div>
                 </CardHeader>
