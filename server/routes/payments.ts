@@ -96,8 +96,8 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
           },
         ],
         mode: 'payment',
-        success_url: `${req.headers.origin}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.headers.origin}/credits?canceled=true`,
+        success_url: `${req.headers.origin}/account?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin}/account?canceled=true`,
         metadata: {
           userId: userId,
           packageType: packageType,
@@ -227,8 +227,8 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
           },
         ],
         mode: 'payment',
-        success_url: `${req.headers.origin}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.headers.origin}/credits?canceled=true`,
+        success_url: `${req.headers.origin}/account?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin}/account?canceled=true`,
         metadata: {
           userId: userId,
           packageType: packageType,
