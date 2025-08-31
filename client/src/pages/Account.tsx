@@ -297,7 +297,7 @@ const Account = () => {
                       {pkg.credits} Credits
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      ~${(Number(pkg.priceDisplay.replace('$', '')) / pkg.credits).toFixed(3)} per credit
+                      ~${(Number(pkg.priceDisplay.replace('$', '')) / pkg.credits).toFixed(2)}¢ per credit
                     </div>
                   </div>
                 </CardHeader>
@@ -306,7 +306,7 @@ const Account = () => {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">{Math.floor(pkg.credits / 5)} additional website scans</span>
+                      <span className="text-sm">{Math.floor(pkg.credits / 5)} website scans</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
