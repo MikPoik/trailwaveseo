@@ -76,24 +76,48 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
 const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
 // Define interface for content duplication analysis results
+export interface DuplicateItem {
+  content: string;
+  urls: string[];
+  similarityScore: number;
+}
+
 export interface ContentDuplicationAnalysis {
   titleRepetition: {
     repetitiveCount: number;
     totalCount: number;
     examples: string[];
     recommendations: string[];
+    duplicateGroups: DuplicateItem[];
   };
   descriptionRepetition: {
     repetitiveCount: number;
     totalCount: number;
     examples: string[];
     recommendations: string[];
+    duplicateGroups: DuplicateItem[];
   };
   headingRepetition: {
     repetitiveCount: number;
     totalCount: number;
     examples: string[];
     recommendations: string[];
+    duplicateGroups: DuplicateItem[];
+    byLevel: {
+      h1: DuplicateItem[];
+      h2: DuplicateItem[];
+      h3: DuplicateItem[];
+      h4: DuplicateItem[];
+      h5: DuplicateItem[];
+      h6: DuplicateItem[];
+    };
+  };
+  paragraphRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+    duplicateGroups: DuplicateItem[];
   };
   overallRecommendations: string[];
 }
@@ -1027,124 +1051,273 @@ export async function generateBatchImageAltText(images: Array<{
 }
 
 /**
- * Analyze content repetition across a website (titles, headings, meta descriptions)
+ * Analyze content repetition across a website (titles, headings, meta descriptions, paragraphs)
  * @param pages Array of analyzed pages with their SEO elements
- * @returns Analysis of content duplication and recommendations
+ * @returns Enhanced analysis of content duplication with URL attribution and similarity scores
  */
 export async function analyzeContentRepetition(pages: Array<any>): Promise<ContentDuplicationAnalysis> {
   try {
     // If no OpenAI API key is set, return empty analysis
     if (!process.env.OPENAI_API_KEY) {
       console.warn("OpenAI API key not set, skipping content repetition analysis");
-      return {
-        titleRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
-        descriptionRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
-        headingRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
-        overallRecommendations: []
-      };
+      return createEmptyContentAnalysis();
     }
 
-    // Extract all titles, descriptions, and h1 headings
-    const titles = pages.map(page => page.title).filter(Boolean);
-    const descriptions = pages.map(page => page.metaDescription).filter(Boolean);
-    const h1Headings = pages.flatMap(page => 
-      page.headings.filter((h: any) => h.level === 1).map((h: any) => h.text)
-    );
+    // Enhanced content extraction with URL mapping
+    const titlesWithUrls = pages.map(page => ({
+      content: page.title,
+      url: page.url
+    })).filter(item => item.content);
 
-    const prompt = `
-      I need an analysis of potential content duplication in a website's SEO elements.
+    const descriptionsWithUrls = pages.map(page => ({
+      content: page.metaDescription,
+      url: page.url
+    })).filter(item => item.content);
 
-      Here are all page titles from the website:
-      ${JSON.stringify(titles)}
+    // Extract headings by level with URL mapping
+    const headingsByLevel = {
+      h1: [],
+      h2: [],
+      h3: [],
+      h4: [],
+      h5: [],
+      h6: []
+    } as Record<string, Array<{content: string, url: string}>>;
 
-      Here are all meta descriptions:
-      ${JSON.stringify(descriptions)}
-
-      Here are all H1 headings:
-      ${JSON.stringify(h1Headings)}
-
-      Please analyze these SEO elements and identify:
-      1. How many titles appear to be duplicated or too similar
-      2. How many meta descriptions appear to be duplicated or too similar
-      3. How many H1 headings appear to be duplicated or too similar
-      4. For each category (titles, descriptions, headings), provide specific examples of repetitive content
-      5. For each category, provide actionable recommendations to fix the issues
-      6. Provide overall recommendations for improving content uniqueness across the site, suggesting specific changes to titles, descriptions, and headings
-
-      Respond with a JSON object in this exact format:
-      {
-        "titleRepetition": {
-          "repetitiveCount": number,
-          "totalCount": number,
-          "examples": string[],
-          "recommendations": string[]
-        },
-        "descriptionRepetition": {
-          "repetitiveCount": number,
-          "totalCount": number,
-          "examples": string[],
-          "recommendations": string[]
-        },
-        "headingRepetition": {
-          "repetitiveCount": number,
-          "totalCount": number,
-          "examples": string[],
-          "recommendations": string[]
-        },
-        "overallRecommendations": string[]
-      }
-    `;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
-      messages: [
-        { role: "system", content: "You are an SEO expert assistant specializing in content uniqueness analysis. Provide clear, actionable recommendations for improving content. Always respond in JSON format." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.5,
-      max_tokens: 1500
+    pages.forEach(page => {
+      page.headings?.forEach((heading: any) => {
+        if (heading.level >= 1 && heading.level <= 6) {
+          const levelKey = `h${heading.level}`;
+          headingsByLevel[levelKey].push({
+            content: heading.text,
+            url: page.url
+          });
+        }
+      });
     });
 
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("No content in response");
+    // Extract paragraph content with URL mapping (limit to prevent token overflow)
+    const paragraphsWithUrls = pages.flatMap(page => 
+      (page.paragraphs || [])
+        .slice(0, 5) // Limit to first 5 paragraphs per page
+        .filter((p: string) => p.length > 50) // Only analyze substantial paragraphs
+        .map((p: string) => ({
+          content: p.length > 300 ? p.substring(0, 300) + '...' : p, // Truncate very long paragraphs
+          url: page.url
+        }))
+    );
+
+    // Prepare data for AI analysis with better structure for batch processing
+    const analysisData = {
+      titles: titlesWithUrls,
+      descriptions: descriptionsWithUrls,
+      headings: headingsByLevel,
+      paragraphs: paragraphsWithUrls,
+      totalPages: pages.length
+    };
+
+    // Split into batches if site is large to avoid token limits
+    const shouldBatch = pages.length > 20;
+    let finalResults: ContentDuplicationAnalysis;
+
+    if (shouldBatch) {
+      console.log(`Large site detected (${pages.length} pages), using batch processing for content duplication analysis`);
+      finalResults = await processBatchedContentAnalysis(analysisData);
+    } else {
+      finalResults = await processSingleContentAnalysis(analysisData);
     }
 
-    // Parse the JSON response
-    const result = JSON.parse(content);
-
-    // Return the analysis
-    return {
-      titleRepetition: {
-        repetitiveCount: result.titleRepetition?.repetitiveCount || 0,
-        totalCount: result.titleRepetition?.totalCount || 0,
-        examples: result.titleRepetition?.examples || [],
-        recommendations: result.titleRepetition?.recommendations || []
-      },
-      descriptionRepetition: {
-        repetitiveCount: result.descriptionRepetition?.repetitiveCount || 0,
-        totalCount: result.descriptionRepetition?.totalCount || 0,
-        examples: result.descriptionRepetition?.examples || [],
-        recommendations: result.descriptionRepetition?.recommendations || []
-      },
-      headingRepetition: {
-        repetitiveCount: result.headingRepetition?.repetitiveCount || 0,
-        totalCount: result.headingRepetition?.totalCount || 0,
-        examples: result.headingRepetition?.examples || [], 
-        recommendations: result.headingRepetition?.recommendations || []
-      },
-      overallRecommendations: result.overallRecommendations || []
-    };
+    return finalResults;
   } catch (error) {
     console.error("Error analyzing content repetition with OpenAI:", error);
-    // Return empty analysis on error
-    return {
-      titleRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
-      descriptionRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
-      headingRepetition: { repetitiveCount: 0, totalCount: 0, examples: [], recommendations: [] },
-      overallRecommendations: []
-    };
+    return createEmptyContentAnalysis();
   }
+}
+
+// Helper function to create empty analysis structure
+function createEmptyContentAnalysis(): ContentDuplicationAnalysis {
+  return {
+    titleRepetition: { 
+      repetitiveCount: 0, 
+      totalCount: 0, 
+      examples: [], 
+      recommendations: [],
+      duplicateGroups: []
+    },
+    descriptionRepetition: { 
+      repetitiveCount: 0, 
+      totalCount: 0, 
+      examples: [], 
+      recommendations: [],
+      duplicateGroups: []
+    },
+    headingRepetition: { 
+      repetitiveCount: 0, 
+      totalCount: 0, 
+      examples: [], 
+      recommendations: [],
+      duplicateGroups: [],
+      byLevel: {
+        h1: [], h2: [], h3: [], h4: [], h5: [], h6: []
+      }
+    },
+    paragraphRepetition: {
+      repetitiveCount: 0,
+      totalCount: 0,
+      examples: [],
+      recommendations: [],
+      duplicateGroups: []
+    },
+    overallRecommendations: []
+  };
+}
+
+// Process content analysis for smaller sites (single API call)
+async function processSingleContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
+  const prompt = `Analyze this website's content for duplication and similarity issues.\n\nTITLES WITH URLS (${data.titles.length} total):\n${data.titles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nMETA DESCRIPTIONS WITH URLS (${data.descriptions.length} total):\n${data.descriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nHEADINGS BY LEVEL WITH URLS:\nH1 (${data.headings.h1.length}): ${data.headings.h1.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH2 (${data.headings.h2.length}): ${data.headings.h2.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH3 (${data.headings.h3.length}): ${data.headings.h3.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH4-H6 Combined (${data.headings.h4.length + data.headings.h5.length + data.headings.h6.length}): ${[...data.headings.h4, ...data.headings.h5, ...data.headings.h6].map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nPARAGRAPH CONTENT WITH URLS (${data.paragraphs.length} substantial paragraphs):\n${data.paragraphs.map((item: any, idx: number) => `P${idx + 1}: "${item.content}" → ${item.url}`).join('\n')}\n\nAnalyze for:\n1. Exact duplicates and high similarity content (80%+ similar)\n2. For each duplicate group, list all URLs containing that content\n3. Provide similarity scores (80-100) for detected duplicates\n4. Generate specific recommendations referencing exact URLs\n5. Analyze paragraph content for boilerplate text and repeated sections\n6. Check all heading levels for patterns and repetition\n\nProvide comprehensive analysis with URL attribution and actionable insights.\n\nRespond in JSON format:\n{\n  "titleRepetition": {\n    "repetitiveCount": number,\n    "totalCount": number,\n    "examples": ["example duplicate titles"],\n    "recommendations": ["specific recommendations with URLs"],\n    "duplicateGroups": [{\n      "content": "duplicate title text",\n      "urls": ["url1", "url2"],\n      "similarityScore": 95\n    }]\n  },\n  "descriptionRepetition": { /* same structure */ },\n  "headingRepetition": {\n    /* same structure plus */\n    "byLevel": {\n      "h1": [/* duplicate groups */],\n      "h2": [/* duplicate groups */],\n      "h3": [/* duplicate groups */],\n      "h4": [/* duplicate groups */],\n      "h5": [/* duplicate groups */],\n      "h6": [/* duplicate groups */]\n    }\n  },\n  "paragraphRepetition": { /* same structure */ },\n  "overallRecommendations": ["site-wide content uniqueness recommendations"]\n}`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1",
+    messages: [
+      { 
+        role: "system", 
+        content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping."
+      },
+      { role: "user", content: prompt }
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.2,
+    max_tokens: 2000
+  });
+
+  const content = response.choices[0].message.content;
+  if (!content) {
+    throw new Error("No content in response");
+  }
+
+  const result = JSON.parse(content);
+  return parseEnhancedAnalysisResult(result);
+}
+
+// Process content analysis for larger sites (batched processing)
+async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
+  // For now, implement simplified version that processes in chunks
+  // This prevents token overflow for large sites
+  const titleBatches = chunkArray(data.titles, 25);
+  const descBatches = chunkArray(data.descriptions, 25);
+  
+  let combinedResults = createEmptyContentAnalysis();
+  
+  // Process titles and descriptions in batches
+  for (const batch of titleBatches.concat(descBatches)) {
+    // Simplified batch processing - can be enhanced further
+    const batchResult = await processSingleContentAnalysis({ 
+      titles: batch.length > 0 && batch[0].content && data.titles.includes(batch[0]) ? batch : [],
+      descriptions: batch.length > 0 && batch[0].content && data.descriptions.includes(batch[0]) ? batch : [],
+      headings: data.headings,
+      paragraphs: data.paragraphs.slice(0, 20), // Limit paragraphs for batches
+      totalPages: data.totalPages
+    });
+    
+    // Merge results (simplified approach)
+    combinedResults = mergeAnalysisResults(combinedResults, batchResult);
+  }
+  
+  return combinedResults;
+}
+
+// Helper function to parse enhanced analysis results
+function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
+  return {
+    titleRepetition: {
+      repetitiveCount: result.titleRepetition?.repetitiveCount || 0,
+      totalCount: result.titleRepetition?.totalCount || 0,
+      examples: result.titleRepetition?.examples || [],
+      recommendations: result.titleRepetition?.recommendations || [],
+      duplicateGroups: result.titleRepetition?.duplicateGroups || []
+    },
+    descriptionRepetition: {
+      repetitiveCount: result.descriptionRepetition?.repetitiveCount || 0,
+      totalCount: result.descriptionRepetition?.totalCount || 0,
+      examples: result.descriptionRepetition?.examples || [],
+      recommendations: result.descriptionRepetition?.recommendations || [],
+      duplicateGroups: result.descriptionRepetition?.duplicateGroups || []
+    },
+    headingRepetition: {
+      repetitiveCount: result.headingRepetition?.repetitiveCount || 0,
+      totalCount: result.headingRepetition?.totalCount || 0,
+      examples: result.headingRepetition?.examples || [],
+      recommendations: result.headingRepetition?.recommendations || [],
+      duplicateGroups: result.headingRepetition?.duplicateGroups || [],
+      byLevel: {
+        h1: result.headingRepetition?.byLevel?.h1 || [],
+        h2: result.headingRepetition?.byLevel?.h2 || [],
+        h3: result.headingRepetition?.byLevel?.h3 || [],
+        h4: result.headingRepetition?.byLevel?.h4 || [],
+        h5: result.headingRepetition?.byLevel?.h5 || [],
+        h6: result.headingRepetition?.byLevel?.h6 || []
+      }
+    },
+    paragraphRepetition: {
+      repetitiveCount: result.paragraphRepetition?.repetitiveCount || 0,
+      totalCount: result.paragraphRepetition?.totalCount || 0,
+      examples: result.paragraphRepetition?.examples || [],
+      recommendations: result.paragraphRepetition?.recommendations || [],
+      duplicateGroups: result.paragraphRepetition?.duplicateGroups || []
+    },
+    overallRecommendations: result.overallRecommendations || []
+  };
+}
+
+// Helper function to chunk arrays for batch processing
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+// Helper function to merge analysis results from batches
+function mergeAnalysisResults(base: ContentDuplicationAnalysis, additional: ContentDuplicationAnalysis): ContentDuplicationAnalysis {
+  return {
+    titleRepetition: {
+      repetitiveCount: base.titleRepetition.repetitiveCount + additional.titleRepetition.repetitiveCount,
+      totalCount: Math.max(base.titleRepetition.totalCount, additional.titleRepetition.totalCount),
+      examples: [...base.titleRepetition.examples, ...additional.titleRepetition.examples],
+      recommendations: [...base.titleRepetition.recommendations, ...additional.titleRepetition.recommendations],
+      duplicateGroups: [...base.titleRepetition.duplicateGroups, ...additional.titleRepetition.duplicateGroups]
+    },
+    descriptionRepetition: {
+      repetitiveCount: base.descriptionRepetition.repetitiveCount + additional.descriptionRepetition.repetitiveCount,
+      totalCount: Math.max(base.descriptionRepetition.totalCount, additional.descriptionRepetition.totalCount),
+      examples: [...base.descriptionRepetition.examples, ...additional.descriptionRepetition.examples],
+      recommendations: [...base.descriptionRepetition.recommendations, ...additional.descriptionRepetition.recommendations],
+      duplicateGroups: [...base.descriptionRepetition.duplicateGroups, ...additional.descriptionRepetition.duplicateGroups]
+    },
+    headingRepetition: {
+      repetitiveCount: base.headingRepetition.repetitiveCount + additional.headingRepetition.repetitiveCount,
+      totalCount: Math.max(base.headingRepetition.totalCount, additional.headingRepetition.totalCount),
+      examples: [...base.headingRepetition.examples, ...additional.headingRepetition.examples],
+      recommendations: [...base.headingRepetition.recommendations, ...additional.headingRepetition.recommendations],
+      duplicateGroups: [...base.headingRepetition.duplicateGroups, ...additional.headingRepetition.duplicateGroups],
+      byLevel: {
+        h1: [...base.headingRepetition.byLevel.h1, ...additional.headingRepetition.byLevel.h1],
+        h2: [...base.headingRepetition.byLevel.h2, ...additional.headingRepetition.byLevel.h2],
+        h3: [...base.headingRepetition.byLevel.h3, ...additional.headingRepetition.byLevel.h3],
+        h4: [...base.headingRepetition.byLevel.h4, ...additional.headingRepetition.byLevel.h4],
+        h5: [...base.headingRepetition.byLevel.h5, ...additional.headingRepetition.byLevel.h5],
+        h6: [...base.headingRepetition.byLevel.h6, ...additional.headingRepetition.byLevel.h6]
+      }
+    },
+    paragraphRepetition: {
+      repetitiveCount: base.paragraphRepetition.repetitiveCount + additional.paragraphRepetition.repetitiveCount,
+      totalCount: Math.max(base.paragraphRepetition.totalCount, additional.paragraphRepetition.totalCount),
+      examples: [...base.paragraphRepetition.examples, ...additional.paragraphRepetition.examples],
+      recommendations: [...base.paragraphRepetition.recommendations, ...additional.paragraphRepetition.recommendations],
+      duplicateGroups: [...base.paragraphRepetition.duplicateGroups, ...additional.paragraphRepetition.duplicateGroups]
+    },
+    overallRecommendations: [...base.overallRecommendations, ...additional.overallRecommendations]
+  };
 }
 // Refactored CTA analysis to filter for elements with text and simplify the display format.

@@ -91,24 +91,48 @@ export interface WebsiteAnalysisMetrics {
   linksOptimization: number;
 }
 
+export interface DuplicateItem {
+  content: string;
+  urls: string[];
+  similarityScore: number;
+}
+
 export interface ContentRepetitionAnalysis {
   titleRepetition: {
     repetitiveCount: number;
     totalCount: number;
     examples: string[];
     recommendations: string[];
+    duplicateGroups: DuplicateItem[];
   };
   descriptionRepetition: {
     repetitiveCount: number;
     totalCount: number;
     examples: string[];
     recommendations: string[];
+    duplicateGroups: DuplicateItem[];
   };
   headingRepetition: {
     repetitiveCount: number;
     totalCount: number;
     examples: string[];
     recommendations: string[];
+    duplicateGroups: DuplicateItem[];
+    byLevel: {
+      h1: DuplicateItem[];
+      h2: DuplicateItem[];
+      h3: DuplicateItem[];
+      h4: DuplicateItem[];
+      h5: DuplicateItem[];
+      h6: DuplicateItem[];
+    };
+  };
+  paragraphRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+    duplicateGroups: DuplicateItem[];
   };
   overallRecommendations: string[];
 }

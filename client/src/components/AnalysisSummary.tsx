@@ -14,7 +14,8 @@ import {
   FileText,
   Copy,
   ChevronRight,
-  Info 
+  Info,
+  ExternalLink
 } from "lucide-react";
 import PageAnalysisCard from "./PageAnalysisCard";
 import CompetitorAnalysis from "./CompetitorAnalysis";
@@ -454,7 +455,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                 </div>
 
                 {/* Summary statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {/* Title repetition */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start">
@@ -500,13 +501,33 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         <Copy className="h-6 w-6 text-teal-500" />
                       </div>
                       <div className="ml-4">
-                        <h4 className="text-sm font-medium text-teal-800">H1 Heading Repetition</h4>
+                        <h4 className="text-sm font-medium text-teal-800">Heading Repetition</h4>
                         <div className="mt-1 text-3xl font-semibold text-teal-600">
                           {analysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount}/{analysis.contentRepetitionAnalysis.headingRepetition.totalCount}
                         </div>
                         <p className="mt-1 text-sm text-teal-700">
                           {Math.round((analysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount / 
-                          Math.max(1, analysis.contentRepetitionAnalysis.headingRepetition.totalCount)) * 100)}% of H1 headings have duplication issues
+                          Math.max(1, analysis.contentRepetitionAnalysis.headingRepetition.totalCount)) * 100)}% of headings have duplication issues
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Paragraph repetition */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <Copy className="h-6 w-6 text-orange-500" />
+                      </div>
+                      <div className="ml-4">
+                        <h4 className="text-sm font-medium text-orange-800">Paragraph Repetition</h4>
+                        <div className="mt-1 text-3xl font-semibold text-orange-600">
+                          {analysis.contentRepetitionAnalysis.paragraphRepetition?.repetitiveCount || 0}/{analysis.contentRepetitionAnalysis.paragraphRepetition?.totalCount || 0}
+                        </div>
+                        <p className="mt-1 text-sm text-orange-700">
+                          {analysis.contentRepetitionAnalysis.paragraphRepetition?.totalCount > 0 ? 
+                            Math.round((analysis.contentRepetitionAnalysis.paragraphRepetition.repetitiveCount / 
+                            Math.max(1, analysis.contentRepetitionAnalysis.paragraphRepetition.totalCount)) * 100) : 0}% of paragraphs have duplication issues
                         </p>
                       </div>
                     </div>
@@ -597,12 +618,12 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       <span className="bg-teal-100 text-teal-800 p-1 rounded-md mr-2">
                         <Copy className="h-5 w-5" />
                       </span>
-                      H1 Heading Repetition Analysis
+                      Heading Repetition Analysis (All Levels)
                     </h4>
 
                     {analysis.contentRepetitionAnalysis.headingRepetition.examples.length > 0 ? (
                       <>
-                        <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar H1 headings:</p>
+                        <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar headings (H1-H6):</p>
                         <ul className="space-y-1 mb-4">
                           {analysis.contentRepetitionAnalysis.headingRepetition.examples.map((example, index) => (
                             <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
@@ -613,7 +634,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         </ul>
                       </>
                     ) : (
-                      <p className="text-sm text-gray-600 mb-3">No examples of duplicate H1 headings found.</p>
+                      <p className="text-sm text-gray-600 mb-3">No examples of duplicate headings found.</p>
                     )}
 
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
@@ -628,6 +649,160 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       ))}
                     </ul>
                   </div>
+
+                  {/* Paragraph repetition section */}
+                  {analysis.contentRepetitionAnalysis.paragraphRepetition && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="text-base font-medium text-gray-900 flex items-center mb-3">
+                        <span className="bg-orange-100 text-orange-800 p-1 rounded-md mr-2">
+                          <Copy className="h-5 w-5" />
+                        </span>
+                        Paragraph Content Repetition
+                      </h4>
+
+                      {analysis.contentRepetitionAnalysis.paragraphRepetition.examples.length > 0 ? (
+                        <>
+                          <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar paragraph content:</p>
+                          <ul className="space-y-1 mb-4">
+                            {analysis.contentRepetitionAnalysis.paragraphRepetition.examples.map((example, index) => (
+                              <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
+                                <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
+                                <span className="break-words">{example}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-3">No examples of duplicate paragraph content found.</p>
+                      )}
+
+                      <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
+                      <ul className="space-y-1">
+                        {analysis.contentRepetitionAnalysis.paragraphRepetition.recommendations.map((rec, index) => (
+                          <li key={index} className="text-sm text-gray-700 flex items-start">
+                            <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
+                              <BadgeCheck className="h-3.5 w-3.5" />
+                            </div>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Enhanced URL Attribution Section */}
+                  {(analysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups?.length > 0 ||
+                    analysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups?.length > 0 ||
+                    analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups?.length > 0 ||
+                    analysis.contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.length > 0) && (
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50">
+                      <h4 className="text-base font-medium text-gray-900 flex items-center mb-4">
+                        <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2">
+                          <ExternalLink className="h-5 w-5" />
+                        </span>
+                        Duplicate Content Attribution
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-4">Specific pages containing duplicate content with similarity scores</p>
+
+                      <div className="space-y-4">
+                        {/* Title duplicate groups */}
+                        {analysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups?.map((group, index) => (
+                          <div key={`title-${index}`} className="bg-white border border-blue-200 rounded-lg p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="text-sm font-medium text-blue-800">Duplicate Title</h5>
+                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                {group.similarityScore}% similar
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 mb-2 font-medium">\"{group.content}\"</p>
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">Found on {group.urls.length} pages:</span>
+                              <ul className="mt-1 space-y-1">
+                                {group.urls.map((url, urlIndex) => (
+                                  <li key={urlIndex} className="flex items-center">
+                                    <ChevronRight className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{url}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )) || null}
+
+                        {/* Description duplicate groups */}
+                        {analysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups?.map((group, index) => (
+                          <div key={`desc-${index}`} className="bg-white border border-purple-200 rounded-lg p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="text-sm font-medium text-purple-800">Duplicate Meta Description</h5>
+                              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                                {group.similarityScore}% similar
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 mb-2 font-medium">\"{group.content}\"</p>
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">Found on {group.urls.length} pages:</span>
+                              <ul className="mt-1 space-y-1">
+                                {group.urls.map((url, urlIndex) => (
+                                  <li key={urlIndex} className="flex items-center">
+                                    <ChevronRight className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{url}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )) || null}
+
+                        {/* Heading duplicate groups */}
+                        {analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups?.map((group, index) => (
+                          <div key={`heading-${index}`} className="bg-white border border-teal-200 rounded-lg p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="text-sm font-medium text-teal-800">Duplicate Heading</h5>
+                              <span className="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full">
+                                {group.similarityScore}% similar
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 mb-2 font-medium">\"{group.content}\"</p>
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">Found on {group.urls.length} pages:</span>
+                              <ul className="mt-1 space-y-1">
+                                {group.urls.map((url, urlIndex) => (
+                                  <li key={urlIndex} className="flex items-center">
+                                    <ChevronRight className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{url}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )) || null}
+
+                        {/* Paragraph duplicate groups */}
+                        {analysis.contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.map((group, index) => (
+                          <div key={`paragraph-${index}`} className="bg-white border border-orange-200 rounded-lg p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="text-sm font-medium text-orange-800">Duplicate Paragraph Content</h5>
+                              <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+                                {group.similarityScore}% similar
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 mb-2 font-medium break-words">\"{group.content.substring(0, 150)}{group.content.length > 150 ? '...' : ''}\"</p>
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">Found on {group.urls.length} pages:</span>
+                              <ul className="mt-1 space-y-1">
+                                {group.urls.map((url, urlIndex) => (
+                                  <li key={urlIndex} className="flex items-center">
+                                    <ChevronRight className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{url}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )) || null}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Overall recommendations */}
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -659,7 +834,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   <Copy className="h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Content Duplication Analysis</h3>
                   <p className="text-gray-500 max-w-md mb-6">
-                    Run an analysis to detect duplicate or similar content across your website's titles, meta descriptions, and headings.
+                    Run an analysis to detect duplicate or similar content across your website's titles, meta descriptions, headings, and paragraph content.
                   </p>
 
                   {analysis.pages.length < 2 ? (
