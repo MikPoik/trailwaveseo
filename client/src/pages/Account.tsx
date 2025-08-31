@@ -306,11 +306,11 @@ const Account = () => {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">{Math.floor(pkg.credits / 5)} website scans</span>
+                      <span className="text-sm">Unlimited website scans</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">{pkg.credits} AI-powered suggestions</span>
+                      <span className="text-sm">{pkg.credits} pages with AI suggestions</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
@@ -364,13 +364,13 @@ const Account = () => {
             <div>
               <h4 className="font-semibold mb-2">Website Scans</h4>
               <p className="text-sm text-muted-foreground">
-                Each additional website scan costs 5 credits. Free users get 3 scans total.
+                Website scans are completely free. Only AI suggestions require credits.
               </p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">AI Suggestions</h4>
               <p className="text-sm text-muted-foreground">
-                AI-powered suggestions cost 1 credit each. Free users get 3 suggestions per page.
+                AI-powered suggestions cost 1 credit per page. Trial users get 5 suggestions per page.
               </p>
             </div>
             <div>
