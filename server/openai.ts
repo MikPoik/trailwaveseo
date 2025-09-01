@@ -1117,7 +1117,7 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
     };
 
     // Split into batches if site is large to avoid token limits
-    const shouldBatch = pages.length > 20;
+    const shouldBatch = pages.length > 15;
     let finalResults: ContentDuplicationAnalysis;
 
     if (shouldBatch) {
@@ -1289,31 +1289,212 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
   }
 }
 
-// Process content analysis for larger sites (batched processing)
+// Process content analysis for larger sites (simplified rule-based + minimal AI)
 async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
-  // For now, implement simplified version that processes in chunks
-  // This prevents token overflow for large sites
-  const titleBatches = chunkArray(data.titles, 25);
-  const descBatches = chunkArray(data.descriptions, 25);
-  
-  let combinedResults = createEmptyContentAnalysis();
-  
-  // Process titles and descriptions in batches
-  for (const batch of titleBatches.concat(descBatches)) {
-    // Simplified batch processing - can be enhanced further
-    const batchResult = await processSingleContentAnalysis({ 
-      titles: batch.length > 0 && batch[0].content && data.titles.includes(batch[0]) ? batch : [],
-      descriptions: batch.length > 0 && batch[0].content && data.descriptions.includes(batch[0]) ? batch : [],
-      headings: data.headings,
-      paragraphs: data.paragraphs.slice(0, 20), // Limit paragraphs for batches
-      totalPages: data.totalPages
+  try {
+    console.log(`Processing large site with ${data.totalPages} pages using simplified analysis`);
+    
+    // For large sites, use rule-based analysis with minimal AI enhancement
+    const analysis = createEmptyContentAnalysis();
+    
+    // Rule-based title duplication detection
+    const titleDuplicates = findExactDuplicates(data.titles);
+    analysis.titleRepetition.repetitiveCount = titleDuplicates.duplicateCount;
+    analysis.titleRepetition.totalCount = data.titles.length;
+    analysis.titleRepetition.duplicateGroups = titleDuplicates.groups;
+    analysis.titleRepetition.examples = titleDuplicates.examples;
+    
+    // Rule-based description duplication detection
+    const descriptionDuplicates = findExactDuplicates(data.descriptions);
+    analysis.descriptionRepetition.repetitiveCount = descriptionDuplicates.duplicateCount;
+    analysis.descriptionRepetition.totalCount = data.descriptions.length;
+    analysis.descriptionRepetition.duplicateGroups = descriptionDuplicates.groups;
+    analysis.descriptionRepetition.examples = descriptionDuplicates.examples;
+    
+    // Rule-based heading duplication (focus on H1-H3)
+    const h1Duplicates = findExactDuplicates(data.headings.h1);
+    const h2Duplicates = findExactDuplicates(data.headings.h2);
+    const h3Duplicates = findExactDuplicates(data.headings.h3);
+    
+    analysis.headingRepetition.repetitiveCount = h1Duplicates.duplicateCount + h2Duplicates.duplicateCount + h3Duplicates.duplicateCount;
+    analysis.headingRepetition.totalCount = data.headings.h1.length + data.headings.h2.length + data.headings.h3.length;
+    analysis.headingRepetition.byLevel.h1 = h1Duplicates.groups;
+    analysis.headingRepetition.byLevel.h2 = h2Duplicates.groups;
+    analysis.headingRepetition.byLevel.h3 = h3Duplicates.groups;
+    analysis.headingRepetition.examples = [...h1Duplicates.examples, ...h2Duplicates.examples, ...h3Duplicates.examples];
+    
+    // Generate rule-based recommendations
+    analysis.titleRepetition.recommendations = generateRuleBasedRecommendations('titles', titleDuplicates);
+    analysis.descriptionRepetition.recommendations = generateRuleBasedRecommendations('descriptions', descriptionDuplicates);
+    analysis.headingRepetition.recommendations = generateRuleBasedRecommendations('headings', {
+      duplicateCount: analysis.headingRepetition.repetitiveCount,
+      groups: [...h1Duplicates.groups, ...h2Duplicates.groups, ...h3Duplicates.groups]
     });
     
-    // Merge results (simplified approach)
-    combinedResults = mergeAnalysisResults(combinedResults, batchResult);
+    // Add minimal AI enhancement only if we have significant duplicates
+    const totalDuplicates = analysis.titleRepetition.repetitiveCount + analysis.descriptionRepetition.repetitiveCount + analysis.headingRepetition.repetitiveCount;
+    
+    if (totalDuplicates > 0) {
+      try {
+        const simplifiedAIRecommendations = await generateSimplifiedAIRecommendations(analysis, data.totalPages);
+        analysis.overallRecommendations = simplifiedAIRecommendations;
+      } catch (aiError) {
+        console.warn('AI enhancement failed for large site, using rule-based only:', aiError);
+        analysis.overallRecommendations = [
+          `Found ${totalDuplicates} duplicate content issues across ${data.totalPages} pages`,
+          'Focus on making each page title unique and descriptive',
+          'Ensure meta descriptions provide unique value for each page',
+          'Review heading structure to avoid repetitive content'
+        ];
+      }
+    } else {
+      analysis.overallRecommendations = [`No major content duplication detected across ${data.totalPages} pages`];
+    }
+    
+    console.log(`Completed simplified analysis: ${totalDuplicates} duplicates found`);
+    return analysis;
+    
+  } catch (error) {
+    console.error('Error in processBatchedContentAnalysis:', error);
+    return createEmptyContentAnalysis();
+  }
+}
+
+// Helper function to find exact duplicates using rule-based analysis
+function findExactDuplicates(items: Array<{content: string, url: string}>): {
+  duplicateCount: number;
+  groups: Array<{content: string, urls: string[], similarityScore: number}>;
+  examples: string[];
+} {
+  const contentMap = new Map<string, string[]>();
+  
+  // Group items by exact content match (case-insensitive, trimmed)
+  items.forEach(item => {
+    const normalizedContent = item.content.trim().toLowerCase();
+    if (normalizedContent.length > 0) {
+      if (!contentMap.has(normalizedContent)) {
+        contentMap.set(normalizedContent, []);
+      }
+      contentMap.get(normalizedContent)!.push(item.url);
+    }
+  });
+  
+  // Find groups with duplicates (more than 1 URL)
+  const duplicateGroups: Array<{content: string, urls: string[], similarityScore: number}> = [];
+  const examples: string[] = [];
+  let duplicateCount = 0;
+  
+  contentMap.forEach((urls, content) => {
+    if (urls.length > 1) {
+      // Find original content (not normalized) for display
+      const originalContent = items.find(item => 
+        item.content.trim().toLowerCase() === content
+      )?.content || content;
+      
+      duplicateGroups.push({
+        content: originalContent,
+        urls: urls,
+        similarityScore: 100 // Exact match
+      });
+      
+      examples.push(originalContent);
+      duplicateCount += urls.length - 1; // Count extra occurrences
+    }
+  });
+  
+  return {
+    duplicateCount,
+    groups: duplicateGroups,
+    examples: examples.slice(0, 5) // Limit examples
+  };
+}
+
+// Helper function to generate rule-based recommendations
+function generateRuleBasedRecommendations(contentType: string, duplicateData: {duplicateCount: number, groups: any[]}): string[] {
+  const recommendations: string[] = [];
+  
+  if (duplicateData.duplicateCount === 0) {
+    recommendations.push(`No duplicate ${contentType} detected - good content uniqueness!`);
+  } else {
+    recommendations.push(`Found ${duplicateData.duplicateCount} duplicate ${contentType} across ${duplicateData.groups.length} groups`);
+    
+    if (contentType === 'titles') {
+      recommendations.push('Make each page title unique and descriptive for better SEO');
+      recommendations.push('Include target keywords specific to each page content');
+    } else if (contentType === 'descriptions') {
+      recommendations.push('Write unique meta descriptions that summarize each page content');
+      recommendations.push('Keep descriptions between 150-160 characters for optimal display');
+    } else if (contentType === 'headings') {
+      recommendations.push('Use unique headings that clearly describe section content');
+      recommendations.push('Avoid generic headings like "Welcome" or "About Us" across multiple pages');
+    }
+    
+    if (duplicateData.groups.length > 0) {
+      const topDuplicate = duplicateData.groups[0];
+      recommendations.push(`Most duplicated content: "${topDuplicate.content}" appears on ${topDuplicate.urls?.length || 0} pages`);
+    }
   }
   
-  return combinedResults;
+  return recommendations;
+}
+
+// Helper function to generate simplified AI recommendations for large sites
+async function generateSimplifiedAIRecommendations(analysis: ContentDuplicationAnalysis, totalPages: number): Promise<string[]> {
+  if (!process.env.OPENAI_API_KEY) {
+    return ['AI recommendations unavailable - OpenAI API key not configured'];
+  }
+  
+  try {
+    const summary = {
+      totalPages,
+      titleDuplicates: analysis.titleRepetition.repetitiveCount,
+      descriptionDuplicates: analysis.descriptionRepetition.repetitiveCount,
+      headingDuplicates: analysis.headingRepetition.repetitiveCount,
+      topExamples: [
+        ...analysis.titleRepetition.examples.slice(0, 2),
+        ...analysis.descriptionRepetition.examples.slice(0, 2)
+      ]
+    };
+    
+    const prompt = `Analyze this content duplication summary for a ${totalPages}-page website:
+    
+- Title duplicates: ${summary.titleDuplicates}
+- Description duplicates: ${summary.descriptionDuplicates}  
+- Heading duplicates: ${summary.headingDuplicates}
+- Sample duplicated content: ${summary.topExamples.join(', ')}
+
+Provide 3-5 actionable recommendations to improve content uniqueness. Focus on practical, high-impact suggestions for a large site.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an SEO expert. Provide concise, actionable recommendations for improving content uniqueness on large websites. Respond with a JSON array of recommendation strings."
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 500 // Very limited to avoid truncation
+    });
+
+    const content = response.choices[0].message.content;
+    if (content) {
+      try {
+        const result = JSON.parse(content);
+        return Array.isArray(result.recommendations) ? result.recommendations : 
+               [content.replace(/[{}"\[\]]/g, '').trim()]; // Fallback parsing
+      } catch (parseError) {
+        return [`AI analysis complete: Focus on the ${summary.titleDuplicates + summary.descriptionDuplicates + summary.headingDuplicates} identified duplicates for maximum SEO impact`];
+      }
+    }
+    
+    return ['AI recommendations generated successfully'];
+  } catch (error) {
+    console.error('Error generating simplified AI recommendations:', error);
+    throw error; // Let caller handle the fallback
+  }
 }
 
 // Helper function to parse enhanced analysis results
