@@ -331,6 +331,10 @@ export class DatabaseStorage implements IStorage {
   async saveAnalysis(analysis: Analysis): Promise<Analysis> {
     const { pool } = await import('./db');
 
+    console.log(`saveAnalysis called for domain: ${analysis.domain}`);
+    console.log(`saveAnalysis received userId: ${analysis.userId}`);
+    console.log(`saveAnalysis userId type: ${typeof analysis.userId}`);
+
     const result = await pool.query(
       `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, competitor_analysis, site_overview, is_competitor_analysis)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
