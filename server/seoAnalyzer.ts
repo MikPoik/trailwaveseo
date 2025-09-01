@@ -626,7 +626,8 @@ export async function analyzeSite(
       metrics,
       pages: analyzedPages,
       contentRepetitionAnalysis,
-      siteOverview: settings.useAI && !isCompetitorAnalysis && siteOverview ? siteOverview : undefined
+      siteOverview: settings.useAI && !isCompetitorAnalysis && siteOverview ? siteOverview : undefined,
+      isCompetitorAnalysis: isCompetitorAnalysis
     };
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
