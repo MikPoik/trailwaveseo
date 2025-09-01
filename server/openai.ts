@@ -557,7 +557,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           ],
           response_format: { type: "json_object" },
           temperature: 0.4,
-          max_tokens: 3500
+          max_tokens: 1500
         });
         
         // If we get here, the request succeeded
@@ -765,7 +765,7 @@ Respond in JSON: {"insights": ["insight 1", "insight 2", ...]}`;
       ],
       response_format: { type: "json_object" },
       temperature: 0.3,
-      max_tokens: 3500
+      max_tokens: 1000
     });
 
     const content = response.choices[0].message.content;
@@ -1174,42 +1174,20 @@ function createEmptyContentAnalysis(): ContentDuplicationAnalysis {
 
 // Process content analysis for smaller sites (single API call)
 async function processSingleContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
-  // Create concise prompt
-  let prompt = "Find duplicates:\n\n";
-  
-  if (data.titles.length > 0) {
-    prompt += `TITLES:\n${data.titles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\n`;
-  }
-  
-  if (data.descriptions.length > 0) {
-    prompt += `DESCRIPTIONS:\n${data.descriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\n`;
-  }
-  
-  const headingTypes = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const;
-  for (const type of headingTypes) {
-    if (data.headings[type]?.length > 0) {
-      prompt += `${type.toUpperCase()}:\n${data.headings[type].map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\n`;
-    }
-  }
-  
-  if (data.paragraphs.length > 0) {
-    prompt += `PARAGRAPHS:\n${data.paragraphs.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\n`;
-  }
-
-  prompt += "Return JSON with duplicates found.";
+  const prompt = `Analyze this website's content for duplication and similarity issues.\n\nTITLES WITH URLS (${data.titles.length} total):\n${data.titles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nMETA DESCRIPTIONS WITH URLS (${data.descriptions.length} total):\n${data.descriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nHEADINGS BY LEVEL WITH URLS:\nH1 (${data.headings.h1.length}): ${data.headings.h1.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH2 (${data.headings.h2.length}): ${data.headings.h2.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH3 (${data.headings.h3.length}): ${data.headings.h3.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH4-H6 Combined (${data.headings.h4.length + data.headings.h5.length + data.headings.h6.length}): ${[...data.headings.h4, ...data.headings.h5, ...data.headings.h6].map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nPARAGRAPH CONTENT WITH URLS (${data.paragraphs.length} substantial paragraphs):\n${data.paragraphs.map((item: any, idx: number) => `P${idx + 1}: "${item.content}" → ${item.url}`).join('\n')}\n\nAnalyze for:\n1. Exact duplicates and high similarity content (80%+ similar)\n2. For each duplicate group, list all URLs containing that content\n3. Provide similarity scores (80-100) for detected duplicates\n4. Generate specific recommendations referencing exact URLs\n5. Analyze paragraph content for boilerplate text and repeated sections\n6. Check all heading levels for patterns and repetition\n\nProvide comprehensive analysis with URL attribution and actionable insights.\n\nRespond in JSON format:\n{\n  "titleRepetition": {\n    "repetitiveCount": number,\n    "totalCount": number,\n    "examples": ["example duplicate titles"],\n    "recommendations": ["specific recommendations with URLs"],\n    "duplicateGroups": [{\n      "content": "duplicate title text",\n      "urls": ["url1", "url2"],\n      "similarityScore": 95\n    }]\n  },\n  "descriptionRepetition": { /* same structure */ },\n  "headingRepetition": {\n    /* same structure plus */\n    "byLevel": {\n      "h1": [/* duplicate groups */],\n      "h2": [/* duplicate groups */],\n      "h3": [/* duplicate groups */],\n      "h4": [/* duplicate groups */],\n      "h5": [/* duplicate groups */],\n      "h6": [/* duplicate groups */]\n    }\n  },\n  "paragraphRepetition": { /* same structure */ },\n  "overallRecommendations": ["site-wide content uniqueness recommendations"]\n}`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4.1",
     messages: [
       { 
         role: "system", 
-        content: "Find content duplicates. Return JSON: {\"titleRepetition\":{\"repetitiveCount\":0,\"totalCount\":0,\"examples\":[],\"recommendations\":[],\"duplicateGroups\":[]},\"descriptionRepetition\":{\"repetitiveCount\":0,\"totalCount\":0,\"examples\":[],\"recommendations\":[],\"duplicateGroups\":[]},\"headingRepetition\":{\"repetitiveCount\":0,\"totalCount\":0,\"examples\":[],\"recommendations\":[],\"duplicateGroups\":[],\"byLevel\":{\"h1\":[],\"h2\":[],\"h3\":[],\"h4\":[],\"h5\":[],\"h6\":[]}},\"paragraphRepetition\":{\"repetitiveCount\":0,\"totalCount\":0,\"examples\":[],\"recommendations\":[],\"duplicateGroups\":[]},\"overallRecommendations\":[]}"
+        content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping."
       },
       { role: "user", content: prompt }
     ],
     response_format: { type: "json_object" },
     temperature: 0.2,
-    max_tokens: 1500
+    max_tokens: 2000
   });
 
   const content = response.choices[0].message.content;
@@ -1217,150 +1195,32 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
     throw new Error("No content in response");
   }
 
-  // Validate that content looks like JSON before parsing
-  const trimmedContent = content.trim();
-  if (!trimmedContent.startsWith('{') || !trimmedContent.endsWith('}')) {
-    console.error(`OpenAI response doesn't appear to be valid JSON. Content: ${trimmedContent.substring(0, 200)}...`);
-    throw new Error("Invalid JSON response from OpenAI");
-  }
-
-  let result;
-  try {
-    result = JSON.parse(content);
-  } catch (parseError) {
-    console.error(`Failed to parse OpenAI response:`, parseError);
-    console.error(`Content that failed to parse: ${content.substring(0, 500)}...`);
-    
-    // Try to fix common JSON issues and retry parsing
-    try {
-      let fixedContent = content.trim();
-      
-      // Remove trailing comma before closing brace
-      fixedContent = fixedContent.replace(/,(\s*})/g, '$1');
-      
-      // If JSON is incomplete, try to complete it more aggressively
-      if (!fixedContent.endsWith('}')) {
-        console.warn('Attempting to fix incomplete JSON by adding closing braces');
-        // Count open vs close braces and add missing ones
-        const openBraces = (fixedContent.match(/\{/g) || []).length;
-        const closeBraces = (fixedContent.match(/\}/g) || []).length;
-        const missingBraces = openBraces - closeBraces;
-        
-        // Close any open strings first
-        if (fixedContent.split('"').length % 2 === 0) {
-          fixedContent += '"';
-        }
-        
-        // Add missing closing braces
-        fixedContent += '}'.repeat(Math.max(1, missingBraces));
-      }
-      
-      result = JSON.parse(fixedContent);
-      console.log(`Successfully recovered content duplication analysis after JSON fix`);
-    } catch (secondParseError) {
-      console.error(`Failed to fix and parse OpenAI response:`, secondParseError);
-      throw new Error("Unable to parse content duplication analysis response");
-    }
-  }
-
+  const result = JSON.parse(content);
   return parseEnhancedAnalysisResult(result);
 }
 
 // Process content analysis for larger sites (batched processing)
 async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
-  // Process content in small, focused batches to avoid token overflow
+  // For now, implement simplified version that processes in chunks
+  // This prevents token overflow for large sites
+  const titleBatches = chunkArray(data.titles, 25);
+  const descBatches = chunkArray(data.descriptions, 25);
+  
   let combinedResults = createEmptyContentAnalysis();
   
-  // Process content in smaller, focused batches
-  let successfulBatches = 0;
-  let totalBatches = 0;
-  
-  // Process titles in batches of 15
-  const titleBatchSize = 15;
-  for (let i = 0; i < data.titles.length; i += titleBatchSize) {
-    totalBatches++;
-    try {
-      const titleBatch = data.titles.slice(i, i + titleBatchSize);
-      
-      const batchResult = await processSingleContentAnalysis({
-        titles: titleBatch,
-        descriptions: [],
-        headings: { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] },
-        paragraphs: [],
-        totalPages: data.totalPages
-      });
-      
-      combinedResults = mergeAnalysisResults(combinedResults, batchResult);
-      successfulBatches++;
-    } catch (batchError) {
-      console.error(`Failed to process title batch ${Math.floor(i/titleBatchSize) + 1}:`, batchError);
-    }
-  }
-  
-  // Process descriptions in batches of 15
-  const descBatchSize = 15;
-  for (let i = 0; i < data.descriptions.length; i += descBatchSize) {
-    totalBatches++;
-    try {
-      const descBatch = data.descriptions.slice(i, i + descBatchSize);
-      
-      const batchResult = await processSingleContentAnalysis({
-        titles: [],
-        descriptions: descBatch,
-        headings: { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] },
-        paragraphs: [],
-        totalPages: data.totalPages
-      });
-      
-      combinedResults = mergeAnalysisResults(combinedResults, batchResult);
-      successfulBatches++;
-    } catch (batchError) {
-      console.error(`Failed to process description batch ${Math.floor(i/descBatchSize) + 1}:`, batchError);
-    }
-  }
-  
-  // Process headings by level in smaller batches
-  const headingTypes = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const;
-  for (const headingType of headingTypes) {
-    const headings = data.headings[headingType];
-    if (headings && headings.length > 0) {
-      const headingBatchSize = 20;
-      for (let i = 0; i < headings.length; i += headingBatchSize) {
-        totalBatches++;
-        try {
-          const headingBatch = headings.slice(i, i + headingBatchSize);
-          const emptyHeadings = { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] };
-          emptyHeadings[headingType] = headingBatch;
-          
-          const batchResult = await processSingleContentAnalysis({
-            titles: [],
-            descriptions: [],
-            headings: emptyHeadings,
-            paragraphs: [],
-            totalPages: data.totalPages
-          });
-          
-          combinedResults = mergeAnalysisResults(combinedResults, batchResult);
-          successfulBatches++;
-        } catch (batchError) {
-          console.error(`Failed to process ${headingType} batch ${Math.floor(i/headingBatchSize) + 1}:`, batchError);
-        }
-      }
-    }
-  }
-  
-  // If no batches succeeded, throw an error
-  if (successfulBatches === 0) {
-    throw new Error(`Content duplication analysis failed: All ${totalBatches} batches failed to process`);
-  }
-  
-  console.log(`Content duplication analysis completed: ${successfulBatches}/${totalBatches} batches processed successfully`);
-  
-  // Add a note to the results if some batches failed
-  if (successfulBatches < totalBatches) {
-    combinedResults.overallRecommendations.unshift(
-      `Note: Content analysis completed with ${successfulBatches}/${totalBatches} batches processed. Some content may not be fully analyzed.`
-    );
+  // Process titles and descriptions in batches
+  for (const batch of titleBatches.concat(descBatches)) {
+    // Simplified batch processing - can be enhanced further
+    const batchResult = await processSingleContentAnalysis({ 
+      titles: batch.length > 0 && batch[0].content && data.titles.includes(batch[0]) ? batch : [],
+      descriptions: batch.length > 0 && batch[0].content && data.descriptions.includes(batch[0]) ? batch : [],
+      headings: data.headings,
+      paragraphs: data.paragraphs.slice(0, 20), // Limit paragraphs for batches
+      totalPages: data.totalPages
+    });
+    
+    // Merge results (simplified approach)
+    combinedResults = mergeAnalysisResults(combinedResults, batchResult);
   }
   
   return combinedResults;
