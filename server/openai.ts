@@ -557,7 +557,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           ],
           response_format: { type: "json_object" },
           temperature: 0.4,
-          max_tokens: 1500
+          max_tokens: 2500
         });
         
         // If we get here, the request succeeded
@@ -764,8 +764,7 @@ Respond in JSON: {"insights": ["insight 1", "insight 2", ...]}`;
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.3,
-      max_tokens: 1000
+      temperature: 0.3
     });
 
     const content = response.choices[0].message.content;
@@ -1181,13 +1180,13 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
     messages: [
       { 
         role: "system", 
-        content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping."
+        content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping. Be concise but comprehensive."
       },
       { role: "user", content: prompt }
     ],
     response_format: { type: "json_object" },
     temperature: 0.2,
-    max_tokens: 2000
+    max_tokens: 4000
   });
 
   const content = response.choices[0].message.content;
