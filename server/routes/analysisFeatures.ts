@@ -240,6 +240,36 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
               usage: usage
             });
           }
+
+          // Check if user has enough credits for basic competitor analysis (1 credit required)
+          const basicAnalysisCost = 1;
+          if (usage && usage.credits < basicAnalysisCost) {
+            return res.status(403).json({
+              error: "Insufficient credits",
+              message: `Competitor analysis requires ${basicAnalysisCost} credit. You have ${usage.credits} credits remaining.`,
+              creditsNeeded: basicAnalysisCost,
+              creditsAvailable: usage.credits
+            });
+          }
+
+          // Deduct 1 credit for basic competitor analysis
+          const creditResult = await storage.atomicDeductCredits(userId, basicAnalysisCost);
+          if (!creditResult.success) {
+            return res.status(403).json({
+              error: "Insufficient credits",
+              message: `Competitor analysis requires ${basicAnalysisCost} credit. You have ${creditResult.remainingCredits} credits remaining.`,
+              creditsNeeded: basicAnalysisCost,
+              creditsAvailable: creditResult.remainingCredits
+            });
+          }
+
+          console.log(`Deducted ${basicAnalysisCost} credit for competitor analysis. User ${userId} has ${creditResult.remainingCredits} credits remaining.`);
+        } else {
+          // Unauthenticated users cannot use competitor analysis
+          return res.status(401).json({
+            error: "Authentication required",
+            message: "Please log in to use competitor analysis."
+          });
         }
 
         // Analyze the competitor domain
