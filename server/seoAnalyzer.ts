@@ -162,7 +162,6 @@ export async function analyzeSite(
   const controller = new AbortController();
   ongoingAnalyses.set(domain, controller);
 
-  console.log(`Starting analysis for ${domain} with userId: ${userId}`);
 
   try {
     // Get settings for this user
@@ -633,8 +632,6 @@ export async function analyzeSite(
       isCompetitorAnalysis: isCompetitorAnalysis
     };
 
-    console.log(`Saving analysis for ${domain} with userId: ${userId}`);
-    console.log(`Analysis object userId: ${analysis.userId}`);
     const savedAnalysis = await storage.saveAnalysis(analysis);
 
     // Credits are now deducted atomically during AI suggestion generation
