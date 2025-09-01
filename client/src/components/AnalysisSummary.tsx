@@ -29,7 +29,7 @@ interface AnalysisSummaryProps {
 }
 
 const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
-  const [displayedPages, setDisplayedPages] = useState(5);
+  const [displayedPages, setDisplayedPages] = useState(10);
   const [isRunningContentDuplication, setIsRunningContentDuplication] = useState(false);
   const [updatedAnalysis, setUpdatedAnalysis] = useState(analysis);
   const [activeTab, setActiveTab] = useState("overview");
