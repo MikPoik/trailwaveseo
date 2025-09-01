@@ -244,7 +244,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
 
         // Analyze the competitor domain
         // For simplicity, we'll reuse the existing analysis flow but mark as competitor to skip alt text generation
-        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true, userId);
+        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true, userId, undefined, true);
 
         // Get the competitor analysis results
         const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId);

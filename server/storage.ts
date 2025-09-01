@@ -40,6 +40,30 @@ export type UpsertUser = {
   profile_image_url?: string | null;
 };
 
+// Define AggregateMetrics and PageAnalysis interfaces if they are not globally available
+interface AggregateMetrics {
+  goodPractices: number;
+  warnings: number;
+  criticalIssues: number;
+  titleOptimization: number;
+  descriptionOptimization: number;
+  headingsOptimization: number;
+  imagesOptimization: number;
+  linksOptimization: number;
+}
+
+interface PageAnalysis {
+  url: string;
+  title?: string;
+  metaDescription?: string;
+  headings: { level: number; text: string }[];
+  images: { alt: string | null }[];
+  internalLinks: { text: string; url: string }[];
+  issues: { severity: string; category: string }[];
+  // ... other properties of a page analysis
+}
+
+
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
@@ -173,23 +197,23 @@ export class DatabaseStorage implements IStorage {
           sql`${users.credits} >= ${credits}` // Only deduct if sufficient credits
         ))
         .returning();
-      
+
       if (user) {
         return { success: true, remainingCredits: user.credits, user };
       } else {
         // Get current credits to return in failure case
         const currentUser = await this.getUser(userId);
-        return { 
-          success: false, 
-          remainingCredits: currentUser?.credits || 0 
+        return {
+          success: false,
+          remainingCredits: currentUser?.credits || 0
         };
       }
     } catch (error) {
       console.error(`Error atomically deducting credits for user ${userId}:`, error);
       const currentUser = await this.getUser(userId);
-      return { 
-        success: false, 
-        remainingCredits: currentUser?.credits || 0 
+      return {
+        success: false,
+        remainingCredits: currentUser?.credits || 0
       };
     }
   }
@@ -255,24 +279,42 @@ export class DatabaseStorage implements IStorage {
   async getAnalysisHistory(userId?: string): Promise<Analysis[]> {
     if (userId) {
       return db.select().from(analyses)
-        .where(eq(analyses.userId, userId))
+        .where(and(eq(analyses.userId, userId), sql`(is_competitor_analysis IS NULL OR is_competitor_analysis = false)`))
         .orderBy(desc(analyses.date));
     }
-    return db.select().from(analyses).orderBy(desc(analyses.date));
+    // If no userId is provided, return all non-competitor analyses
+    return db.select().from(analyses)
+      .where(sql`(is_competitor_analysis IS NULL OR is_competitor_analysis = false)`)
+      .orderBy(desc(analyses.date));
   }
 
-  async getRecentAnalyses(limit: number, userId?: string): Promise<{id: number, domain: string}[]> {
-    let query = db.select({
-      id: analyses.id,
-      domain: analyses.domain
-    }).from(analyses);
+  async getRecentAnalyses(limit: number = 5, userId?: string): Promise<{id: number, domain: string}[]> {
+    const { pool } = await import('./db');
+
+    let query: string;
+    let params: any[];
 
     if (userId) {
-      query = query.where(eq(analyses.userId, userId));
+      query = `SELECT id, domain
+               FROM analyses
+               WHERE user_id = $1 AND (is_competitor_analysis IS NULL OR is_competitor_analysis = false)
+               ORDER BY date DESC
+               LIMIT $2`;
+      params = [userId, limit];
+    } else {
+      // If no userId, fetch global recent analyses (which are also not competitor analyses)
+      query = `SELECT id, domain
+               FROM analyses
+               WHERE user_id IS NULL AND (is_competitor_analysis IS NULL OR is_competitor_analysis = false)
+               ORDER BY date DESC
+               LIMIT $1`;
+      params = [limit];
     }
 
-    return query.orderBy(desc(analyses.date)).limit(limit);
+    const result = await pool.query(query, params);
+    return result.rows;
   }
+
 
   async getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null> {
     let query = db.select().from(analyses)
@@ -286,28 +328,35 @@ export class DatabaseStorage implements IStorage {
     return analysisResults.length > 0 ? analysisResults[0] : null;
   }
 
-  async saveAnalysis(analysis: any, userId?: string): Promise<Analysis> {
-    const [newAnalysis] = await db
-      .insert(analyses)
-      .values({
-        userId: userId || null,
-        domain: analysis.domain,
-        date: new Date(),
-        pagesCount: analysis.pagesCount || analysis.pages.length,
-        metrics: analysis.metrics,
-        pages: analysis.pages,
-        contentRepetitionAnalysis: analysis.contentRepetitionAnalysis,
-        competitorAnalysis: analysis.competitorAnalysis,
-        siteOverview: analysis.siteOverview
-      })
-      .returning();
+  async saveAnalysis(analysis: Analysis): Promise<Analysis> {
+    const { pool } = await import('./db');
 
-    // Increment user's page usage count if userId is provided
-    if (userId) {
+    const result = await pool.query(
+      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, competitor_analysis, site_overview, is_competitor_analysis)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [
+        analysis.userId,
+        analysis.domain,
+        analysis.date,
+        analysis.pagesCount,
+        JSON.stringify(analysis.metrics),
+        JSON.stringify(analysis.pages),
+        analysis.contentRepetitionAnalysis ? JSON.stringify(analysis.contentRepetitionAnalysis) : null,
+        analysis.competitorAnalysis ? JSON.stringify(analysis.competitorAnalysis) : null,
+        analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null,
+        analysis.isCompetitorAnalysis || false
+      ]
+    );
+
+    const newAnalysis = result.rows[0];
+
+    // Increment user's page usage count if userId is provided and it's not a competitor analysis
+    if (analysis.userId && !analysis.isCompetitorAnalysis) {
       const pageCount = analysis.pagesCount || analysis.pages.length;
-      await this.incrementUserUsage(userId, pageCount);
+      await this.incrementUserUsage(analysis.userId, pageCount);
     }
 
+    // Return the saved analysis object
     return newAnalysis;
   }
 
@@ -325,7 +374,8 @@ export class DatabaseStorage implements IStorage {
       const [updatedAnalysis] = await db
         .update(analyses)
         .set({
-          competitorAnalysis: competitorData
+          competitorAnalysis: competitorData,
+          isCompetitorAnalysis: true // Ensure this flag is set
         })
         .where(eq(analyses.id, id))
         .returning();
@@ -338,7 +388,7 @@ export class DatabaseStorage implements IStorage {
       try {
         const { pool } = await import('./db');
         const result = await pool.query(
-          'UPDATE analyses SET competitor_analysis = $1 WHERE id = $2 RETURNING *',
+          'UPDATE analyses SET competitor_analysis = $1, is_competitor_analysis = true WHERE id = $2 RETURNING *',
           [JSON.stringify(competitorData), id]
         );
 
@@ -452,7 +502,7 @@ export class DatabaseStorage implements IStorage {
         titleOptimized = true;
         goodPractices++;
       }
-      const titleIssues = page.issues.filter((issue: any) => 
+      const titleIssues = page.issues.filter((issue: any) =>
         issue.category === 'title' && issue.severity === 'critical'
       );
       if (titleIssues.length > 0) {
@@ -465,7 +515,7 @@ export class DatabaseStorage implements IStorage {
         descriptionOptimized = true;
         goodPractices++;
       }
-      const descriptionIssues = page.issues.filter((issue: any) => 
+      const descriptionIssues = page.issues.filter((issue: any) =>
         issue.category === 'meta-description' && issue.severity === 'critical'
       );
       if (descriptionIssues.length > 0) {
@@ -478,7 +528,7 @@ export class DatabaseStorage implements IStorage {
         headingsOptimized = true;
         goodPractices++;
       }
-      const headingsIssues = page.issues.filter((issue: any) => 
+      const headingsIssues = page.issues.filter((issue: any) =>
         issue.category === 'headings' && issue.severity === 'critical'
       );
       if (headingsIssues.length > 0) {
@@ -493,7 +543,7 @@ export class DatabaseStorage implements IStorage {
       } else if (page.images.length === 0) {
         imagesOptimized = true;
       }
-      const imagesIssues = page.issues.filter((issue: any) => 
+      const imagesIssues = page.issues.filter((issue: any) =>
         issue.category === 'images' && issue.severity === 'critical'
       );
       if (imagesIssues.length > 0) {
@@ -504,7 +554,7 @@ export class DatabaseStorage implements IStorage {
       let linksOptimized = false;
       if (page.internalLinks && page.internalLinks.length >= 3) {
         const genericTexts = ['click here', 'read more', 'learn more', 'here', 'this', 'link'];
-        const hasGoodAnchorText = page.internalLinks.every((link: any) => 
+        const hasGoodAnchorText = page.internalLinks.every((link: any) =>
           !genericTexts.some(generic => link.text.toLowerCase().includes(generic))
         );
         if (hasGoodAnchorText) {
@@ -512,7 +562,7 @@ export class DatabaseStorage implements IStorage {
           goodPractices++;
         }
       }
-      const linksIssues = page.issues.filter((issue: any) => 
+      const linksIssues = page.issues.filter((issue: any) =>
         issue.category === 'links' && issue.severity === 'critical'
       );
       if (linksIssues.length > 0) {
@@ -589,8 +639,8 @@ export class DatabaseStorage implements IStorage {
 
       // Directly use the imported pool from db.ts
       const query = `
-        UPDATE settings 
-        SET 
+        UPDATE settings
+        SET
           max_pages = $1,
           crawl_delay = $2,
           follow_external_links = $3,
@@ -600,7 +650,7 @@ export class DatabaseStorage implements IStorage {
           analyze_page_speed = $7,
           analyze_structured_data = $8,
           analyze_mobile_compatibility = $9
-        WHERE 
+        WHERE
           ${userId ? "user_id = $10" : "user_id IS NULL"}
         RETURNING *
       `;

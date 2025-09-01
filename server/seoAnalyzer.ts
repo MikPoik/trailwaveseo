@@ -144,16 +144,19 @@ const ongoingAnalyses = new Map();
  * @param domain Domain name without protocol (e.g., example.com)
  * @param useSitemap Whether to attempt to use sitemap.xml first
  * @param events EventEmitter for sending progress updates
- * @param isCompetitor Whether this is a competitor analysis (skips alt text generation)
+ * @param skipAltTextGeneration Whether to skip generating alt text for images (competitor analysis)
  * @param userId Optional user ID to associate with the analysis
+ * @param additionalInfo Optional additional context for AI analysis
+ * @param isCompetitorAnalysis Whether this is a competitor analysis (skips alt text generation)
  */
 export async function analyzeSite(
   domain: string,
   useSitemap: boolean,
   events: EventEmitter,
-  isCompetitor: boolean = false,
+  skipAltTextGeneration: boolean = false,
   userId?: string,
-  additionalInfo?: string
+  additionalInfo?: string,
+  isCompetitorAnalysis: boolean = false
 ): Promise<number> {
   // Set up cancellation token
   const controller = new AbortController();
@@ -169,13 +172,13 @@ export async function analyzeSite(
     let isTrialUser = false;
     let aiSuggestionsRemaining = 0;
     let aiSuggestionsUsed = 0;
-    
+
     if (userId) {
       userUsage = await storage.getUserUsage(userId);
       if (userUsage) {
         // Check if user is on trial account
         isTrialUser = userUsage.accountStatus === "trial";
-        
+
         // Calculate AI suggestions and page limits based on account status
         if (isTrialUser) {
           // Trial users: limit to 3 pages max, each page gets AI suggestions
@@ -185,7 +188,7 @@ export async function analyzeSite(
         } else {
           // Paid users: unlimited pages (up to settings), 1 credit per page for AI suggestions
           aiSuggestionsRemaining = userUsage.credits; // Paid users: 1 credit = 1 page with AI suggestions
-          
+
           if (userUsage.pageLimit === -1) {
             // Unlimited access - use settings.maxPages as the technical limit
             remainingQuota = settings.maxPages;
@@ -193,21 +196,21 @@ export async function analyzeSite(
           } else {
             remainingQuota = Math.max(0, userUsage.pageLimit - userUsage.pagesAnalyzed);
             console.log(`Paid user ${userId} has ${remainingQuota} pages remaining (${userUsage.pagesAnalyzed}/${userUsage.pageLimit})`);
-            
+
             // If user has no remaining quota, stop immediately
             if (remainingQuota <= 0) {
               throw new Error(`Page analysis limit reached. You have analyzed ${userUsage.pagesAnalyzed}/${userUsage.pageLimit} pages.`);
             }
           }
         }
-        
+
         console.log(`User ${userId} AI suggestions: ${aiSuggestionsRemaining} available (trial: ${isTrialUser})`);
       }
     }
 
     // Set effective max pages based on user type
     let effectiveMaxPages = Math.min(settings.maxPages, remainingQuota);
-    
+
     // For trial users, ensure we don't analyze more pages than we can provide AI suggestions for
     if (isTrialUser && settings.useAI && aiSuggestionsRemaining > 0) {
       effectiveMaxPages = Math.min(effectiveMaxPages, 3); // Trial users: max 3 pages
@@ -269,7 +272,7 @@ export async function analyzeSite(
 
     if (!useSitemap || pages.length === 0) {
       console.log(`Falling back to crawling for ${domain} (sitemap pages found: ${pages.length})`);
-      
+
       // Emit progress update indicating fallback to crawling
       events.emit(domain, {
         status: 'in-progress',
@@ -311,7 +314,7 @@ export async function analyzeSite(
           });
         }
       );
-      
+
       console.log(`Crawling completed for ${domain}, found ${pages.length} pages`);
     }
 
@@ -383,7 +386,7 @@ export async function analyzeSite(
 
       try {
         // Analyze the page
-        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitor, analyzedPages, additionalInfo);
+        const pageAnalysis = await analyzePage(pageUrl, settings, controller.signal, isCompetitorAnalysis, analyzedPages, additionalInfo);
         if (pageAnalysis) {
           analyzedPages.push(pageAnalysis);
         }
@@ -438,7 +441,7 @@ export async function analyzeSite(
     let siteOverview: any = undefined;
 
     // Enhance suggestions with site structure for internal linking (if AI is enabled)
-    if (settings.useAI && analyzedPages.length > 0 && !isCompetitor) {
+    if (settings.useAI && analyzedPages.length > 0 && !isCompetitorAnalysis) {
       try {
         // Emit progress update for AI analysis start (40% progress)
         events.emit(domain, {
@@ -537,7 +540,7 @@ export async function analyzeSite(
                     if (isTrialUser) {
                       const limitedSuggestions = suggestions.slice(0, 5);
                       page.suggestions = limitedSuggestions;
-                      
+
                       // Add teaser if there are more suggestions available
                       if (suggestions.length > 5) {
                         const remainingSuggestions = suggestions.length - 5;
@@ -546,7 +549,7 @@ export async function analyzeSite(
                       } else {
                         console.log(`Successfully generated ${limitedSuggestions.length} suggestions for trial user ${page.url}`);
                       }
-                      
+
                       aiSuggestionsUsed += 1; // Track usage for final credit calculation
                     } else {
                       // Paid users get all suggestions (8-12 typically)
@@ -623,7 +626,7 @@ export async function analyzeSite(
       metrics,
       pages: analyzedPages,
       contentRepetitionAnalysis,
-      siteOverview: settings.useAI && !isCompetitor && siteOverview ? siteOverview : undefined
+      siteOverview: settings.useAI && !isCompetitorAnalysis && siteOverview ? siteOverview : undefined
     };
 
     const savedAnalysis = await storage.saveAnalysis(analysis, userId);
@@ -967,8 +970,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
                          class: classes,
                          'data-attributes': Object.keys(attrs)
                              .filter(attr => attr.startsWith('data-'))
-                             .map(attr => `${attr}="${$(el).attr(attr)}"`)
-                             .join(', ')
+                             .map(attr => `${attr}="${$(el).attr(attr)}"`).join(', ')
                      }
                  });
              }
@@ -1148,7 +1150,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
 
     // Additional comprehensive SEO checks to ensure we find improvement opportunities
 
-    // Enhanced content quality analysis
+    // Enhanced content analysis
     if (contentMetrics.wordCount < 150) {
       issues.push({
         category: 'content',
