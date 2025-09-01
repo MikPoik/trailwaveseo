@@ -620,6 +620,7 @@ export async function analyzeSite(
 
     // Save analysis to storage
     const analysis = {
+      userId,
       domain,
       date: new Date().toISOString(),
       pagesCount: analyzedPages.length,
@@ -630,7 +631,7 @@ export async function analyzeSite(
       isCompetitorAnalysis: isCompetitorAnalysis
     };
 
-    const savedAnalysis = await storage.saveAnalysis(analysis, userId);
+    const savedAnalysis = await storage.saveAnalysis(analysis);
 
     // Credits are now deducted atomically during AI suggestion generation
     // This prevents race conditions and ensures accurate billing
