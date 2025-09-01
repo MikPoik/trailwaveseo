@@ -48,9 +48,7 @@ const Landing = () => {
                 Start Free Analysis
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button variant="outline" size="lg" asChild className="text-lg px-8">
-                <Link href="/how-it-works">View Sample Report</Link>
-              </Button>
+
             </div>
             <div className="flex items-center justify-center space-x-8 text-sm text-muted-foreground">
               <div className="flex items-center">
