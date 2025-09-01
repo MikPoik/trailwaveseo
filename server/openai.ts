@@ -1172,31 +1172,121 @@ function createEmptyContentAnalysis(): ContentDuplicationAnalysis {
   };
 }
 
+// Helper function to sanitize content for JSON prompts
+function sanitizeContentForPrompt(content: string): string {
+  return content
+    .replace(/\\/g, '\\\\')  // Escape backslashes
+    .replace(/"/g, '\\"')    // Escape quotes
+    .replace(/\n/g, '\\n')    // Escape newlines
+    .replace(/\r/g, '\\r')    // Escape carriage returns
+    .replace(/\t/g, '\\t');   // Escape tabs
+}
+
 // Process content analysis for smaller sites (single API call)
 async function processSingleContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
-  const prompt = `Analyze this website's content for duplication and similarity issues.\n\nTITLES WITH URLS (${data.titles.length} total):\n${data.titles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nMETA DESCRIPTIONS WITH URLS (${data.descriptions.length} total):\n${data.descriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nHEADINGS BY LEVEL WITH URLS:\nH1 (${data.headings.h1.length}): ${data.headings.h1.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH2 (${data.headings.h2.length}): ${data.headings.h2.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH3 (${data.headings.h3.length}): ${data.headings.h3.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH4-H6 Combined (${data.headings.h4.length + data.headings.h5.length + data.headings.h6.length}): ${[...data.headings.h4, ...data.headings.h5, ...data.headings.h6].map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nPARAGRAPH CONTENT WITH URLS (${data.paragraphs.length} substantial paragraphs):\n${data.paragraphs.map((item: any, idx: number) => `P${idx + 1}: "${item.content}" → ${item.url}`).join('\n')}\n\nAnalyze for:\n1. Exact duplicates and high similarity content (80%+ similar)\n2. For each duplicate group, list all URLs containing that content\n3. Provide similarity scores (80-100) for detected duplicates\n4. Generate specific recommendations referencing exact URLs\n5. Analyze paragraph content for boilerplate text and repeated sections\n6. Check all heading levels for patterns and repetition\n\nProvide comprehensive analysis with URL attribution and actionable insights.\n\nRespond in JSON format:\n{\n  "titleRepetition": {\n    "repetitiveCount": number,\n    "totalCount": number,\n    "examples": ["example duplicate titles"],\n    "recommendations": ["specific recommendations with URLs"],\n    "duplicateGroups": [{\n      "content": "duplicate title text",\n      "urls": ["url1", "url2"],\n      "similarityScore": 95\n    }]\n  },\n  "descriptionRepetition": { /* same structure */ },\n  "headingRepetition": {\n    /* same structure plus */\n    "byLevel": {\n      "h1": [/* duplicate groups */],\n      "h2": [/* duplicate groups */],\n      "h3": [/* duplicate groups */],\n      "h4": [/* duplicate groups */],\n      "h5": [/* duplicate groups */],\n      "h6": [/* duplicate groups */]\n    }\n  },\n  "paragraphRepetition": { /* same structure */ },\n  "overallRecommendations": ["site-wide content uniqueness recommendations"]\n}`;
+  try {
+    // Sanitize content to prevent JSON injection issues
+    const sanitizedTitles = data.titles.map((item: any) => ({
+      content: sanitizeContentForPrompt(item.content || ''),
+      url: item.url
+    }));
+    
+    const sanitizedDescriptions = data.descriptions.map((item: any) => ({
+      content: sanitizeContentForPrompt(item.content || ''),
+      url: item.url
+    }));
+    
+    const sanitizedHeadings = {
+      h1: data.headings.h1.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
+      h2: data.headings.h2.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
+      h3: data.headings.h3.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
+      h4: data.headings.h4.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
+      h5: data.headings.h5.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
+      h6: data.headings.h6.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url }))
+    };
+    
+    const sanitizedParagraphs = data.paragraphs.map((item: any) => ({
+      content: sanitizeContentForPrompt(item.content || ''),
+      url: item.url
+    }));
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
-    messages: [
-      { 
-        role: "system", 
-        content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping."
-      },
-      { role: "user", content: prompt }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-    max_tokens: 2000
-  });
+    const prompt = `Analyze this website's content for duplication and similarity issues.\n\nTITLES WITH URLS (${sanitizedTitles.length} total):\n${sanitizedTitles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nMETA DESCRIPTIONS WITH URLS (${sanitizedDescriptions.length} total):\n${sanitizedDescriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nHEADINGS BY LEVEL WITH URLS:\nH1 (${sanitizedHeadings.h1.length}): ${sanitizedHeadings.h1.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH2 (${sanitizedHeadings.h2.length}): ${sanitizedHeadings.h2.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH3 (${sanitizedHeadings.h3.length}): ${sanitizedHeadings.h3.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH4-H6 Combined (${sanitizedHeadings.h4.length + sanitizedHeadings.h5.length + sanitizedHeadings.h6.length}): ${[...sanitizedHeadings.h4, ...sanitizedHeadings.h5, ...sanitizedHeadings.h6].map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nPARAGRAPH CONTENT WITH URLS (${sanitizedParagraphs.length} substantial paragraphs):\n${sanitizedParagraphs.map((item: any, idx: number) => `P${idx + 1}: "${item.content}" → ${item.url}`).join('\n')}\n\nAnalyze for:\n1. Exact duplicates and high similarity content (80%+ similar)\n2. For each duplicate group, list all URLs containing that content\n3. Provide similarity scores (80-100) for detected duplicates\n4. Generate specific recommendations referencing exact URLs\n5. Analyze paragraph content for boilerplate text and repeated sections\n6. Check all heading levels for patterns and repetition\n\nProvide comprehensive analysis with URL attribution and actionable insights.\n\nRespond in valid JSON format with proper structure and escaping.`;
 
-  const content = response.choices[0].message.content;
-  if (!content) {
-    throw new Error("No content in response");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping. Ensure all JSON strings are properly escaped and the response is complete."
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_tokens: 4000  // Increased from 2000 to reduce truncation
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      console.error("No content in OpenAI response for content duplication analysis");
+      return createEmptyContentAnalysis();
+    }
+
+    console.log(`Content duplication OpenAI response length: ${content.length} characters`);
+    console.log(`Content duplication response preview:`, content.substring(0, 200) + '...');
+
+    // Enhanced JSON parsing with robust error handling (same pattern as generateSEOSuggestions)
+    let result: any;
+    try {
+      // First attempt to parse the response as-is
+      result = JSON.parse(content);
+      console.log('Successfully parsed content duplication response on first attempt');
+    } catch (parseError) {
+      console.error('Failed to parse content duplication response on first attempt:', parseError);
+      
+      // Try to fix common JSON issues and retry parsing
+      try {
+        // Remove any trailing commas and fix incomplete JSON
+        let fixedContent = content.trim();
+        
+        // Remove trailing comma before closing brace/bracket
+        fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
+        
+        // If JSON is incomplete, try to complete it
+        if (!fixedContent.endsWith('}') && !fixedContent.endsWith(']')) {
+          // Find the last complete object structure and close the JSON properly
+          const lastCompleteMatch = fixedContent.lastIndexOf('}');
+          if (lastCompleteMatch > 0) {
+            // Try to find the main object structure
+            const openBraceCount = (fixedContent.match(/{/g) || []).length;
+            const closeBraceCount = (fixedContent.match(/}/g) || []).length;
+            const missingBraces = openBraceCount - closeBraceCount;
+            
+            if (missingBraces > 0) {
+              fixedContent = fixedContent + '}'.repeat(missingBraces);
+            }
+          } else {
+            // If no complete structure found, return empty analysis
+            console.warn('Could not fix malformed JSON for content duplication, returning empty analysis');
+            return createEmptyContentAnalysis();
+          }
+        }
+        
+        result = JSON.parse(fixedContent);
+        console.log('Successfully recovered content duplication response after JSON fix');
+      } catch (secondParseError) {
+        console.error('Failed to fix and parse content duplication response:', secondParseError);
+        console.error('Original content length:', content.length);
+        console.error('Content sample:', content.substring(0, 500));
+        return createEmptyContentAnalysis();
+      }
+    }
+
+    return parseEnhancedAnalysisResult(result);
+  } catch (error) {
+    console.error('Error in processSingleContentAnalysis:', error);
+    return createEmptyContentAnalysis();
   }
-
-  const result = JSON.parse(content);
-  return parseEnhancedAnalysisResult(result);
 }
 
 // Process content analysis for larger sites (batched processing)
