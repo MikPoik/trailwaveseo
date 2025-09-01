@@ -1195,7 +1195,41 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
     throw new Error("No content in response");
   }
 
-  const result = JSON.parse(content);
+  // Validate that content looks like JSON before parsing
+  const trimmedContent = content.trim();
+  if (!trimmedContent.startsWith('{') || !trimmedContent.endsWith('}')) {
+    console.error(`OpenAI response doesn't appear to be valid JSON. Content: ${trimmedContent.substring(0, 200)}...`);
+    throw new Error("Invalid JSON response from OpenAI");
+  }
+
+  let result;
+  try {
+    result = JSON.parse(content);
+  } catch (parseError) {
+    console.error(`Failed to parse OpenAI response:`, parseError);
+    console.error(`Content that failed to parse: ${content.substring(0, 500)}...`);
+    
+    // Try to fix common JSON issues and retry parsing
+    try {
+      let fixedContent = content.trim();
+      
+      // Remove trailing comma before closing brace
+      fixedContent = fixedContent.replace(/,(\s*})/g, '$1');
+      
+      // If JSON is incomplete, try to complete it
+      if (!fixedContent.endsWith('}')) {
+        console.warn('Attempting to fix incomplete JSON by adding closing brace');
+        fixedContent += '}';
+      }
+      
+      result = JSON.parse(fixedContent);
+      console.log(`Successfully recovered content duplication analysis after JSON fix`);
+    } catch (secondParseError) {
+      console.error(`Failed to fix and parse OpenAI response:`, secondParseError);
+      throw new Error("Unable to parse content duplication analysis response");
+    }
+  }
+
   return parseEnhancedAnalysisResult(result);
 }
 
@@ -1209,18 +1243,41 @@ async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicat
   let combinedResults = createEmptyContentAnalysis();
   
   // Process titles and descriptions in batches
+  let successfulBatches = 0;
+  let totalBatches = titleBatches.concat(descBatches).length;
+  
   for (const batch of titleBatches.concat(descBatches)) {
-    // Simplified batch processing - can be enhanced further
-    const batchResult = await processSingleContentAnalysis({ 
-      titles: batch.length > 0 && batch[0].content && data.titles.includes(batch[0]) ? batch : [],
-      descriptions: batch.length > 0 && batch[0].content && data.descriptions.includes(batch[0]) ? batch : [],
-      headings: data.headings,
-      paragraphs: data.paragraphs.slice(0, 20), // Limit paragraphs for batches
-      totalPages: data.totalPages
-    });
-    
-    // Merge results (simplified approach)
-    combinedResults = mergeAnalysisResults(combinedResults, batchResult);
+    try {
+      // Simplified batch processing - can be enhanced further
+      const batchResult = await processSingleContentAnalysis({ 
+        titles: batch.length > 0 && batch[0].content && data.titles.includes(batch[0]) ? batch : [],
+        descriptions: batch.length > 0 && batch[0].content && data.descriptions.includes(batch[0]) ? batch : [],
+        headings: data.headings,
+        paragraphs: data.paragraphs.slice(0, 20), // Limit paragraphs for batches
+        totalPages: data.totalPages
+      });
+      
+      // Merge results (simplified approach)
+      combinedResults = mergeAnalysisResults(combinedResults, batchResult);
+      successfulBatches++;
+    } catch (batchError) {
+      console.error(`Failed to process content duplication batch:`, batchError);
+      // Continue with other batches instead of failing completely
+    }
+  }
+  
+  // If no batches succeeded, throw an error
+  if (successfulBatches === 0) {
+    throw new Error(`Content duplication analysis failed: All ${totalBatches} batches failed to process`);
+  }
+  
+  console.log(`Content duplication analysis completed: ${successfulBatches}/${totalBatches} batches processed successfully`);
+  
+  // Add a note to the results if some batches failed
+  if (successfulBatches < totalBatches) {
+    combinedResults.overallRecommendations.unshift(
+      `Note: Content analysis completed with ${successfulBatches}/${totalBatches} batches processed. Some content may not be fully analyzed.`
+    );
   }
   
   return combinedResults;
