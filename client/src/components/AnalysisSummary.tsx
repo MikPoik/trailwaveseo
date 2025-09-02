@@ -18,7 +18,8 @@ import {
   Info,
   ExternalLink,
   Bot,
-  Badge
+  Badge,
+  Lightbulb
 } from "lucide-react";
 import PageAnalysisCard from "./PageAnalysisCard";
 import CompetitorAnalysis from "./CompetitorAnalysis";
