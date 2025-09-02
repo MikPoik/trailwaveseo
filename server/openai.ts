@@ -1571,6 +1571,100 @@ Focus on actionable insights that help prioritize which duplicates to fix first 
 
 // Helper function to parse enhanced analysis results
 function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
+  // Handle both new structured format and legacy format
+  if (result.deduplication_analysis) {
+    // New format from OpenAI with deduplication_analysis array
+    const analysis = result.deduplication_analysis;
+    const overallRecommendations = result.strategic_recommendations || result.overall_recommendations || [];
+    
+    // Initialize counters and groups
+    const titleGroups: DuplicateItem[] = [];
+    const descriptionGroups: DuplicateItem[] = [];
+    const headingGroups: DuplicateItem[] = [];
+    const paragraphGroups: DuplicateItem[] = [];
+    
+    let titleCount = 0, titleRepetitive = 0;
+    let descCount = 0, descRepetitive = 0;
+    let headingCount = 0, headingRepetitive = 0;
+    let paragraphCount = 0, paragraphRepetitive = 0;
+    
+    // Process each duplicate group from OpenAI response
+    analysis.forEach((item: any) => {
+      const duplicateItem: DuplicateItem = {
+        content: item.content || item.group || '',
+        urls: item.affected_urls || item.urls || [],
+        similarityScore: typeof item.similarity_score === 'string' 
+          ? parseInt(item.similarity_score.replace('%', '')) 
+          : item.similarity_score || 0,
+        impactLevel: item.impact_level as 'Critical' | 'High' | 'Medium' | 'Low',
+        priority: item.priority || 3,
+        rootCause: item.root_cause,
+        improvementStrategy: item.improvement_strategy || item.specific_recommendations
+      };
+      
+      // Categorize by content type
+      const contentType = item.content_type?.toLowerCase() || '';
+      if (contentType.includes('title') || contentType.includes('brand')) {
+        titleGroups.push(duplicateItem);
+        titleRepetitive += duplicateItem.urls.length;
+        titleCount += duplicateItem.urls.length;
+      } else if (contentType.includes('description') || contentType.includes('meta')) {
+        descriptionGroups.push(duplicateItem);
+        descRepetitive += duplicateItem.urls.length;
+        descCount += duplicateItem.urls.length;
+      } else if (contentType.includes('heading') || contentType.includes('h1') || contentType.includes('h2')) {
+        headingGroups.push(duplicateItem);
+        headingRepetitive += duplicateItem.urls.length;
+        headingCount += duplicateItem.urls.length;
+      } else if (contentType.includes('paragraph') || contentType.includes('content')) {
+        paragraphGroups.push(duplicateItem);
+        paragraphRepetitive += duplicateItem.urls.length;
+        paragraphCount += duplicateItem.urls.length;
+      }
+    });
+    
+    return {
+      titleRepetition: {
+        repetitiveCount: titleRepetitive,
+        totalCount: Math.max(titleCount, titleRepetitive),
+        examples: titleGroups.map(g => g.content).slice(0, 5),
+        recommendations: titleGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        duplicateGroups: titleGroups
+      },
+      descriptionRepetition: {
+        repetitiveCount: descRepetitive,
+        totalCount: Math.max(descCount, descRepetitive),
+        examples: descriptionGroups.map(g => g.content).slice(0, 5),
+        recommendations: descriptionGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        duplicateGroups: descriptionGroups
+      },
+      headingRepetition: {
+        repetitiveCount: headingRepetitive,
+        totalCount: Math.max(headingCount, headingRepetitive),
+        examples: headingGroups.map(g => g.content).slice(0, 5),
+        recommendations: headingGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        duplicateGroups: headingGroups,
+        byLevel: {
+          h1: headingGroups.filter(g => g.content.toLowerCase().includes('h1')),
+          h2: headingGroups.filter(g => g.content.toLowerCase().includes('h2')),
+          h3: headingGroups.filter(g => g.content.toLowerCase().includes('h3')),
+          h4: headingGroups.filter(g => g.content.toLowerCase().includes('h4')),
+          h5: headingGroups.filter(g => g.content.toLowerCase().includes('h5')),
+          h6: headingGroups.filter(g => g.content.toLowerCase().includes('h6'))
+        }
+      },
+      paragraphRepetition: {
+        repetitiveCount: paragraphRepetitive,
+        totalCount: Math.max(paragraphCount, paragraphRepetitive),
+        examples: paragraphGroups.map(g => g.content).slice(0, 5),
+        recommendations: paragraphGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        duplicateGroups: paragraphGroups
+      },
+      overallRecommendations: Array.isArray(overallRecommendations) ? overallRecommendations : []
+    };
+  }
+  
+  // Legacy format handling
   return {
     titleRepetition: {
       repetitiveCount: result.titleRepetition?.repetitiveCount || 0,
