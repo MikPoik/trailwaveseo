@@ -240,7 +240,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
         metaDescription: pageData.metaDescription,
         headings: pageData.headings.slice(0, 3), // First 3 headings
         firstParagraph: pageData.paragraphs?.[0]?.substring(0, 200) || '',
-        issues: pageData.issues.map(i => i.category).sort(),
+        issues: pageData.issues.map((i: any) => i.category).sort(),
         timestamp: Math.floor(Date.now() / (1000 * 60 * 60)) // Cache per hour
       }))
       .digest('hex');
@@ -312,7 +312,7 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     // Analyze existing internal links quality (optimized)
     const existingLinksAnalysis = pageData.internalLinks && pageData.internalLinks.length > 0 ? `
       Internal Links (${pageData.internalLinks.length} found):
-      ${pageData.internalLinks.slice(0, 5).map(link => {
+      ${pageData.internalLinks.slice(0, 5).map((link: any) => {
         const linkText = link.text || 'No anchor text';
         const hasKeywords = extractedKeywords.some(keyword => 
           linkText.toLowerCase().includes(keyword.toLowerCase())
@@ -330,14 +330,14 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
       Internal Link Opportunities:
       ${siteStructure.allPages
         .filter(page => page.url !== url)
-        .map(page => {
-          const pageKeywords = extractKeywords([page.title || '', page.headings.find(h => h.level === 1)?.text || ''].join(' '));
+        .map((page: any) => {
+          const pageKeywords = extractKeywords([page.title || '', page.headings.find((h: any) => h.level === 1)?.text || ''].join(' '));
           const commonKeywords = extractedKeywords.filter(keyword => pageKeywords.includes(keyword));
-          const isAlreadyLinked = pageData.internalLinks?.some(link => link.href.includes(page.url)) || false;
+          const isAlreadyLinked = pageData.internalLinks?.some((link: any) => link.href.includes(page.url)) || false;
           return { page, relevanceScore: commonKeywords.length, commonKeywords, isAlreadyLinked };
         })
         .filter(item => item.relevanceScore > 0)
-        .sort((a, b) => {
+        .sort((a: any, b: any) => {
           if (a.isAlreadyLinked && !b.isAlreadyLinked) return 1;
           if (!a.isAlreadyLinked && b.isAlreadyLinked) return -1;
           return b.relevanceScore - a.relevanceScore;
@@ -374,7 +374,7 @@ CONTENT QUALITY:
 - Readability: ${pageData.contentMetrics.readabilityScore}/100
 - Avg words/sentence: ${pageData.contentMetrics.averageWordsPerSentence}
 - Content depth: ${pageData.contentMetrics.contentDepthScore}/100
-- Top keywords: ${pageData.contentMetrics.keywordDensity?.slice(0, 5).map(k => `${k.keyword}(${k.density.toFixed(1)}%)`).join(', ') || 'None'}
+- Top keywords: ${pageData.contentMetrics.keywordDensity?.slice(0, 5).map((k: any) => `${k.keyword}(${k.density.toFixed(1)}%)`).join(', ') || 'None'}
 - Semantic phrases: ${pageData.contentMetrics.semanticKeywords?.slice(0, 5).join(', ') || 'None'}
 ` : '';
 
@@ -412,7 +412,7 @@ ${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
     console.log(`Original CTA elements: ${pageData.ctaElements ? pageData.ctaElements.length : 0}`);
     console.log(`CTA elements with text: ${ctaElementsWithText.length}`);
     if (ctaElementsWithText.length > 0) {
-      console.log('CTA elements with text:', ctaElementsWithText.map(cta => `${cta.type}: "${cta.text}"`));
+      console.log('CTA elements with text:', ctaElementsWithText.map((cta: any) => `${cta.type}: "${cta.text}"`));
     }
 
     // Analyze CTA elements on the page
@@ -462,7 +462,7 @@ H1: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
 Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.length || 0} paragraphs
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
-Keywords: ${pageData.contentMetrics?.keywordDensity?.slice(0, 5).map(k => k.keyword).join(', ') || 'None'}
+Keywords: ${pageData.contentMetrics?.keywordDensity?.slice(0, 5).map((k: any) => k.keyword).join(', ') || 'None'}
 CTAs: ${pageData.ctaElements ? pageData.ctaElements.length : 0} total (${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'button' || cta.type === 'input_button' || cta.type === 'link_button').length : 0} buttons, ${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'form').length : 0} forms)
 HEADING STRUCTURE:
 ${contentQuality}${headingStructure}
@@ -557,7 +557,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
       const result = JSON.parse(content);
 
       if (result?.suggestions && Array.isArray(result.suggestions)) {
-        suggestions = result.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0);
+        suggestions = result.suggestions.filter((s: any) => typeof s === 'string' && s.trim().length > 0);
       } else {
         console.error(`Invalid response format for ${url}. Expected: {"suggestions": [...]}`);
         return [];
@@ -588,7 +588,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
 
         const fixedResult = JSON.parse(fixedContent);
         if (fixedResult?.suggestions && Array.isArray(fixedResult.suggestions)) {
-          suggestions = fixedResult.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0);
+          suggestions = fixedResult.suggestions.filter((s: any) => typeof s === 'string' && s.trim().length > 0);
           console.log(`Successfully recovered ${suggestions.length} suggestions after JSON fix for ${url}`);
         } else {
           console.warn(`Fixed JSON still invalid format for ${url}`);
@@ -771,8 +771,8 @@ function extractContentTopics(pages: any[]): string[] {
         const words = heading.text.toLowerCase()
           .replace(/[^\w\s]/g, ' ')
           .split(/\s+/)
-          .filter(word => word.length > 4);
-        words.forEach(word => topics.add(word));
+          .filter((word: string) => word.length > 4);
+        words.forEach((word: string) => topics.add(word));
       }
     });
   });
@@ -882,8 +882,8 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
       // Convert image to base64
       const buffer = Buffer.from(response.data, 'binary');
       imageData = buffer.toString('base64');
-    } catch (error) {
-      console.error(`Error downloading image ${imageUrl}:`, error.message || error);
+    } catch (error: unknown) {
+      console.error(`Error downloading image ${imageUrl}:`, (error as any)?.message || error);
       return ""; // Return empty string if image can't be downloaded
     }
 
@@ -1021,7 +1021,7 @@ export async function generateBatchImageAltText(images: Array<{
 }
 
 /**
- * Analyze content repetition across a website (titles, headings, meta descriptions, paragraphs)
+ * Analyze content repetition across a website using the new modular system
  * @param pages Array of analyzed pages with their SEO elements
  * @returns Enhanced analysis of content duplication with URL attribution and similarity scores
  */
@@ -1033,73 +1033,42 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
       return createEmptyContentAnalysis();
     }
 
-    // Enhanced content extraction with URL mapping
-    const titlesWithUrls = pages.map(page => ({
-      content: page.title,
-      url: page.url
-    })).filter(item => item.content);
+    console.log(`Starting content duplication analysis for ${pages.length} pages using new modular system`);
 
-    const descriptionsWithUrls = pages.map(page => ({
-      content: page.metaDescription,
-      url: page.url
-    })).filter(item => item.content);
+    // Import the new modules dynamically to avoid circular dependencies
+    const { extractPageContent } = await import('./content-analysis/content-preprocessor.js');
+    const { processContentHierarchically, DEFAULT_PROCESSING_OPTIONS } = await import('./content-analysis/content-sampler.js');
 
-    // Extract headings by level with URL mapping
-    const headingsByLevel = {
-      h1: [],
-      h2: [],
-      h3: [],
-      h4: [],
-      h5: [],
-      h6: []
-    } as Record<string, Array<{content: string, url: string}>>;
+    // Extract and preprocess content using the new system
+    const extractedContent = extractPageContent(pages);
+    
+    console.log(`Extracted content: ${extractedContent.titles.length} titles, ${extractedContent.descriptions.length} descriptions, ${extractedContent.headings.h1.length} H1s, ${extractedContent.paragraphs.length} paragraphs`);
 
-    pages.forEach(page => {
-      page.headings?.forEach((heading: any) => {
-        if (heading.level >= 1 && heading.level <= 6) {
-          const levelKey = `h${heading.level}`;
-          headingsByLevel[levelKey].push({
-            content: heading.text,
-            url: page.url
-          });
-        }
-      });
-    });
-
-    // Extract paragraph content with URL mapping (limit to prevent token overflow)
-    const paragraphsWithUrls = pages.flatMap(page => 
-      (page.paragraphs || [])
-        .slice(0, 5) // Limit to first 5 paragraphs per page
-        .filter((p: string) => p.length > 50) // Only analyze substantial paragraphs
-        .map((p: string) => ({
-          content: p.length > 300 ? p.substring(0, 300) + '...' : p, // Truncate very long paragraphs
-          url: page.url
-        }))
-    );
-
-    // Prepare data for AI analysis with better structure for batch processing
-    const analysisData = {
-      titles: titlesWithUrls,
-      descriptions: descriptionsWithUrls,
-      headings: headingsByLevel,
-      paragraphs: paragraphsWithUrls,
-      totalPages: pages.length
+    // Configure processing options based on site size
+    const processingOptions = {
+      ...DEFAULT_PROCESSING_OPTIONS,
+      maxTotalTokens: pages.length > 50 ? 20000 : pages.length > 20 ? 15000 : 10000,
+      useAIAnalysis: true,
+      prioritizeByImpact: true
     };
 
-    // Split into batches if site is large to avoid token limits
-    const shouldBatch = pages.length > 15;
-    let finalResults: ContentDuplicationAnalysis;
+    // Process content using the hierarchical pipeline
+    const processingResult = await processContentHierarchically(
+      extractedContent,
+      openai, // Use the existing OpenAI instance
+      processingOptions
+    );
 
-    if (shouldBatch) {
-      console.log(`Large site detected (${pages.length} pages), using batch processing for content duplication analysis`);
-      finalResults = await processBatchedContentAnalysis(analysisData);
-    } else {
-      finalResults = await processSingleContentAnalysis(analysisData);
-    }
+    console.log(`Content duplication analysis completed in ${processingResult.performance.totalProcessingTime}ms`);
+    console.log(`Tokens used: ${processingResult.performance.tokensUsed}, AI calls: ${processingResult.performance.aiCallsMade}`);
 
-    return finalResults;
+    return processingResult.analysis;
+
   } catch (error) {
-    console.error("Error analyzing content repetition with OpenAI:", error);
+    console.error("Error in new content repetition analysis system:", error);
+    
+    // Fallback to simplified analysis if new system fails
+    console.log("Falling back to simplified content analysis");
     return createEmptyContentAnalysis();
   }
 }
@@ -1598,8 +1567,8 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
     const titleRecommendations = titleGroups
       .map(g => {
         if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
-          return g.improvementStrategy.description;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy && 'description' in g.improvementStrategy) {
+          return (g.improvementStrategy as any).description;
         }
         return null;
       })
@@ -1609,8 +1578,8 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
     const descriptionRecommendations = descriptionGroups
       .map(g => {
         if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
-          return g.improvementStrategy.description;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy && 'description' in g.improvementStrategy) {
+          return (g.improvementStrategy as any).description;
         }
         return null;
       })
@@ -1620,8 +1589,8 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
     const headingRecommendations = headingGroups
       .map(g => {
         if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
-          return g.improvementStrategy.description;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy && 'description' in g.improvementStrategy) {
+          return (g.improvementStrategy as any).description;
         }
         return null;
       })
@@ -1631,8 +1600,8 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
     const paragraphRecommendations = paragraphGroups
       .map(g => {
         if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
-          return g.improvementStrategy.description;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy && 'description' in g.improvementStrategy) {
+          return (g.improvementStrategy as any).description;
         }
         return null;
       })
