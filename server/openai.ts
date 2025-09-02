@@ -1628,21 +1628,33 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
         repetitiveCount: titleRepetitive,
         totalCount: Math.max(titleCount, titleRepetitive),
         examples: titleGroups.map(g => g.content).slice(0, 5),
-        recommendations: titleGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        recommendations: titleGroups.map(g => {
+          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
+          return String(g.improvementStrategy || '');
+        }).filter(Boolean).slice(0, 3),
         duplicateGroups: titleGroups
       },
       descriptionRepetition: {
         repetitiveCount: descRepetitive,
         totalCount: Math.max(descCount, descRepetitive),
         examples: descriptionGroups.map(g => g.content).slice(0, 5),
-        recommendations: descriptionGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        recommendations: descriptionGroups.map(g => {
+          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
+          return String(g.improvementStrategy || '');
+        }).filter(Boolean).slice(0, 3),
         duplicateGroups: descriptionGroups
       },
       headingRepetition: {
         repetitiveCount: headingRepetitive,
         totalCount: Math.max(headingCount, headingRepetitive),
         examples: headingGroups.map(g => g.content).slice(0, 5),
-        recommendations: headingGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        recommendations: headingGroups.map(g => {
+          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
+          return String(g.improvementStrategy || '');
+        }).filter(Boolean).slice(0, 3),
         duplicateGroups: headingGroups,
         byLevel: {
           h1: headingGroups.filter(g => g.content.toLowerCase().includes('h1')),
@@ -1657,7 +1669,11 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
         repetitiveCount: paragraphRepetitive,
         totalCount: Math.max(paragraphCount, paragraphRepetitive),
         examples: paragraphGroups.map(g => g.content).slice(0, 5),
-        recommendations: paragraphGroups.map(g => g.improvementStrategy).filter(Boolean).slice(0, 3),
+        recommendations: paragraphGroups.map(g => {
+          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
+          return String(g.improvementStrategy || '');
+        }).filter(Boolean).slice(0, 3),
         duplicateGroups: paragraphGroups
       },
       overallRecommendations: Array.isArray(overallRecommendations) ? overallRecommendations : []
@@ -1670,21 +1686,33 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
       repetitiveCount: result.titleRepetition?.repetitiveCount || 0,
       totalCount: result.titleRepetition?.totalCount || 0,
       examples: result.titleRepetition?.examples || [],
-      recommendations: result.titleRepetition?.recommendations || [],
+      recommendations: (result.titleRepetition?.recommendations || []).map((rec: any) => {
+        if (typeof rec === 'string') return rec;
+        if (typeof rec === 'object' && rec?.description) return rec.description;
+        return String(rec || '');
+      }),
       duplicateGroups: result.titleRepetition?.duplicateGroups || []
     },
     descriptionRepetition: {
       repetitiveCount: result.descriptionRepetition?.repetitiveCount || 0,
       totalCount: result.descriptionRepetition?.totalCount || 0,
       examples: result.descriptionRepetition?.examples || [],
-      recommendations: result.descriptionRepetition?.recommendations || [],
+      recommendations: (result.descriptionRepetition?.recommendations || []).map((rec: any) => {
+        if (typeof rec === 'string') return rec;
+        if (typeof rec === 'object' && rec?.description) return rec.description;
+        return String(rec || '');
+      }),
       duplicateGroups: result.descriptionRepetition?.duplicateGroups || []
     },
     headingRepetition: {
       repetitiveCount: result.headingRepetition?.repetitiveCount || 0,
       totalCount: result.headingRepetition?.totalCount || 0,
       examples: result.headingRepetition?.examples || [],
-      recommendations: result.headingRepetition?.recommendations || [],
+      recommendations: (result.headingRepetition?.recommendations || []).map((rec: any) => {
+        if (typeof rec === 'string') return rec;
+        if (typeof rec === 'object' && rec?.description) return rec.description;
+        return String(rec || '');
+      }),
       duplicateGroups: result.headingRepetition?.duplicateGroups || [],
       byLevel: {
         h1: result.headingRepetition?.byLevel?.h1 || [],
@@ -1699,7 +1727,11 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
       repetitiveCount: result.paragraphRepetition?.repetitiveCount || 0,
       totalCount: result.paragraphRepetition?.totalCount || 0,
       examples: result.paragraphRepetition?.examples || [],
-      recommendations: result.paragraphRepetition?.recommendations || [],
+      recommendations: (result.paragraphRepetition?.recommendations || []).map((rec: any) => {
+        if (typeof rec === 'string') return rec;
+        if (typeof rec === 'object' && rec?.description) return rec.description;
+        return String(rec || '');
+      }),
       duplicateGroups: result.paragraphRepetition?.duplicateGroups || []
     },
     overallRecommendations: result.overallRecommendations || []

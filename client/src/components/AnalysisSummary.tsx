@@ -601,7 +601,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                             {group.improvementStrategy && (
                               <div className="bg-white/50 rounded p-2 mb-2">
                                 <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
-                                <p className="text-xs text-green-600 whitespace-pre-line">{group.improvementStrategy}</p>
+                                <p className="text-xs text-green-600 whitespace-pre-line">{typeof group.improvementStrategy === 'string' ? group.improvementStrategy : JSON.stringify(group.improvementStrategy)}</p>
                               </div>
                             )}
                             <div className="space-y-1">
@@ -652,7 +652,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                             {group.improvementStrategy && (
                               <div className="bg-white/50 rounded p-2 mb-2">
                                 <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
-                                <p className="text-xs text-green-600 whitespace-pre-line">{group.improvementStrategy}</p>
+                                <p className="text-xs text-green-600 whitespace-pre-line">{typeof group.improvementStrategy === 'string' ? group.improvementStrategy : JSON.stringify(group.improvementStrategy)}</p>
                               </div>
                             )}
                             <div className="space-y-1">
