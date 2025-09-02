@@ -207,7 +207,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
       // Update the analysis data with the new content repetition analysis
       const updatedAnalysisData = {
-        ...analysis,
+        ...updatedAnalysis,
         contentRepetitionAnalysis: result.contentRepetitionAnalysis
       };
 
@@ -215,6 +215,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       setUpdatedAnalysis(updatedAnalysisData);
       queryClient.setQueryData(['/api/analysis', analysis.id?.toString()], updatedAnalysisData);
       queryClient.invalidateQueries({ queryKey: ['/api/analysis', analysis.id?.toString()] });
+
+      // Automatically switch to the content duplication tab to show results
+      setActiveTab("content-repetition");
 
       toast({
         title: "Content Duplication Analysis Complete",
@@ -445,12 +448,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         </TabsContent>
 
         <TabsContent value="content-repetition">
-          {updatedAnalysis.contentRepetitionAnalysis && (
-            updatedAnalysis.contentRepetitionAnalysis.titleRepetition?.totalCount > 0 ||
-            updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition?.totalCount > 0 ||
-            updatedAnalysis.contentRepetitionAnalysis.headingRepetition?.totalCount > 0 ||
-            (updatedAnalysis.contentRepetitionAnalysis.overallRecommendations && updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.length > 0)
-          ) ? (
+          {updatedAnalysis.contentRepetitionAnalysis && 
+           updatedAnalysis.contentRepetitionAnalysis.titleRepetition && 
+           updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="mb-6">
