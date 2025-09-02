@@ -534,7 +534,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.slice(0, 3).map((recommendation, index) => {
                         const recommendationText = typeof recommendation === 'string' 
                           ? recommendation 
-                          : String(recommendation || '');
+                          : (recommendation?.text || recommendation?.recommendation || 'Improve content uniqueness across pages');
                         
                         return (
                           <div key={index} className="flex items-start gap-3">
@@ -559,57 +559,65 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         <h4 className="font-semibold text-blue-900">Duplicate Page Titles ({updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.length})</h4>
                       </div>
                       <div className="space-y-3">
-                        {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.map((group, index) => (
-                          <div key={index} className="bg-white rounded p-3 border border-blue-100">
-                            <p className="font-medium text-sm mb-2">"{group.content}"</p>
-                            <p className="text-xs text-gray-600 mb-2">
-                              Found on {(() => {
-                                const urls = Array.isArray(group.urls) 
-                                  ? group.urls.flatMap(item => 
-                                      typeof item === 'string' ? item : 
-                                      (item?.urls || [])
-                                    ).filter(url => typeof url === 'string')
-                                  : [];
-                                return urls.length;
-                              })()} pages • {group.similarityScore}% similar
-                              {group.impactLevel && ` • ${group.impactLevel} impact`}
-                            </p>
-                            <div className="text-xs text-blue-600 space-y-1 mb-2">
-                              {(() => {
-                                // Handle different URL structure formats from OpenAI response
-                                const urls = Array.isArray(group.urls) 
-                                  ? group.urls.flatMap(item => 
-                                      typeof item === 'string' ? item : 
-                                      (item?.urls || [])
-                                    ).filter(url => typeof url === 'string')
-                                  : [];
-                                
-                                return urls.slice(0, 3).map((url, urlIndex) => (
-                                  <div key={urlIndex}>• {url}</div>
-                                ));
-                              })()}
-                              {(() => {
-                                const urls = Array.isArray(group.urls) 
-                                  ? group.urls.flatMap(item => 
-                                      typeof item === 'string' ? item : 
-                                      (item?.urls || [])
-                                    ).filter(url => typeof url === 'string')
-                                  : [];
-                                return urls.length > 3 && (
-                                  <div className="text-gray-500">... and {urls.length - 3} more pages</div>
-                                );
-                              })()}
-                            </div>
-                            {group.improvementStrategy && (
-                              <div className="bg-green-50 rounded p-2">
-                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
-                                <p className="text-xs text-green-600">
-                                  {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique titles for each page'}
-                                </p>
+                        {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.map((group, index) => {
+                          // Extract actual duplicate content from nested structure
+                          const duplicateContent = group.content || 
+                            (group.urls?.[0]?.title) || 
+                            (group.urls?.[0]?.meta_description) || 
+                            'Duplicate content detected';
+                          
+                          return (
+                            <div key={index} className="bg-white rounded p-3 border border-blue-100">
+                              <p className="font-medium text-sm mb-2">"{duplicateContent}"</p>
+                              <p className="text-xs text-gray-600 mb-2">
+                                Found on {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  return urls.length;
+                                })()} pages • {group.similarityScore}% similar
+                                {group.impactLevel && ` • ${group.impactLevel} impact`}
+                              </p>
+                              <div className="text-xs text-blue-600 space-y-1 mb-2">
+                                {(() => {
+                                  // Handle different URL structure formats from OpenAI response
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  
+                                  return urls.slice(0, 3).map((url, urlIndex) => (
+                                    <div key={urlIndex}>• {url}</div>
+                                  ));
+                                })()}
+                                {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  return urls.length > 3 && (
+                                    <div className="text-gray-500">... and {urls.length - 3} more pages</div>
+                                  );
+                                })()}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                              {group.improvementStrategy && (
+                                <div className="bg-green-50 rounded p-2">
+                                  <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                                  <p className="text-xs text-green-600">
+                                    {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique titles for each page'}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -622,9 +630,16 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         <h4 className="font-semibold text-purple-900">Duplicate Meta Descriptions ({updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.length})</h4>
                       </div>
                       <div className="space-y-3">
-                        {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.map((group, index) => (
+                        {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.map((group, index) => {
+                          // Extract actual duplicate content from nested structure  
+                          const duplicateContent = group.content || 
+                            (group.urls?.[0]?.meta_description) || 
+                            (group.urls?.[0]?.title) || 
+                            'Duplicate content detected';
+                          
+                          return (
                           <div key={index} className="bg-white rounded p-3 border border-purple-100">
-                            <p className="font-medium text-sm mb-2">"{group.content}"</p>
+                            <p className="font-medium text-sm mb-2">"{duplicateContent}"</p>
                             <p className="text-xs text-gray-600 mb-2">
                               Found on {(() => {
                                 const urls = Array.isArray(group.urls) 
@@ -671,7 +686,8 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                               </div>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
