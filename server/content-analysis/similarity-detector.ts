@@ -60,15 +60,30 @@ export function detectDuplicates(
   const remainingAfterFuzzy = filterProcessedContent(remainingAfterExact, fuzzyMatches);
   const semanticMatches = findSemanticMatches(remainingAfterFuzzy, options.semanticThreshold);
 
-  // Combine all results
-  const allDuplicateGroups = [
-    ...exactMatches.map(group => ({ ...group, similarityScore: 100, impactLevel: determinImpactLevel(group) })),
-    ...fuzzyMatches.map(group => ({ ...group, impactLevel: determinImpactLevel(group) })),
-    ...semanticMatches.map(group => ({ ...group, impactLevel: determinImpactLevel(group) }))
-  ] as DuplicateItem[];
+  // Combine all results and convert to proper DuplicateItem format
+  const allDuplicateGroups: DuplicateItem[] = [
+    ...exactMatches.map(group => ({
+      content: group.representativeContent,
+      urls: group.items.map(item => item.url),
+      similarityScore: 100,
+      impactLevel: determinImpactLevel(group)
+    })),
+    ...fuzzyMatches.map(group => ({
+      content: group.representativeContent,
+      urls: group.items.map(item => item.url),
+      similarityScore: group.similarity,
+      impactLevel: determinImpactLevel(group)
+    })),
+    ...semanticMatches.map(group => ({
+      content: group.representativeContent,
+      urls: group.items.map(item => item.url),
+      similarityScore: group.similarity,
+      impactLevel: determinImpactLevel(group)
+    }))
+  ];
 
   // Calculate statistics
-  const duplicateCount = allDuplicateGroups.reduce((sum, group) => sum + group.urls.length - 1, 0);
+  const duplicateCount = allDuplicateGroups.reduce((sum, group) => sum + (group.urls?.length || 0) - 1, 0);
   const examples = allDuplicateGroups
     .slice(0, 5)
     .map(group => group.content)
@@ -254,8 +269,8 @@ function calculateJaccardSimilarity(text1: string, text2: string): number {
   if (words1.size === 0 && words2.size === 0) return 100;
   if (words1.size === 0 || words2.size === 0) return 0;
   
-  const intersection = new Set([...words1].filter(word => words2.has(word)));
-  const union = new Set([...words1, ...words2]);
+  const intersection = new Set(Array.from(words1).filter(word => words2.has(word)));
+  const union = new Set([...Array.from(words1), ...Array.from(words2)]);
   
   return Math.round((intersection.size / union.size) * 100);
 }
