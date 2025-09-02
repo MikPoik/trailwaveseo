@@ -54,7 +54,7 @@ const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
             ) : (
               showGetStarted && (
                 <Button onClick={handleGetStarted} size="sm">
-                  Get Started
+                  Login
                 </Button>
               )
             )}
