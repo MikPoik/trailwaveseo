@@ -204,17 +204,15 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       console.log('Content duplication analysis result:', result);
 
       // Update the analysis data with the new content repetition analysis
-      const updatedAnalysis = {
+      const updatedAnalysisData = {
         ...analysis,
         contentRepetitionAnalysis: result.contentRepetitionAnalysis
       };
 
-      // Update the query cache with the new data and invalidate to trigger refetch
-      queryClient.setQueryData(['/api/analysis', analysis.id?.toString()], updatedAnalysis);
+      // Update the state and the query cache with the new data
+      setUpdatedAnalysis(updatedAnalysisData);
+      queryClient.setQueryData(['/api/analysis', analysis.id?.toString()], updatedAnalysisData);
       queryClient.invalidateQueries({ queryKey: ['/api/analysis', analysis.id?.toString()] });
-      
-      // Force a re-render by updating the state if needed
-      window.location.reload();
 
       toast({
         title: "Content Duplication Analysis Complete",
@@ -233,13 +231,13 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
   };
 
   const getCategoryOptimizationPercentage = (category: string): number => {
-    const allPagesWithIssues = analysis.pages.filter(page => 
+    const allPagesWithIssues = updatedAnalysis.pages.filter(page => 
       page.issues.some(issue => issue.category === category)
     ).length;
 
     if (allPagesWithIssues === 0) return 100;
 
-    const pagesWithCategory = analysis.pages.length;
+    const pagesWithCategory = updatedAnalysis.pages.length;
     return Math.round(((pagesWithCategory - allPagesWithIssues) / pagesWithCategory) * 100);
   };
 
@@ -259,9 +257,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">SEO Analysis Results</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Website: <span>{analysis.domain}</span> • 
-                    Analyzed <span>{analysis.pages?.length || 0}</span> pages • 
-                    <span>{format(new Date(analysis.date), 'MMMM d, yyyy')}</span>
+                    Website: <span>{updatedAnalysis.domain}</span> • 
+                    Analyzed <span>{updatedAnalysis.pages?.length || 0}</span> pages • 
+                    <span>{format(new Date(updatedAnalysis.date), 'MMMM d, yyyy')}</span>
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
@@ -431,7 +429,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                 />
               ))}
 
-            {displayedPages < analysis.pages.length && (
+            {displayedPages < updatedAnalysis.pages.length && (
               <div className="flex justify-center mt-4">
                 <Button 
                   variant="outline" 
@@ -445,11 +443,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         </TabsContent>
 
         <TabsContent value="content-repetition">
-          {analysis.contentRepetitionAnalysis && (
-            analysis.contentRepetitionAnalysis.titleRepetition?.totalCount > 0 ||
-            analysis.contentRepetitionAnalysis.descriptionRepetition?.totalCount > 0 ||
-            analysis.contentRepetitionAnalysis.headingRepetition?.totalCount > 0 ||
-            (analysis.contentRepetitionAnalysis.overallRecommendations && analysis.contentRepetitionAnalysis.overallRecommendations.length > 0)
+          {updatedAnalysis.contentRepetitionAnalysis && (
+            updatedAnalysis.contentRepetitionAnalysis.titleRepetition?.totalCount > 0 ||
+            updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition?.totalCount > 0 ||
+            updatedAnalysis.contentRepetitionAnalysis.headingRepetition?.totalCount > 0 ||
+            (updatedAnalysis.contentRepetitionAnalysis.overallRecommendations && updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.length > 0)
           ) ? (
             <Card>
               <CardContent className="pt-6">
@@ -471,11 +469,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       <div className="ml-4">
                         <h4 className="text-sm font-medium text-blue-800">Title Repetition</h4>
                         <div className="mt-1 text-3xl font-semibold text-blue-600">
-                          {analysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount}/{analysis.contentRepetitionAnalysis.titleRepetition.totalCount}
+                          {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount}/{updatedAnalysis.contentRepetitionAnalysis.titleRepetition.totalCount}
                         </div>
                         <p className="mt-1 text-sm text-blue-700">
-                          {Math.round((analysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount / 
-                          Math.max(1, analysis.contentRepetitionAnalysis.titleRepetition.totalCount)) * 100)}% of titles have duplication issues
+                          {Math.round((updatedAnalysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount / 
+                          Math.max(1, updatedAnalysis.contentRepetitionAnalysis.titleRepetition.totalCount)) * 100)}% of titles have duplication issues
                         </p>
                       </div>
                     </div>
@@ -490,11 +488,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       <div className="ml-4">
                         <h4 className="text-sm font-medium text-purple-800">Meta Description Repetition</h4>
                         <div className="mt-1 text-3xl font-semibold text-purple-600">
-                          {analysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount}/{analysis.contentRepetitionAnalysis.descriptionRepetition.totalCount}
+                          {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount}/{updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.totalCount}
                         </div>
                         <p className="mt-1 text-sm text-purple-700">
-                          {Math.round((analysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount / 
-                          Math.max(1, analysis.contentRepetitionAnalysis.descriptionRepetition.totalCount)) * 100)}% of descriptions have duplication issues
+                          {Math.round((updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount / 
+                          Math.max(1, updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.totalCount)) * 100)}% of descriptions have duplication issues
                         </p>
                       </div>
                     </div>
@@ -509,11 +507,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       <div className="ml-4">
                         <h4 className="text-sm font-medium text-teal-800">Heading Repetition</h4>
                         <div className="mt-1 text-3xl font-semibold text-teal-600">
-                          {analysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount}/{analysis.contentRepetitionAnalysis.headingRepetition.totalCount}
+                          {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount}/{updatedAnalysis.contentRepetitionAnalysis.headingRepetition.totalCount}
                         </div>
                         <p className="mt-1 text-sm text-teal-700">
-                          {Math.round((analysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount / 
-                          Math.max(1, analysis.contentRepetitionAnalysis.headingRepetition.totalCount)) * 100)}% of headings have duplication issues
+                          {Math.round((updatedAnalysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount / 
+                          Math.max(1, updatedAnalysis.contentRepetitionAnalysis.headingRepetition.totalCount)) * 100)}% of headings have duplication issues
                         </p>
                       </div>
                     </div>
@@ -528,12 +526,12 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       <div className="ml-4">
                         <h4 className="text-sm font-medium text-orange-800">Paragraph Repetition</h4>
                         <div className="mt-1 text-3xl font-semibold text-orange-600">
-                          {analysis.contentRepetitionAnalysis.paragraphRepetition?.repetitiveCount || 0}/{analysis.contentRepetitionAnalysis.paragraphRepetition?.totalCount || 0}
+                          {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition?.repetitiveCount || 0}/{updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition?.totalCount || 0}
                         </div>
                         <p className="mt-1 text-sm text-orange-700">
-                          {analysis.contentRepetitionAnalysis.paragraphRepetition?.totalCount > 0 ? 
-                            Math.round((analysis.contentRepetitionAnalysis.paragraphRepetition.repetitiveCount / 
-                            Math.max(1, analysis.contentRepetitionAnalysis.paragraphRepetition.totalCount)) * 100) : 0}% of paragraphs have duplication issues
+                          {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition?.totalCount > 0 ? 
+                            Math.round((updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.repetitiveCount / 
+                            Math.max(1, updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.totalCount)) * 100) : 0}% of paragraphs have duplication issues
                         </p>
                       </div>
                     </div>
@@ -551,11 +549,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       Title Repetition Analysis
                     </h4>
 
-                    {analysis.contentRepetitionAnalysis.titleRepetition.examples.length > 0 ? (
+                    {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.examples.length > 0 ? (
                       <>
                         <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar titles:</p>
                         <ul className="space-y-1 mb-4">
-                          {analysis.contentRepetitionAnalysis.titleRepetition.examples.map((example, index) => (
+                          {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.examples.map((example, index) => (
                             <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
                               <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
                               <span>{example}</span>
@@ -569,7 +567,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                     <ul className="space-y-1">
-                      {analysis.contentRepetitionAnalysis.titleRepetition.recommendations.map((rec, index) => (
+                      {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-gray-700 flex items-start">
                           <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
                             <BadgeCheck className="h-3.5 w-3.5" />
@@ -589,11 +587,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       Meta Description Repetition Analysis
                     </h4>
 
-                    {analysis.contentRepetitionAnalysis.descriptionRepetition.examples.length > 0 ? (
+                    {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.examples.length > 0 ? (
                       <>
                         <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar meta descriptions:</p>
                         <ul className="space-y-1 mb-4">
-                          {analysis.contentRepetitionAnalysis.descriptionRepetition.examples.map((example, index) => (
+                          {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.examples.map((example, index) => (
                             <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
                               <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
                               <span>{example}</span>
@@ -607,7 +605,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                     <ul className="space-y-1">
-                      {analysis.contentRepetitionAnalysis.descriptionRepetition.recommendations.map((rec, index) => (
+                      {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-gray-700 flex items-start">
                           <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
                             <BadgeCheck className="h-3.5 w-3.5" />
@@ -627,11 +625,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                       Heading Repetition Analysis (All Levels)
                     </h4>
 
-                    {analysis.contentRepetitionAnalysis.headingRepetition.examples.length > 0 ? (
+                    {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.examples.length > 0 ? (
                       <>
                         <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar headings (H1-H6):</p>
                         <ul className="space-y-1 mb-4">
-                          {analysis.contentRepetitionAnalysis.headingRepetition.examples.map((example, index) => (
+                          {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.examples.map((example, index) => (
                             <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
                               <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
                               <span>{example}</span>
@@ -645,7 +643,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                     <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                     <ul className="space-y-1">
-                      {analysis.contentRepetitionAnalysis.headingRepetition.recommendations.map((rec, index) => (
+                      {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-gray-700 flex items-start">
                           <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
                             <BadgeCheck className="h-3.5 w-3.5" />
@@ -657,7 +655,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   </div>
 
                   {/* Paragraph repetition section */}
-                  {analysis.contentRepetitionAnalysis.paragraphRepetition && (
+                  {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition && (
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="text-base font-medium text-gray-900 flex items-center mb-3">
                         <span className="bg-orange-100 text-orange-800 p-1 rounded-md mr-2">
@@ -666,11 +664,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         Paragraph Content Repetition
                       </h4>
 
-                      {analysis.contentRepetitionAnalysis.paragraphRepetition.examples.length > 0 ? (
+                      {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.examples.length > 0 ? (
                         <>
                           <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar paragraph content:</p>
                           <ul className="space-y-1 mb-4">
-                            {analysis.contentRepetitionAnalysis.paragraphRepetition.examples.map((example, index) => (
+                            {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.examples.map((example, index) => (
                               <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
                                 <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
                                 <span className="break-words">{example}</span>
@@ -684,7 +682,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                       <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
                       <ul className="space-y-1">
-                        {analysis.contentRepetitionAnalysis.paragraphRepetition.recommendations.map((rec, index) => (
+                        {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.recommendations.map((rec, index) => (
                           <li key={index} className="text-sm text-gray-700 flex items-start">
                             <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
                               <BadgeCheck className="h-3.5 w-3.5" />
@@ -697,10 +695,10 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   )}
 
                   {/* Enhanced URL Attribution Section */}
-                  {(analysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups?.length > 0 ||
-                    analysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups?.length > 0 ||
-                    analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups?.length > 0 ||
-                    analysis.contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.length > 0) && (
+                  {(updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups?.length > 0 ||
+                    updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups?.length > 0 ||
+                    updatedAnalysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups?.length > 0 ||
+                    updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.length > 0) && (
                     <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50">
                       <h4 className="text-base font-medium text-gray-900 flex items-center mb-4">
                         <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2">
@@ -712,7 +710,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                       <div className="space-y-4">
                         {/* Title duplicate groups */}
-                        {analysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups?.map((group, index) => (
+                        {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups?.map((group, index) => (
                           <div key={`title-${index}`} className="bg-white border border-blue-200 rounded-lg p-3">
                             <div className="flex items-start justify-between mb-2">
                               <h5 className="text-sm font-medium text-blue-800">Duplicate Title</h5>
@@ -736,7 +734,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         )) || null}
 
                         {/* Description duplicate groups */}
-                        {analysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups?.map((group, index) => (
+                        {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups?.map((group, index) => (
                           <div key={`desc-${index}`} className="bg-white border border-purple-200 rounded-lg p-3">
                             <div className="flex items-start justify-between mb-2">
                               <h5 className="text-sm font-medium text-purple-800">Duplicate Meta Description</h5>
@@ -760,7 +758,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         )) || null}
 
                         {/* Heading duplicate groups */}
-                        {analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups?.map((group, index) => (
+                        {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups?.map((group, index) => (
                           <div key={`heading-${index}`} className="bg-white border border-teal-200 rounded-lg p-3">
                             <div className="flex items-start justify-between mb-2">
                               <h5 className="text-sm font-medium text-teal-800">Duplicate Heading</h5>
@@ -784,7 +782,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         )) || null}
 
                         {/* Paragraph duplicate groups */}
-                        {analysis.contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.map((group, index) => (
+                        {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.map((group, index) => (
                           <div key={`paragraph-${index}`} className="bg-white border border-orange-200 rounded-lg p-3">
                             <div className="flex items-start justify-between mb-2">
                               <h5 className="text-sm font-medium text-orange-800">Duplicate Paragraph Content</h5>
@@ -820,7 +818,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     </h4>
 
                     <ul className="space-y-2">
-                      {analysis.contentRepetitionAnalysis.overallRecommendations.map((rec, index) => (
+                      {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-100 flex items-start">
                           <div className="bg-amber-100 rounded-full p-1 text-amber-700 mr-2 flex-shrink-0">
                             <BadgeCheck className="h-3.5 w-3.5" />
@@ -843,11 +841,11 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     Run an analysis to detect duplicate or similar content across your website's titles, meta descriptions, headings, and paragraph content.
                   </p>
 
-                  {analysis.pages.length < 2 ? (
+                  {updatedAnalysis.pages.length < 2 ? (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
                       <h4 className="text-sm font-medium text-amber-800 mb-2">Requirements:</h4>
                       <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
-                        <li>Pages analyzed: {analysis.pages.length} (minimum 2 required)</li>
+                        <li>Pages analyzed: {updatedAnalysis.pages.length} (minimum 2 required)</li>
                         <li>AI analysis must be enabled in settings</li>
                       </ul>
                     </div>
@@ -855,7 +853,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left w-full max-w-md">
                       <h4 className="text-sm font-medium text-green-800 mb-2">Ready to analyze:</h4>
                       <ul className="text-xs text-green-700 list-disc pl-4 space-y-1">
-                        <li>Pages available: {analysis.pages.length}</li>
+                        <li>Pages available: {updatedAnalysis.pages.length}</li>
                         <li>Analysis will check for duplicate titles, descriptions, and headings</li>
                       </ul>
                     </div>
@@ -863,7 +861,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                   <Button 
                     onClick={runContentDuplicationAnalysis} 
-                    disabled={isRunningContentDuplication || analysis.pages.length < 2}
+                    disabled={isRunningContentDuplication || updatedAnalysis.pages.length < 2}
                     className="mb-4"
                   >
                     {isRunningContentDuplication ? (
@@ -879,7 +877,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     )}
                   </Button>
 
-                  {analysis.pages.length < 2 && (
+                  {updatedAnalysis.pages.length < 2 && (
                     <Button variant="outline" onClick={onNewAnalysis}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Run New Analysis with More Pages
@@ -892,7 +890,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         </TabsContent>
 
         <TabsContent value="competitor">
-          <CompetitorAnalysis mainAnalysis={analysis} />
+          <CompetitorAnalysis mainAnalysis={updatedAnalysis} />
         </TabsContent>
       </Tabs>
     </div>
