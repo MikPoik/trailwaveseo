@@ -549,13 +549,13 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Attempt ${attempt}/${maxRetries} for ${url}`);
-        
+
         response = await openai.chat.completions.create({
           model: "gpt-4.1",
           messages: [
             { 
               role: "system", 
-              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format only with proper escaping of quotes and special characters. Write in the same language as the website's content is."
+              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. Write in the same language as the website's content is."
             },
             { role: "user", content: prompt }
           ],
@@ -563,14 +563,14 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           temperature: 0.4,
           max_tokens: 1500
         });
-        
+
         // If we get here, the request succeeded
         break;
-        
+
       } catch (error) {
         lastError = error as Error;
         console.warn(`Attempt ${attempt} failed for ${url}:`, error);
-        
+
         if (attempt < maxRetries) {
           // Exponential backoff: wait 1s, 2s, 4s
           const delay = Math.pow(2, attempt - 1) * 1000;
@@ -614,15 +614,15 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
       }
     } catch (parseError) {
       console.error(`Failed to parse OpenAI response for ${url}:`, parseError);
-      
+
       // Try to fix common JSON issues and retry parsing
       try {
         // Remove any trailing commas and fix incomplete JSON
         let fixedContent = content.trim();
-        
+
         // Remove trailing comma before closing brace/bracket
         fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
-        
+
         // If JSON is incomplete, try to complete it
         if (!fixedContent.endsWith('}') && !fixedContent.endsWith(']')) {
           // Find the last complete suggestion and close the JSON properly
@@ -635,7 +635,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
             return [];
           }
         }
-        
+
         const fixedResult = JSON.parse(fixedContent);
         if (fixedResult?.suggestions && Array.isArray(fixedResult.suggestions)) {
           suggestions = fixedResult.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0);
@@ -798,13 +798,13 @@ function extractTopKeywords(pages: any[]): string[] {
       allKeywords.push(...page.contentMetrics.keywordDensity.slice(0, 3).map((k: any) => k.keyword));
     }
   });
-  
+
   // Get most frequent keywords across all pages
   const keywordCounts = allKeywords.reduce((acc, keyword) => {
     acc[keyword] = (acc[keyword] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-  
+
   return Object.entries(keywordCounts)
     .sort(([,a], [,b]) => b - a)
     .slice(0, 8)
@@ -834,7 +834,7 @@ function analyzeHeadingStrategy(pages: any[]): string {
   const h2Count = pages.reduce((sum, page) => sum + (page.headings?.filter((h: any) => h.level === 2).length || 0), 0);
   const avgH1PerPage = h1Count / pages.length;
   const avgH2PerPage = h2Count / pages.length;
-  
+
   return `${avgH1PerPage.toFixed(1)} H1s per page, ${avgH2PerPage.toFixed(1)} H2s per page`;
 }
 
@@ -844,21 +844,21 @@ function analyzeContentDepth(pages: any[]): string {
     const wordCount = page.paragraphs?.join(' ').split(/\s+/).length || 0;
     return sum + wordCount;
   }, 0) / pages.length;
-  
+
   return `${Math.round(avgWordCount)} words avg, ${avgParagraphs.toFixed(1)} paragraphs per page`;
 }
 
 function analyzeLinkingStrategy(pages: any[]): string {
   const avgInternalLinks = pages.reduce((sum, page) => sum + (page.internalLinks?.length || 0), 0) / pages.length;
   const totalUniqueLinks = new Set(pages.flatMap(page => page.internalLinks?.map((link: any) => link.href) || [])).size;
-  
+
   return `${avgInternalLinks.toFixed(1)} internal links per page, ${totalUniqueLinks} unique destinations`;
 }
 
 function analyzeCtaApproach(pages: any[]): string {
   const avgCtas = pages.reduce((sum, page) => sum + (page.ctaElements?.length || 0), 0) / pages.length;
   const buttonTypes = new Set(pages.flatMap(page => page.ctaElements?.map((cta: any) => cta.type) || []));
-  
+
   return `${avgCtas.toFixed(1)} CTAs per page, types: ${Array.from(buttonTypes).join(', ') || 'none'}`;
 }
 
@@ -1210,12 +1210,12 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
       content: sanitizeContentForPrompt(item.content || ''),
       url: item.url
     }));
-    
+
     const sanitizedDescriptions = data.descriptions.map((item: any) => ({
       content: sanitizeContentForPrompt(item.content || ''),
       url: item.url
     }));
-    
+
     const sanitizedHeadings = {
       h1: data.headings.h1.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
       h2: data.headings.h2.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
@@ -1224,7 +1224,7 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
       h5: data.headings.h5.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url })),
       h6: data.headings.h6.map((item: any) => ({ content: sanitizeContentForPrompt(item.content || ''), url: item.url }))
     };
-    
+
     const sanitizedParagraphs = data.paragraphs.map((item: any) => ({
       content: sanitizeContentForPrompt(item.content || ''),
       url: item.url
@@ -1298,15 +1298,15 @@ Respond in valid JSON format with comprehensive analysis and strategic recommend
       console.log('Successfully parsed content duplication response on first attempt');
     } catch (parseError) {
       console.error('Failed to parse content duplication response on first attempt:', parseError);
-      
+
       // Try to fix common JSON issues and retry parsing
       try {
         // Remove any trailing commas and fix incomplete JSON
         let fixedContent = content.trim();
-        
+
         // Remove trailing comma before closing brace/bracket
         fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
-        
+
         // If JSON is incomplete, try to complete it
         if (!fixedContent.endsWith('}') && !fixedContent.endsWith(']')) {
           // Find the last complete object structure and close the JSON properly
@@ -1316,7 +1316,7 @@ Respond in valid JSON format with comprehensive analysis and strategic recommend
             const openBraceCount = (fixedContent.match(/{/g) || []).length;
             const closeBraceCount = (fixedContent.match(/}/g) || []).length;
             const missingBraces = openBraceCount - closeBraceCount;
-            
+
             if (missingBraces > 0) {
               fixedContent = fixedContent + '}'.repeat(missingBraces);
             }
@@ -1326,7 +1326,7 @@ Respond in valid JSON format with comprehensive analysis and strategic recommend
             return createEmptyContentAnalysis();
           }
         }
-        
+
         result = JSON.parse(fixedContent);
         console.log('Successfully recovered content duplication response after JSON fix');
       } catch (secondParseError) {
@@ -1348,36 +1348,36 @@ Respond in valid JSON format with comprehensive analysis and strategic recommend
 async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicationAnalysis> {
   try {
     console.log(`Processing large site with ${data.totalPages} pages using simplified analysis`);
-    
+
     // For large sites, use rule-based analysis with minimal AI enhancement
     const analysis = createEmptyContentAnalysis();
-    
+
     // Rule-based title duplication detection
     const titleDuplicates = findExactDuplicates(data.titles);
     analysis.titleRepetition.repetitiveCount = titleDuplicates.duplicateCount;
     analysis.titleRepetition.totalCount = data.titles.length;
     analysis.titleRepetition.duplicateGroups = titleDuplicates.groups;
     analysis.titleRepetition.examples = titleDuplicates.examples;
-    
+
     // Rule-based description duplication detection
     const descriptionDuplicates = findExactDuplicates(data.descriptions);
     analysis.descriptionRepetition.repetitiveCount = descriptionDuplicates.duplicateCount;
     analysis.descriptionRepetition.totalCount = data.descriptions.length;
     analysis.descriptionRepetition.duplicateGroups = descriptionDuplicates.groups;
     analysis.descriptionRepetition.examples = descriptionDuplicates.examples;
-    
+
     // Rule-based heading duplication (focus on H1-H3)
     const h1Duplicates = findExactDuplicates(data.headings.h1);
     const h2Duplicates = findExactDuplicates(data.headings.h2);
     const h3Duplicates = findExactDuplicates(data.headings.h3);
-    
+
     analysis.headingRepetition.repetitiveCount = h1Duplicates.duplicateCount + h2Duplicates.duplicateCount + h3Duplicates.duplicateCount;
     analysis.headingRepetition.totalCount = data.headings.h1.length + data.headings.h2.length + data.headings.h3.length;
     analysis.headingRepetition.byLevel.h1 = h1Duplicates.groups;
     analysis.headingRepetition.byLevel.h2 = h2Duplicates.groups;
     analysis.headingRepetition.byLevel.h3 = h3Duplicates.groups;
     analysis.headingRepetition.examples = [...h1Duplicates.examples, ...h2Duplicates.examples, ...h3Duplicates.examples];
-    
+
     // Generate rule-based recommendations
     analysis.titleRepetition.recommendations = generateRuleBasedRecommendations('titles', titleDuplicates);
     analysis.descriptionRepetition.recommendations = generateRuleBasedRecommendations('descriptions', descriptionDuplicates);
@@ -1385,10 +1385,10 @@ async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicat
       duplicateCount: analysis.headingRepetition.repetitiveCount,
       groups: [...h1Duplicates.groups, ...h2Duplicates.groups, ...h3Duplicates.groups]
     });
-    
+
     // Add minimal AI enhancement only if we have significant duplicates
     const totalDuplicates = analysis.titleRepetition.repetitiveCount + analysis.descriptionRepetition.repetitiveCount + analysis.headingRepetition.repetitiveCount;
-    
+
     if (totalDuplicates > 0) {
       try {
         const simplifiedAIRecommendations = await generateSimplifiedAIRecommendations(analysis, data.totalPages);
@@ -1405,10 +1405,10 @@ async function processBatchedContentAnalysis(data: any): Promise<ContentDuplicat
     } else {
       analysis.overallRecommendations = [`No major content duplication detected across ${data.totalPages} pages`];
     }
-    
+
     console.log(`Completed simplified analysis: ${totalDuplicates} duplicates found`);
     return analysis;
-    
+
   } catch (error) {
     console.error('Error in processBatchedContentAnalysis:', error);
     return createEmptyContentAnalysis();
@@ -1422,7 +1422,7 @@ function findExactDuplicates(items: Array<{content: string, url: string}>): {
   examples: string[];
 } {
   const contentMap = new Map<string, string[]>();
-  
+
   // Group items by exact content match (case-insensitive, trimmed)
   items.forEach(item => {
     const normalizedContent = item.content.trim().toLowerCase();
@@ -1433,30 +1433,30 @@ function findExactDuplicates(items: Array<{content: string, url: string}>): {
       contentMap.get(normalizedContent)!.push(item.url);
     }
   });
-  
+
   // Find groups with duplicates (more than 1 URL)
   const duplicateGroups: Array<{content: string, urls: string[], similarityScore: number}> = [];
   const examples: string[] = [];
   let duplicateCount = 0;
-  
+
   contentMap.forEach((urls, content) => {
     if (urls.length > 1) {
       // Find original content (not normalized) for display
       const originalContent = items.find(item => 
         item.content.trim().toLowerCase() === content
       )?.content || content;
-      
+
       duplicateGroups.push({
         content: originalContent,
         urls: urls,
         similarityScore: 100 // Exact match
       });
-      
+
       examples.push(originalContent);
       duplicateCount += urls.length - 1; // Count extra occurrences
     }
   });
-  
+
   return {
     duplicateCount,
     groups: duplicateGroups,
@@ -1467,12 +1467,12 @@ function findExactDuplicates(items: Array<{content: string, url: string}>): {
 // Helper function to generate rule-based recommendations
 function generateRuleBasedRecommendations(contentType: string, duplicateData: {duplicateCount: number, groups: any[]}): string[] {
   const recommendations: string[] = [];
-  
+
   if (duplicateData.duplicateCount === 0) {
     recommendations.push(`No duplicate ${contentType} detected - good content uniqueness!`);
   } else {
     recommendations.push(`Found ${duplicateData.duplicateCount} duplicate ${contentType} across ${duplicateData.groups.length} groups`);
-    
+
     if (contentType === 'titles') {
       recommendations.push('Make each page title unique and descriptive for better SEO');
       recommendations.push('Include target keywords specific to each page content');
@@ -1483,13 +1483,13 @@ function generateRuleBasedRecommendations(contentType: string, duplicateData: {d
       recommendations.push('Use unique headings that clearly describe section content');
       recommendations.push('Avoid generic headings like "Welcome" or "About Us" across multiple pages');
     }
-    
+
     if (duplicateData.groups.length > 0) {
       const topDuplicate = duplicateData.groups[0];
       recommendations.push(`Most duplicated content: "${topDuplicate.content}" appears on ${topDuplicate.urls?.length || 0} pages`);
     }
   }
-  
+
   return recommendations;
 }
 
@@ -1498,7 +1498,7 @@ async function generateSimplifiedAIRecommendations(analysis: ContentDuplicationA
   if (!process.env.OPENAI_API_KEY) {
     return ['AI recommendations unavailable - OpenAI API key not configured'];
   }
-  
+
   try {
     const summary = {
       totalPages,
@@ -1514,7 +1514,7 @@ async function generateSimplifiedAIRecommendations(analysis: ContentDuplicationA
         ...analysis.descriptionRepetition.duplicateGroups.slice(0, 2)
       ]
     };
-    
+
     const prompt = `As an SEO strategist, analyze this large website's content duplication issues and provide KEY INSIGHTS for prioritized deduplication:
 
 SITE OVERVIEW: ${totalPages} pages analyzed
@@ -1561,7 +1561,7 @@ Focus on actionable insights that help prioritize which duplicates to fix first 
         return [`AI analysis complete: Focus on the ${summary.titleDuplicates + summary.descriptionDuplicates + summary.headingDuplicates} identified duplicates for maximum SEO impact`];
       }
     }
-    
+
     return ['AI recommendations generated successfully'];
   } catch (error) {
     console.error('Error generating simplified AI recommendations:', error);
@@ -1576,18 +1576,18 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
     // New format from OpenAI with deduplication_analysis array
     const analysis = result.deduplication_analysis;
     const overallRecommendations = result.strategic_recommendations || result.overall_recommendations || [];
-    
+
     // Initialize counters and groups
     const titleGroups: DuplicateItem[] = [];
     const descriptionGroups: DuplicateItem[] = [];
     const headingGroups: DuplicateItem[] = [];
     const paragraphGroups: DuplicateItem[] = [];
-    
+
     let titleCount = 0, titleRepetitive = 0;
     let descCount = 0, descRepetitive = 0;
     let headingCount = 0, headingRepetitive = 0;
     let paragraphCount = 0, paragraphRepetitive = 0;
-    
+
     // Process each duplicate group from OpenAI response
     analysis.forEach((item: any) => {
       const duplicateItem: DuplicateItem = {
@@ -1601,7 +1601,7 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
         rootCause: item.root_cause,
         improvementStrategy: item.improvement_strategy || item.specific_recommendations
       };
-      
+
       // Categorize by content type
       const contentType = item.content_type?.toLowerCase() || '';
       if (contentType.includes('title') || contentType.includes('brand')) {
@@ -1622,39 +1622,102 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
         paragraphCount += duplicateItem.urls.length;
       }
     });
-    
+
+    // Extract unique examples from duplicate groups, filtering out empty content
+    const titleExamples = titleGroups
+      .map(g => g.content)
+      .filter(content => content && content.trim().length > 0)
+      .slice(0, 5);
+
+    const descriptionExamples = descriptionGroups
+      .map(g => g.content)
+      .filter(content => content && content.trim().length > 0)
+      .slice(0, 5);
+
+    const headingExamples = headingGroups
+      .map(g => g.content)
+      .filter(content => content && content.trim().length > 0)
+      .slice(0, 5);
+
+    const paragraphExamples = paragraphGroups
+      .map(g => g.content)
+      .filter(content => content && content.trim().length > 0)
+      .slice(0, 5);
+
+    // Extract recommendations from improvement strategies, ensuring they're strings
+    const titleRecommendations = titleGroups
+      .map(g => {
+        if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
+          return g.improvementStrategy.description;
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const descriptionRecommendations = descriptionGroups
+      .map(g => {
+        if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
+          return g.improvementStrategy.description;
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const headingRecommendations = headingGroups
+      .map(g => {
+        if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
+          return g.improvementStrategy.description;
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const paragraphRecommendations = paragraphGroups
+      .map(g => {
+        if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
+        if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) {
+          return g.improvementStrategy.description;
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+
+    // Parse overall recommendations ensuring they're strings
+    const parsedOverallRecommendations = Array.isArray(overallRecommendations) 
+      ? overallRecommendations.map(rec => {
+          if (typeof rec === 'string') return rec;
+          if (typeof rec === 'object' && rec?.description) return rec.description;
+          return String(rec || '');
+        }).filter(rec => rec.trim().length > 0)
+      : [];
+
     return {
       titleRepetition: {
         repetitiveCount: titleRepetitive,
         totalCount: Math.max(titleCount, titleRepetitive),
-        examples: titleGroups.map(g => g.content).slice(0, 5),
-        recommendations: titleGroups.map(g => {
-          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
-          return String(g.improvementStrategy || '');
-        }).filter(Boolean).slice(0, 3),
+        examples: titleExamples,
+        recommendations: titleRecommendations,
         duplicateGroups: titleGroups
       },
       descriptionRepetition: {
         repetitiveCount: descRepetitive,
         totalCount: Math.max(descCount, descRepetitive),
-        examples: descriptionGroups.map(g => g.content).slice(0, 5),
-        recommendations: descriptionGroups.map(g => {
-          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
-          return String(g.improvementStrategy || '');
-        }).filter(Boolean).slice(0, 3),
+        examples: descriptionExamples,
+        recommendations: descriptionRecommendations,
         duplicateGroups: descriptionGroups
       },
       headingRepetition: {
         repetitiveCount: headingRepetitive,
         totalCount: Math.max(headingCount, headingRepetitive),
-        examples: headingGroups.map(g => g.content).slice(0, 5),
-        recommendations: headingGroups.map(g => {
-          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
-          return String(g.improvementStrategy || '');
-        }).filter(Boolean).slice(0, 3),
+        examples: headingExamples,
+        recommendations: headingRecommendations,
         duplicateGroups: headingGroups,
         byLevel: {
           h1: headingGroups.filter(g => g.content.toLowerCase().includes('h1')),
@@ -1668,18 +1731,14 @@ function parseEnhancedAnalysisResult(result: any): ContentDuplicationAnalysis {
       paragraphRepetition: {
         repetitiveCount: paragraphRepetitive,
         totalCount: Math.max(paragraphCount, paragraphRepetitive),
-        examples: paragraphGroups.map(g => g.content).slice(0, 5),
-        recommendations: paragraphGroups.map(g => {
-          if (typeof g.improvementStrategy === 'string') return g.improvementStrategy;
-          if (typeof g.improvementStrategy === 'object' && g.improvementStrategy?.description) return g.improvementStrategy.description;
-          return String(g.improvementStrategy || '');
-        }).filter(Boolean).slice(0, 3),
+        examples: paragraphExamples,
+        recommendations: paragraphRecommendations,
         duplicateGroups: paragraphGroups
       },
-      overallRecommendations: Array.isArray(overallRecommendations) ? overallRecommendations : []
+      overallRecommendations: parsedOverallRecommendations
     };
   }
-  
+
   // Legacy format handling
   return {
     titleRepetition: {
@@ -1789,4 +1848,3 @@ function mergeAnalysisResults(base: ContentDuplicationAnalysis, additional: Cont
     overallRecommendations: [...base.overallRecommendations, ...additional.overallRecommendations]
   };
 }
-// Refactored CTA analysis to filter for elements with text and simplify the display format.

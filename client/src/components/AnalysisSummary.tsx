@@ -543,25 +543,34 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                 {/* Detailed analysis sections */}
                 <div className="space-y-6">
                   {/* AI-Powered Key Insights Section */}
-                  {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.length > 0 && (
+                  {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations?.length > 0 && (
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
                       <div className="flex items-center gap-2 mb-3">
                         <Bot className="w-5 h-5 text-blue-600" />
                         <h4 className="font-semibold text-blue-900">🎯 AI-Powered Key Insights</h4>
                       </div>
                       <div className="space-y-2">
-                        {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.slice(0, 3).map((recommendation, index) => (
-                          <div key={index} className="flex items-start gap-2">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                              index === 0 ? 'bg-red-100 text-red-700' : 
-                              index === 1 ? 'bg-orange-100 text-orange-700' : 
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {index + 1}
+                        {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.slice(0, 3).map((recommendation, index) => {
+                          // Ensure recommendation is a string
+                          const recommendationText = typeof recommendation === 'string' 
+                            ? recommendation 
+                            : typeof recommendation === 'object' && recommendation?.description
+                              ? recommendation.description
+                              : String(recommendation || '');
+                              
+                          return (
+                            <div key={index} className="flex items-start gap-2">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                index === 0 ? 'bg-red-100 text-red-700' : 
+                                index === 1 ? 'bg-orange-100 text-orange-700' : 
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {index + 1}
+                              </div>
+                              <p className="text-sm text-blue-800 flex-1">{recommendationText}</p>
                             </div>
-                            <p className="text-sm text-blue-800 flex-1">{recommendation}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
