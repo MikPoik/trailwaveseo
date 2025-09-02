@@ -95,6 +95,10 @@ export interface DuplicateItem {
   content: string;
   urls: string[];
   similarityScore: number;
+  impactLevel?: 'Critical' | 'High' | 'Medium' | 'Low';
+  priority?: number; // 1-5, where 1 is most urgent
+  rootCause?: string;
+  improvementStrategy?: string;
 }
 
 export interface ContentRepetitionAnalysis {
