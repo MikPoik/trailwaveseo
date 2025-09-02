@@ -861,26 +861,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     </div>
                   )}
 
-                  {/* Overall recommendations */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="text-base font-medium text-gray-900 flex items-center mb-3">
-                      <span className="bg-amber-100 text-amber-800 p-1 rounded-md mr-2">
-                        <Info className="h-5 w-5" />
-                      </span>
-                      Overall Content Recommendations
-                    </h4>
-
-                    <ul className="space-y-2">
-                      {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.map((rec, index) => (
-                        <li key={index} className="text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-100 flex items-start">
-                          <div className="bg-amber-100 rounded-full p-1 text-amber-700 mr-2 flex-shrink-0">
-                            <BadgeCheck className="h-3.5 w-3.5" />
-                          </div>
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  
                 </div>
               </CardContent>
             </Card>
