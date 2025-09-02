@@ -90,6 +90,57 @@ export const insertSettingsSchema = createInsertSchema(settings).pick({
   useAI: true,
 });
 
+// Content duplication analysis types
+export interface DuplicateItem {
+  content: string;
+  urls: string[];
+  similarityScore: number;
+  impactLevel?: 'Critical' | 'High' | 'Medium' | 'Low';
+  priority?: number; // 1-5, where 1 is most urgent
+  rootCause?: string;
+  improvementStrategy?: string;
+}
+
+export interface ContentDuplicationAnalysis {
+  titleRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+    duplicateGroups: DuplicateItem[];
+  };
+  descriptionRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+    duplicateGroups: DuplicateItem[];
+  };
+  headingRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+    duplicateGroups: DuplicateItem[];
+    byLevel: {
+      h1: DuplicateItem[];
+      h2: DuplicateItem[];
+      h3: DuplicateItem[];
+      h4: DuplicateItem[];
+      h5: DuplicateItem[];
+      h6: DuplicateItem[];
+    };
+  };
+  paragraphRepetition: {
+    repetitiveCount: number;
+    totalCount: number;
+    examples: string[];
+    recommendations: string[];
+    duplicateGroups: DuplicateItem[];
+  };
+  overallRecommendations: string[];
+}
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

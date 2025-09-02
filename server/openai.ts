@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import axios from "axios";
 import crypto from "crypto";
+import { ContentDuplicationAnalysis, DuplicateItem } from '@shared/schema';
 
 // Using gpt-4o as the OpenAI model for better reliability
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -74,57 +75,6 @@ function analyzeContentIntent(pageData: any, siteOverview?: any): {
   };
 }
 const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-
-// Define interface for content duplication analysis results
-export interface DuplicateItem {
-  content: string;
-  urls: string[];
-  similarityScore: number;
-  impactLevel?: 'Critical' | 'High' | 'Medium' | 'Low';
-  priority?: number; // 1-5, where 1 is most urgent
-  rootCause?: string;
-  improvementStrategy?: string;
-}
-
-export interface ContentDuplicationAnalysis {
-  titleRepetition: {
-    repetitiveCount: number;
-    totalCount: number;
-    examples: string[];
-    recommendations: string[];
-    duplicateGroups: DuplicateItem[];
-  };
-  descriptionRepetition: {
-    repetitiveCount: number;
-    totalCount: number;
-    examples: string[];
-    recommendations: string[];
-    duplicateGroups: DuplicateItem[];
-  };
-  headingRepetition: {
-    repetitiveCount: number;
-    totalCount: number;
-    examples: string[];
-    recommendations: string[];
-    duplicateGroups: DuplicateItem[];
-    byLevel: {
-      h1: DuplicateItem[];
-      h2: DuplicateItem[];
-      h3: DuplicateItem[];
-      h4: DuplicateItem[];
-      h5: DuplicateItem[];
-      h6: DuplicateItem[];
-    };
-  };
-  paragraphRepetition: {
-    repetitiveCount: number;
-    totalCount: number;
-    examples: string[];
-    recommendations: string[];
-    duplicateGroups: DuplicateItem[];
-  };
-  overallRecommendations: string[];
-}
 
 /**
  * Analyze site overview to detect business context and provide general insights
