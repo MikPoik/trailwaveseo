@@ -601,7 +601,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                             {group.improvementStrategy && (
                               <div className="bg-white/50 rounded p-2 mb-2">
                                 <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
-                                <p className="text-xs text-green-600">{group.improvementStrategy}</p>
+                                <p className="text-xs text-green-600 whitespace-pre-line">{group.improvementStrategy}</p>
                               </div>
                             )}
                             <div className="space-y-1">
@@ -652,7 +652,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                             {group.improvementStrategy && (
                               <div className="bg-white/50 rounded p-2 mb-2">
                                 <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
-                                <p className="text-xs text-green-600">{group.improvementStrategy}</p>
+                                <p className="text-xs text-green-600 whitespace-pre-line">{group.improvementStrategy}</p>
                               </div>
                             )}
                             <div className="space-y-1">
@@ -771,7 +771,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                                 {group.similarityScore}% similar
                               </span>
                             </div>
-                            <p className="text-sm text-gray-800 mb-2 font-medium">\"{group.content}\"</p>
+                            <p className="text-sm text-gray-800 mb-2 font-medium">"{group.content}"</p>
                             <div className="text-xs text-gray-600">
                               <span className="font-medium">Found on {group.urls.length} pages:</span>
                               <ul className="mt-1 space-y-1">
@@ -795,7 +795,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                                 {group.similarityScore}% similar
                               </span>
                             </div>
-                            <p className="text-sm text-gray-800 mb-2 font-medium">\"{group.content}\"</p>
+                            <p className="text-sm text-gray-800 mb-2 font-medium">"{group.content}"</p>
                             <div className="text-xs text-gray-600">
                               <span className="font-medium">Found on {group.urls.length} pages:</span>
                               <ul className="mt-1 space-y-1">
@@ -819,7 +819,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                                 {group.similarityScore}% similar
                               </span>
                             </div>
-                            <p className="text-sm text-gray-800 mb-2 font-medium">\"{group.content}\"</p>
+                            <p className="text-sm text-gray-800 mb-2 font-medium">"{group.content}"</p>
                             <div className="text-xs text-gray-600">
                               <span className="font-medium">Found on {group.urls.length} pages:</span>
                               <ul className="mt-1 space-y-1">
@@ -861,7 +861,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     </div>
                   )}
 
-                  
+
                 </div>
               </CardContent>
             </Card>
