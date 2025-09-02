@@ -563,16 +563,42 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                           <div key={index} className="bg-white rounded p-3 border border-blue-100">
                             <p className="font-medium text-sm mb-2">"{group.content}"</p>
                             <p className="text-xs text-gray-600 mb-2">
-                              Found on {group.urls.length} pages • {group.similarityScore}% similar
+                              Found on {(() => {
+                                const urls = Array.isArray(group.urls) 
+                                  ? group.urls.flatMap(item => 
+                                      typeof item === 'string' ? item : 
+                                      (item?.urls || [])
+                                    ).filter(url => typeof url === 'string')
+                                  : [];
+                                return urls.length;
+                              })()} pages • {group.similarityScore}% similar
                               {group.impactLevel && ` • ${group.impactLevel} impact`}
                             </p>
                             <div className="text-xs text-blue-600 space-y-1 mb-2">
-                              {group.urls.slice(0, 3).map((url, urlIndex) => (
-                                <div key={urlIndex}>• {url}</div>
-                              ))}
-                              {group.urls.length > 3 && (
-                                <div className="text-gray-500">... and {group.urls.length - 3} more pages</div>
-                              )}
+                              {(() => {
+                                // Handle different URL structure formats from OpenAI response
+                                const urls = Array.isArray(group.urls) 
+                                  ? group.urls.flatMap(item => 
+                                      typeof item === 'string' ? item : 
+                                      (item?.urls || [])
+                                    ).filter(url => typeof url === 'string')
+                                  : [];
+                                
+                                return urls.slice(0, 3).map((url, urlIndex) => (
+                                  <div key={urlIndex}>• {url}</div>
+                                ));
+                              })()}
+                              {(() => {
+                                const urls = Array.isArray(group.urls) 
+                                  ? group.urls.flatMap(item => 
+                                      typeof item === 'string' ? item : 
+                                      (item?.urls || [])
+                                    ).filter(url => typeof url === 'string')
+                                  : [];
+                                return urls.length > 3 && (
+                                  <div className="text-gray-500">... and {urls.length - 3} more pages</div>
+                                );
+                              })()}
                             </div>
                             {group.improvementStrategy && (
                               <div className="bg-green-50 rounded p-2">
@@ -600,16 +626,41 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                           <div key={index} className="bg-white rounded p-3 border border-purple-100">
                             <p className="font-medium text-sm mb-2">"{group.content}"</p>
                             <p className="text-xs text-gray-600 mb-2">
-                              Found on {group.urls.length} pages • {group.similarityScore}% similar
+                              Found on {(() => {
+                                const urls = Array.isArray(group.urls) 
+                                  ? group.urls.flatMap(item => 
+                                      typeof item === 'string' ? item : 
+                                      (item?.urls || [])
+                                    ).filter(url => typeof url === 'string')
+                                  : [];
+                                return urls.length;
+                              })()} pages • {group.similarityScore}% similar
                               {group.impactLevel && ` • ${group.impactLevel} impact`}
                             </p>
                             <div className="text-xs text-purple-600 space-y-1 mb-2">
-                              {group.urls.slice(0, 3).map((url, urlIndex) => (
-                                <div key={urlIndex}>• {url}</div>
-                              ))}
-                              {group.urls.length > 3 && (
-                                <div className="text-gray-500">... and {group.urls.length - 3} more pages</div>
-                              )}
+                              {(() => {
+                                const urls = Array.isArray(group.urls) 
+                                  ? group.urls.flatMap(item => 
+                                      typeof item === 'string' ? item : 
+                                      (item?.urls || [])
+                                    ).filter(url => typeof url === 'string')
+                                  : [];
+                                
+                                return urls.slice(0, 3).map((url, urlIndex) => (
+                                  <div key={urlIndex}>• {url}</div>
+                                ));
+                              })()}
+                              {(() => {
+                                const urls = Array.isArray(group.urls) 
+                                  ? group.urls.flatMap(item => 
+                                      typeof item === 'string' ? item : 
+                                      (item?.urls || [])
+                                    ).filter(url => typeof url === 'string')
+                                  : [];
+                                return urls.length > 3 && (
+                                  <div className="text-gray-500">... and {urls.length - 3} more pages</div>
+                                );
+                              })()}
                             </div>
                             {group.improvementStrategy && (
                               <div className="bg-green-50 rounded p-2">
