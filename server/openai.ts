@@ -80,6 +80,10 @@ export interface DuplicateItem {
   content: string;
   urls: string[];
   similarityScore: number;
+  impactLevel?: 'Critical' | 'High' | 'Medium' | 'Low';
+  priority?: number; // 1-5, where 1 is most urgent
+  rootCause?: string;
+  improvementStrategy?: string;
 }
 
 export interface ContentDuplicationAnalysis {
@@ -1226,20 +1230,55 @@ async function processSingleContentAnalysis(data: any): Promise<ContentDuplicati
       url: item.url
     }));
 
-    const prompt = `Analyze this website's content for duplication and similarity issues.\n\nTITLES WITH URLS (${sanitizedTitles.length} total):\n${sanitizedTitles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nMETA DESCRIPTIONS WITH URLS (${sanitizedDescriptions.length} total):\n${sanitizedDescriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nHEADINGS BY LEVEL WITH URLS:\nH1 (${sanitizedHeadings.h1.length}): ${sanitizedHeadings.h1.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH2 (${sanitizedHeadings.h2.length}): ${sanitizedHeadings.h2.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH3 (${sanitizedHeadings.h3.length}): ${sanitizedHeadings.h3.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\nH4-H6 Combined (${sanitizedHeadings.h4.length + sanitizedHeadings.h5.length + sanitizedHeadings.h6.length}): ${[...sanitizedHeadings.h4, ...sanitizedHeadings.h5, ...sanitizedHeadings.h6].map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}\n\nPARAGRAPH CONTENT WITH URLS (${sanitizedParagraphs.length} substantial paragraphs):\n${sanitizedParagraphs.map((item: any, idx: number) => `P${idx + 1}: "${item.content}" → ${item.url}`).join('\n')}\n\nAnalyze for:\n1. Exact duplicates and high similarity content (80%+ similar)\n2. For each duplicate group, list all URLs containing that content\n3. Provide similarity scores (80-100) for detected duplicates\n4. Generate specific recommendations referencing exact URLs\n5. Analyze paragraph content for boilerplate text and repeated sections\n6. Check all heading levels for patterns and repetition\n\nProvide comprehensive analysis with URL attribution and actionable insights.\n\nRespond in valid JSON format with proper structure and escaping.`;
+    const prompt = `As an expert SEO content analyst, analyze this website's content for duplication patterns and provide strategic insights for deduplication.
+
+CONTENT ANALYSIS DATA:
+
+TITLES (${sanitizedTitles.length} total):
+${sanitizedTitles.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}
+
+META DESCRIPTIONS (${sanitizedDescriptions.length} total):
+${sanitizedDescriptions.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}
+
+HEADINGS BY LEVEL:
+H1 (${sanitizedHeadings.h1.length}): ${sanitizedHeadings.h1.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}
+H2 (${sanitizedHeadings.h2.length}): ${sanitizedHeadings.h2.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}
+H3 (${sanitizedHeadings.h3.length}): ${sanitizedHeadings.h3.map((item: any) => `"${item.content}" → ${item.url}`).join('\n')}
+
+PARAGRAPH CONTENT (${sanitizedParagraphs.length} substantial paragraphs):
+${sanitizedParagraphs.map((item: any, idx: number) => `P${idx + 1}: "${item.content}" → ${item.url}`).join('\n')}
+
+ANALYSIS REQUIREMENTS:
+1. **Smart Duplicate Detection**: Identify exact matches and high similarity content (80%+ similar)
+2. **Impact Assessment**: Prioritize duplicates by SEO impact (title > H1 > meta desc > other headings > paragraphs)
+3. **Pattern Recognition**: Detect template-based duplicates, boilerplate content, and systematic issues
+4. **Actionable Insights**: Provide specific, prioritized recommendations with URL references
+5. **Content Uniqueness Strategy**: Suggest content differentiation approaches for each duplicate group
+
+RESPONSE FORMAT:
+For each duplicate group, provide:
+- Content type and impact level (Critical/High/Medium/Low)
+- Similarity score and affected URLs
+- Root cause analysis (template issue, copy-paste, auto-generation, etc.)
+- Specific improvement strategy with examples
+- Priority level for fixing (1-5, where 1 is most urgent)
+
+Focus on highlighting the most critical deduplication opportunities that will have the biggest SEO impact.
+
+Respond in valid JSON format with comprehensive analysis and strategic recommendations.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
       messages: [
         { 
           role: "system", 
-          content: "You are an expert content analyst specializing in content duplication detection. Detect duplicate and highly similar content across website pages. Provide URL attribution, similarity scores (80-100), and actionable insights. Always respond in valid JSON format with proper escaping. Ensure all JSON strings are properly escaped and the response is complete."
+          content: "You are an expert SEO content strategist specializing in intelligent content deduplication analysis. Your role is to identify not just what content is duplicated, but WHY it matters for SEO and HOW to strategically fix it. Provide actionable insights that highlight the most critical deduplication opportunities with clear business impact. Focus on: 1) SEO impact prioritization, 2) Root cause analysis, 3) Strategic differentiation recommendations, 4) Implementation roadmap. Always respond in valid JSON format with comprehensive analysis that helps users understand which duplicates to fix first and why."
         },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_tokens: 4000  // Increased from 2000 to reduce truncation
+      temperature: 0.3,  // Slightly higher for more creative suggestions
+      max_tokens: 4000
     });
 
     const content = response.choices[0].message.content;
@@ -1469,17 +1508,34 @@ async function generateSimplifiedAIRecommendations(analysis: ContentDuplicationA
       topExamples: [
         ...analysis.titleRepetition.examples.slice(0, 2),
         ...analysis.descriptionRepetition.examples.slice(0, 2)
+      ],
+      criticalGroups: [
+        ...analysis.titleRepetition.duplicateGroups.slice(0, 2),
+        ...analysis.descriptionRepetition.duplicateGroups.slice(0, 2)
       ]
     };
     
-    const prompt = `Analyze this content duplication summary for a ${totalPages}-page website:
-    
-- Title duplicates: ${summary.titleDuplicates}
-- Description duplicates: ${summary.descriptionDuplicates}  
-- Heading duplicates: ${summary.headingDuplicates}
-- Sample duplicated content: ${summary.topExamples.join(', ')}
+    const prompt = `As an SEO strategist, analyze this large website's content duplication issues and provide KEY INSIGHTS for prioritized deduplication:
 
-Provide 3-5 actionable recommendations to improve content uniqueness. Focus on practical, high-impact suggestions for a large site.`;
+SITE OVERVIEW: ${totalPages} pages analyzed
+DUPLICATION SUMMARY:
+- Title duplicates: ${summary.titleDuplicates} (CRITICAL impact)
+- Description duplicates: ${summary.descriptionDuplicates} (HIGH impact)  
+- Heading duplicates: ${summary.headingDuplicates} (MEDIUM impact)
+
+TOP DUPLICATE GROUPS:
+${summary.criticalGroups.map((group: any, idx: number) => 
+  `${idx + 1}. "${group.content}" (${group.urls?.length || 0} pages affected)`
+).join('\n')}
+
+REQUIREMENTS:
+1. **Highlight the #1 most critical deduplication priority** 
+2. **Identify pattern-based vs random duplicates**
+3. **Provide a strategic 3-step action plan**
+4. **Estimate effort vs SEO impact for each recommendation**
+5. **Suggest automation opportunities for template-based fixes**
+
+Focus on actionable insights that help prioritize which duplicates to fix first for maximum SEO impact on a large site.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",

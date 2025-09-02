@@ -15,7 +15,9 @@ import {
   Copy,
   ChevronRight,
   Info,
-  ExternalLink
+  ExternalLink,
+  Bot,
+  Badge
 } from "lucide-react";
 import PageAnalysisCard from "./PageAnalysisCard";
 import CompetitorAnalysis from "./CompetitorAnalysis";
@@ -540,80 +542,131 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
                 {/* Detailed analysis sections */}
                 <div className="space-y-6">
-                  {/* Title repetition section */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-base font-medium text-gray-900 flex items-center mb-3">
-                      <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2">
-                        <Copy className="h-5 w-5" />
-                      </span>
-                      Title Repetition Analysis
-                    </h4>
-
-                    {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.examples.length > 0 ? (
-                      <>
-                        <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar titles:</p>
-                        <ul className="space-y-1 mb-4">
-                          {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.examples.map((example, index) => (
-                            <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
-                              <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-                              <span>{example}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    ) : (
-                      <p className="text-sm text-gray-600 mb-3">No examples of duplicate titles found.</p>
-                    )}
-
-                    <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
-                    <ul className="space-y-1">
-                      {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.recommendations.map((rec, index) => (
-                        <li key={index} className="text-sm text-gray-700 flex items-start">
-                          <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
-                            <BadgeCheck className="h-3.5 w-3.5" />
+                  {/* AI-Powered Key Insights Section */}
+                  {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.length > 0 && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Bot className="w-5 h-5 text-blue-600" />
+                        <h4 className="font-semibold text-blue-900">🎯 AI-Powered Key Insights</h4>
+                      </div>
+                      <div className="space-y-2">
+                        {updatedAnalysis.contentRepetitionAnalysis.overallRecommendations.slice(0, 3).map((recommendation, index) => (
+                          <div key={index} className="flex items-start gap-2">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                              index === 0 ? 'bg-red-100 text-red-700' : 
+                              index === 1 ? 'bg-orange-100 text-orange-700' : 
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <p className="text-sm text-blue-800 flex-1">{recommendation}</p>
                           </div>
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Meta description repetition section */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-base font-medium text-gray-900 flex items-center mb-3">
-                      <span className="bg-purple-100 text-purple-800 p-1 rounded-md mr-2">
-                        <Copy className="h-5 w-5" />
-                      </span>
-                      Meta Description Repetition Analysis
+                  <div>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      Title Duplication
+                      {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount} Critical Issues
+                        </Badge>
+                      )}
                     </h4>
-
-                    {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.examples.length > 0 ? (
-                      <>
-                        <p className="text-sm text-gray-600 mb-3">Examples of duplicate or similar meta descriptions:</p>
-                        <ul className="space-y-1 mb-4">
-                          {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.examples.map((example, index) => (
-                            <li key={index} className="text-sm text-gray-800 bg-gray-50 p-2 rounded flex items-start">
-                              <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-                              <span>{example}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    ) : (
-                      <p className="text-sm text-gray-600 mb-3">No examples of duplicate meta descriptions found.</p>
-                    )}
-
-                    <h5 className="text-sm font-medium text-gray-800 mb-2">Recommendations:</h5>
-                    <ul className="space-y-1">
-                      {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.recommendations.map((rec, index) => (
-                        <li key={index} className="text-sm text-gray-700 flex items-start">
-                          <div className="bg-green-100 rounded-full p-1 text-green-700 mr-2 flex-shrink-0">
-                            <BadgeCheck className="h-3.5 w-3.5" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount} of {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.totalCount} titles are duplicated
+                    </p>
+                    {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.length > 0 && (
+                      <div className="space-y-2">
+                        {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.slice(0, 3).map((group, index) => (
+                          <div key={index} className={`border rounded p-3 ${
+                            group.impactLevel === 'Critical' ? 'bg-red-50 border-red-200' :
+                            group.impactLevel === 'High' ? 'bg-orange-50 border-orange-200' :
+                            'bg-muted/50'
+                          }`}>
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <p className="font-medium text-sm flex-1">"{group.content}"</p>
+                              {group.priority && group.priority <= 2 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Priority {group.priority}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Found on {group.urls.length} pages • Similarity: {group.similarityScore}%
+                              {group.impactLevel && ` • Impact: ${group.impactLevel}`}
+                            </p>
+                            {group.improvementStrategy && (
+                              <div className="bg-white/50 rounded p-2 mb-2">
+                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                                <p className="text-xs text-green-600">{group.improvementStrategy}</p>
+                              </div>
+                            )}
+                            <div className="space-y-1">
+                              {group.urls.slice(0, 3).map((url, urlIndex) => (
+                                <p key={urlIndex} className="text-xs text-blue-600 truncate">{url}</p>
+                              ))}
+                              {group.urls.length > 3 && (
+                                <p className="text-xs text-muted-foreground">+{group.urls.length - 3} more pages</p>
+                              )}
+                            </div>
                           </div>
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
+                        ))}
+                      </div>
+                    )}</div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      Meta Description Duplication
+                      {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount > 0 && (
+                        <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">
+                          {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount} High Impact Issues
+                        </Badge>
+                      )}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount} of {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.totalCount} descriptions are duplicated
+                    </p>
+                    {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.length > 0 && (
+                      <div className="space-y-2">
+                        {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.slice(0, 3).map((group, index) => (
+                          <div key={index} className={`border rounded p-3 ${
+                            group.impactLevel === 'Critical' ? 'bg-red-50 border-red-200' :
+                            group.impactLevel === 'High' ? 'bg-orange-50 border-orange-200' :
+                            'bg-muted/50'
+                          }`}>
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <p className="font-medium text-sm flex-1">"{group.content}"</p>
+                              {group.priority && group.priority <= 2 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Priority {group.priority}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Found on {group.urls.length} pages • Similarity: {group.similarityScore}%
+                              {group.impactLevel && ` • Impact: ${group.impactLevel}`}
+                            </p>
+                            {group.improvementStrategy && (
+                              <div className="bg-white/50 rounded p-2 mb-2">
+                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                                <p className="text-xs text-green-600">{group.improvementStrategy}</p>
+                              </div>
+                            )}
+                            <div className="space-y-1">
+                              {group.urls.slice(0, 3).map((url, urlIndex) => (
+                                <p key={urlIndex} className="text-xs text-blue-600 truncate">{url}</p>
+                              ))}
+                              {group.urls.length > 3 && (
+                                <p className="text-xs text-muted-foreground">+{group.urls.length - 3} more pages</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* H1 Heading repetition section */}
