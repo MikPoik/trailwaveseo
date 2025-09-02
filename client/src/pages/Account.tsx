@@ -370,7 +370,7 @@ const Account = () => {
             <div>
               <h4 className="font-semibold mb-2">AI Suggestions</h4>
               <p className="text-sm text-muted-foreground">
-                AI-powered suggestions cost 1 credit each. Free users get 3 suggestions per page.
+                AI-powered suggestions cost 1 credit per page. Content duplication analysis costs 1 credit per scan.
               </p>
             </div>
             <div>

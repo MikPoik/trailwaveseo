@@ -444,6 +444,35 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         return res.status(400).json({ error: "Content duplication analysis requires at least 2 pages" });
       }
 
+      // Check if user has enough credits for content duplication analysis (1 credit required)
+      const usage = await storage.getUserUsage(userId);
+      if (!usage) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const contentDuplicationCost = 1;
+      if (usage.credits < contentDuplicationCost) {
+        return res.status(403).json({
+          error: "Insufficient credits",
+          message: `Content duplication analysis requires ${contentDuplicationCost} credit. You have ${usage.credits} credits remaining.`,
+          creditsNeeded: contentDuplicationCost,
+          creditsAvailable: usage.credits
+        });
+      }
+
+      // Deduct 1 credit for content duplication analysis
+      const creditResult = await storage.atomicDeductCredits(userId, contentDuplicationCost);
+      if (!creditResult.success) {
+        return res.status(403).json({
+          error: "Insufficient credits",
+          message: `Content duplication analysis requires ${contentDuplicationCost} credit. You have ${creditResult.remainingCredits} credits remaining.`,
+          creditsNeeded: contentDuplicationCost,
+          creditsAvailable: creditResult.remainingCredits
+        });
+      }
+
+      console.log(`Deducted ${contentDuplicationCost} credit for content duplication analysis. User ${userId} has ${creditResult.remainingCredits} credits remaining.`);
+
       try {
         console.log(`Running content duplication analysis for analysis ${id}...`);
         const contentRepetitionAnalysis = await analyzeContentRepetition(analysis.pages);
@@ -455,7 +484,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           return res.status(500).json({ error: "Failed to save content duplication analysis" });
         }
 
-        // Note: No usage increment needed - this analyzes existing data, doesn't count as new page analysis
+        // Content duplication analysis now costs 1 credit (deducted above)
 
         res.json({ contentRepetitionAnalysis });
       } catch (error) {
