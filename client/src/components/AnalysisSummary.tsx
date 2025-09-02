@@ -455,10 +455,32 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
             <Card>
               <CardContent className="pt-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Content Duplication Analysis</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    AI-powered analysis of duplicate content across your website
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">Content Duplication Analysis</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        AI-powered analysis of duplicate content across your website
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={runContentDuplicationAnalysis} 
+                      disabled={isRunningContentDuplication}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {isRunningContentDuplication ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Rerunning...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Rerun Analysis
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Summary Overview */}
