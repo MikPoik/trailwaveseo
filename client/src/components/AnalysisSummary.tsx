@@ -548,27 +548,36 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                   </div>
                 )}
 
-                {/* Top Priority Fixes */}
+                {/* Detailed Duplicate Content */}
                 <div className="space-y-4">
-                  {/* Critical Title Duplicates */}
+                  {/* Title Duplicates */}
                   {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.length > 0 && (
-                    <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                    <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
                       <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600" />
-                        <h4 className="font-semibold text-red-900">Critical: Duplicate Page Titles</h4>
+                        <Copy className="w-5 h-5 text-blue-600" />
+                        <h4 className="font-semibold text-blue-900">Duplicate Page Titles ({updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.length})</h4>
                       </div>
                       <div className="space-y-3">
-                        {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.slice(0, 2).map((group, index) => (
-                          <div key={index} className="bg-white rounded p-3 border border-red-100">
+                        {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.map((group, index) => (
+                          <div key={index} className="bg-white rounded p-3 border border-blue-100">
                             <p className="font-medium text-sm mb-2">"{group.content}"</p>
                             <p className="text-xs text-gray-600 mb-2">
                               Found on {group.urls.length} pages • {group.similarityScore}% similar
+                              {group.impactLevel && ` • ${group.impactLevel} impact`}
                             </p>
+                            <div className="text-xs text-blue-600 space-y-1 mb-2">
+                              {group.urls.slice(0, 3).map((url, urlIndex) => (
+                                <div key={urlIndex}>• {url}</div>
+                              ))}
+                              {group.urls.length > 3 && (
+                                <div className="text-gray-500">... and {group.urls.length - 3} more pages</div>
+                              )}
+                            </div>
                             {group.improvementStrategy && (
                               <div className="bg-green-50 rounded p-2">
-                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Fix:</p>
+                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                                 <p className="text-xs text-green-600">
-                                  {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Make each title unique and descriptive'}
+                                  {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique titles for each page'}
                                 </p>
                               </div>
                             )}
@@ -578,23 +587,32 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                     </div>
                   )}
                   
-                  {/* Important Meta Description Duplicates */}
+                  {/* Meta Description Duplicates */}
                   {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.length > 0 && (
-                    <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                    <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
                       <div className="flex items-center gap-2 mb-3">
-                        <AlertCircle className="w-5 h-5 text-orange-600" />
-                        <h4 className="font-semibold text-orange-900">Important: Duplicate Meta Descriptions</h4>
+                        <FileText className="w-5 h-5 text-purple-600" />
+                        <h4 className="font-semibold text-purple-900">Duplicate Meta Descriptions ({updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.length})</h4>
                       </div>
                       <div className="space-y-3">
-                        {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.slice(0, 2).map((group, index) => (
-                          <div key={index} className="bg-white rounded p-3 border border-orange-100">
+                        {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.map((group, index) => (
+                          <div key={index} className="bg-white rounded p-3 border border-purple-100">
                             <p className="font-medium text-sm mb-2">"{group.content}"</p>
                             <p className="text-xs text-gray-600 mb-2">
                               Found on {group.urls.length} pages • {group.similarityScore}% similar
+                              {group.impactLevel && ` • ${group.impactLevel} impact`}
                             </p>
+                            <div className="text-xs text-purple-600 space-y-1 mb-2">
+                              {group.urls.slice(0, 3).map((url, urlIndex) => (
+                                <div key={urlIndex}>• {url}</div>
+                              ))}
+                              {group.urls.length > 3 && (
+                                <div className="text-gray-500">... and {group.urls.length - 3} more pages</div>
+                              )}
+                            </div>
                             {group.improvementStrategy && (
                               <div className="bg-green-50 rounded p-2">
-                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Fix:</p>
+                                <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                                 <p className="text-xs text-green-600">
                                   {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Write unique descriptions for each page'}
                                 </p>
