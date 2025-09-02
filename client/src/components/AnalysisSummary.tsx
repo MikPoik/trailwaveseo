@@ -196,10 +196,12 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to run content duplication analysis');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to run content duplication analysis');
       }
 
       const result = await response.json();
+      console.log('Content duplication analysis result:', result);
 
       // Update the analysis data with the new content repetition analysis
       const updatedAnalysis = {
@@ -207,8 +209,12 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         contentRepetitionAnalysis: result.contentRepetitionAnalysis
       };
 
-      // Update the query cache with the new data
+      // Update the query cache with the new data and invalidate to trigger refetch
       queryClient.setQueryData(['/api/analysis', analysis.id?.toString()], updatedAnalysis);
+      queryClient.invalidateQueries({ queryKey: ['/api/analysis', analysis.id?.toString()] });
+      
+      // Force a re-render by updating the state if needed
+      window.location.reload();
 
       toast({
         title: "Content Duplication Analysis Complete",
