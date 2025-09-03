@@ -129,6 +129,7 @@ export async function processContentHierarchically(
 
   // Process H2-H6 headings if we have remaining tokens and content
   if (remainingTokens > 1000) {
+    console.log(`Processing remaining heading levels with ${analysis.headingRepetition.examples?.length || 0} existing examples`);
     await processRemainingHeadings(
       extractedContent.headings,
       analysis.headingRepetition,
@@ -136,6 +137,7 @@ export async function processContentHierarchically(
       openai,
       options
     );
+    console.log(`After processing remaining headings: ${analysis.headingRepetition.examples?.length || 0} total examples`);
   }
 
   // Generate overall recommendations
@@ -262,9 +264,11 @@ async function processRemainingHeadings(
       // FIX: Aggregate examples from each heading level
       if (levelDuplicates.examples && levelDuplicates.examples.length > 0) {
         headingAnalysis.examples = headingAnalysis.examples || [];
+        console.log(`Found ${levelDuplicates.examples.length} examples for ${level}:`, levelDuplicates.examples.slice(0, 3));
         headingAnalysis.examples.push(...levelDuplicates.examples);
         // Keep only unique examples and limit to top 10
-        headingAnalysis.examples = [...new Set(headingAnalysis.examples)].slice(0, 10);
+        headingAnalysis.examples = Array.from(new Set(headingAnalysis.examples)).slice(0, 10);
+        console.log(`Total heading examples now: ${headingAnalysis.examples.length}`);
       }
       
       console.log(`Processed ${level}: ${levelDuplicates.duplicateGroups.length} duplicate groups`);
