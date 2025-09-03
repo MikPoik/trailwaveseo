@@ -259,6 +259,14 @@ async function processRemainingHeadings(
       headingAnalysis.repetitiveCount += levelDuplicates.duplicateCount;
       headingAnalysis.totalCount += levelDuplicates.totalAnalyzed;
       
+      // FIX: Aggregate examples from each heading level
+      if (levelDuplicates.examples && levelDuplicates.examples.length > 0) {
+        headingAnalysis.examples = headingAnalysis.examples || [];
+        headingAnalysis.examples.push(...levelDuplicates.examples);
+        // Keep only unique examples and limit to top 10
+        headingAnalysis.examples = [...new Set(headingAnalysis.examples)].slice(0, 10);
+      }
+      
       console.log(`Processed ${level}: ${levelDuplicates.duplicateGroups.length} duplicate groups`);
       
     } catch (error) {
