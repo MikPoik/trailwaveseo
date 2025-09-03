@@ -276,7 +276,30 @@ function updateAnalysisWithResults(
   results: DuplicateAnalysisResult
 ): void {
   
-  const section = type === 'headings' ? analysis.headingRepetition : analysis[`${type}Repetition` as keyof ContentDuplicationAnalysis] as any;
+  let section: any;
+  
+  switch (type) {
+    case 'titles':
+      section = analysis.titleRepetition;
+      break;
+    case 'descriptions':
+      section = analysis.descriptionRepetition;
+      break;
+    case 'headings':
+      section = analysis.headingRepetition;
+      break;
+    case 'paragraphs':
+      section = analysis.paragraphRepetition;
+      break;
+    default:
+      console.error(`Unknown content type: ${type}`);
+      return;
+  }
+  
+  if (!section) {
+    console.error(`Section not found for type: ${type}`);
+    return;
+  }
   
   section.repetitiveCount = results.duplicateCount;
   section.totalCount = results.totalAnalyzed;
@@ -293,12 +316,19 @@ function mergeAIInsights(ruleBasedGroups: DuplicateItem[], aiResults: DuplicateI
   const groupMap = new Map<string, DuplicateItem>();
   
   ruleBasedGroups.forEach(group => {
-    const key = group.content.toLowerCase().trim();
-    groupMap.set(key, group);
+    if (group.content && typeof group.content === 'string') {
+      const key = group.content.toLowerCase().trim();
+      groupMap.set(key, group);
+    }
   });
 
   // Merge AI insights into existing groups or add new ones
   aiResults.forEach(aiGroup => {
+    if (!aiGroup.content || typeof aiGroup.content !== 'string') {
+      console.warn('AI group missing content property, skipping:', aiGroup);
+      return;
+    }
+    
     const key = aiGroup.content.toLowerCase().trim();
     const existingGroup = groupMap.get(key);
 
