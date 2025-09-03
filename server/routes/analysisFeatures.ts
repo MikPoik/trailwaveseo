@@ -499,6 +499,23 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         }
 
         // Content duplication analysis now costs 1 credit (deducted above)
+        
+        // DEBUG: Check what's being returned to frontend
+        console.log(`[API RESPONSE DEBUG] Returning to frontend:`);
+        console.log(`[API RESPONSE DEBUG] Title duplicates: ${contentRepetitionAnalysis.titleRepetition?.duplicateGroups?.length || 0}`);
+        console.log(`[API RESPONSE DEBUG] Description duplicates: ${contentRepetitionAnalysis.descriptionRepetition?.duplicateGroups?.length || 0}`);
+        console.log(`[API RESPONSE DEBUG] Heading duplicates: ${contentRepetitionAnalysis.headingRepetition?.duplicateGroups?.length || 0}`);
+        console.log(`[API RESPONSE DEBUG] Paragraph duplicates: ${contentRepetitionAnalysis.paragraphRepetition?.duplicateGroups?.length || 0}`);
+        
+        // Check each heading duplicate group specifically
+        if (contentRepetitionAnalysis.headingRepetition?.duplicateGroups) {
+          contentRepetitionAnalysis.headingRepetition.duplicateGroups.forEach((group, index) => {
+            console.log(`[API RESPONSE DEBUG] Heading group ${index}: "${group.content}" with ${group.urls?.length || 0} URLs`);
+            if (group.urls && group.urls.length === 1) {
+              console.log(`[API RESPONSE DEBUG] ❌ SINGLE-PAGE GROUP FOUND: "${group.content}"`);
+            }
+          });
+        }
 
         res.json({ contentRepetitionAnalysis });
       } catch (error) {
