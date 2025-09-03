@@ -86,22 +86,21 @@ export function detectDuplicates(
         console.log(`[DESCRIPTION DEBUG] ${index + 1}: "${item.content.substring(0, 100)}..." (${item.content.length} chars) - ${item.url}`);
       });
       
-      // Debug similarity calculations for potentially similar pairs
+      // Debug similarity calculations for ALL pairs (no threshold filtering)
       if (validContent.length >= 2) {
         console.log(`[SIMILARITY DEBUG] Testing similarity scores between descriptions:`);
-        for (let i = 0; i < Math.min(3, validContent.length - 1); i++) {
-          for (let j = i + 1; j < Math.min(i + 3, validContent.length); j++) {
+        for (let i = 0; i < Math.min(2, validContent.length - 1); i++) {
+          for (let j = i + 1; j < Math.min(i + 2, validContent.length); j++) {
             const item1 = validContent[i];
             const item2 = validContent[j];
             const fuzzyScore = calculateAdvancedSimilarity(item1.content, item2.content);
             const semanticScore = calculateSemanticSimilarity(item1.content, item2.content);
             
-            // Log pairs that are potentially similar or close to thresholds
-            if (fuzzyScore > 60 || semanticScore > 60) {
-              console.log(`[SIMILARITY DEBUG] "${item1.content.substring(0, 50)}..." vs "${item2.content.substring(0, 50)}..."`);
-              console.log(`[SIMILARITY DEBUG] Fuzzy: ${fuzzyScore}% (need: ${options.fuzzyMatchThreshold}%), Semantic: ${semanticScore}% (need: ${options.semanticThreshold}%)`);
-              console.log(`[SIMILARITY DEBUG] Would be detected: ${fuzzyScore >= options.fuzzyMatchThreshold || semanticScore >= options.semanticThreshold ? 'YES' : 'NO'}`);
-            }
+            // Log ALL comparisons to see what's happening
+            console.log(`[SIMILARITY DEBUG] "${item1.content.substring(0, 40)}..." vs "${item2.content.substring(0, 40)}..."`);
+            console.log(`[SIMILARITY DEBUG] Fuzzy: ${fuzzyScore}%, Semantic: ${semanticScore}% (need fuzzy: ${options.fuzzyMatchThreshold}%, semantic: ${options.semanticThreshold}%)`);
+            console.log(`[SIMILARITY DEBUG] Would detect: ${fuzzyScore >= options.fuzzyMatchThreshold || semanticScore >= options.semanticThreshold ? 'YES' : 'NO'}`);
+            console.log(`[SIMILARITY DEBUG] ---`);
           }
         }
       }
