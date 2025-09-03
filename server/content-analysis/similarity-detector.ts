@@ -76,40 +76,6 @@ export function detectDuplicates(
     return createEmptyResult();
   }
 
-  // Add debugging for descriptions specifically
-  if (content.length > 0 && content[0].url.includes('meta_description') === false) {
-    // This is likely description content - check first few items
-    const isDescriptionAnalysis = content.every(item => item.content.length < 200);
-    if (isDescriptionAnalysis) {
-      console.log(`[DESCRIPTION DEBUG] Analyzing ${validContent.length} descriptions:`);
-      
-      // Show ALL descriptions, not just first 5
-      validContent.forEach((item, index) => {
-        console.log(`[DESCRIPTION DEBUG] ${index + 1}: "${item.content}" (${item.content.length} chars)`);
-      });
-      
-      // Debug similarity calculations for more pairs
-      if (validContent.length >= 2) {
-        console.log(`[SIMILARITY DEBUG] Testing similarity scores (first 6 pairs):`);
-        let pairCount = 0;
-        for (let i = 0; i < validContent.length - 1 && pairCount < 6; i++) {
-          for (let j = i + 1; j < validContent.length && pairCount < 6; j++) {
-            const item1 = validContent[i];
-            const item2 = validContent[j];
-            const fuzzyScore = calculateAdvancedSimilarity(item1.content, item2.content);
-            const semanticScore = calculateSemanticSimilarity(item1.content, item2.content);
-            
-            console.log(`[SIMILARITY DEBUG] Pair ${pairCount + 1}: Items ${i + 1} vs ${j + 1}`);
-            console.log(`[SIMILARITY DEBUG] "${item1.content.substring(0, 50)}..." vs "${item2.content.substring(0, 50)}..."`);
-            console.log(`[SIMILARITY DEBUG] Fuzzy: ${fuzzyScore}%, Semantic: ${semanticScore}% (need: ${options.fuzzyMatchThreshold}%/${options.semanticThreshold}%)`);
-            console.log(`[SIMILARITY DEBUG] Would detect: ${fuzzyScore >= options.fuzzyMatchThreshold || semanticScore >= options.semanticThreshold ? 'YES' : 'NO'}`);
-            console.log(`[SIMILARITY DEBUG] ---`);
-            pairCount++;
-          }
-        }
-      }
-    }
-  }
 
   // Step 1: Find exact matches (fastest)
   const exactMatches = findExactMatches(validContent);
@@ -360,16 +326,6 @@ function calculateAdvancedSimilarity(text1: string, text2: string): number {
   // Weighted combination (Levenshtein gets more weight for fuzzy matching)
   const finalScore = Math.round((levenshteinSim * 0.5) + (jaccardSim * 0.3) + (lengthSim * 0.2));
   
-  // Debug individual components for low scores
-  if (finalScore < 30) {
-    console.log(`[SIMILARITY BREAKDOWN] Advanced similarity debug:`);
-    console.log(`[SIMILARITY BREAKDOWN] Text1: "${text1.substring(0, 60)}..."`); 
-    console.log(`[SIMILARITY BREAKDOWN] Text2: "${text2.substring(0, 60)}..."`); 
-    console.log(`[SIMILARITY BREAKDOWN] Levenshtein: ${levenshteinSim}% (weight: 50%)`);
-    console.log(`[SIMILARITY BREAKDOWN] Jaccard: ${jaccardSim}% (weight: 30%)`);
-    console.log(`[SIMILARITY BREAKDOWN] Length: ${lengthSim}% (weight: 20%)`);
-    console.log(`[SIMILARITY BREAKDOWN] Final: ${finalScore}% = (${levenshteinSim}*0.5 + ${jaccardSim}*0.3 + ${lengthSim}*0.2)`);
-  }
   
   return finalScore;
 }
@@ -390,16 +346,6 @@ function calculateSemanticSimilarity(text1: string, text2: string): number {
   // Weighted combination for semantic analysis
   const finalScore = Math.round((wordSim * 0.4) + (structSim * 0.2) + (phraseSim * 0.4));
   
-  // Debug individual components for low scores
-  if (finalScore < 30) {
-    console.log(`[SEMANTIC BREAKDOWN] Semantic similarity debug:`);
-    console.log(`[SEMANTIC BREAKDOWN] Text1: "${text1.substring(0, 60)}..."`); 
-    console.log(`[SEMANTIC BREAKDOWN] Text2: "${text2.substring(0, 60)}..."`); 
-    console.log(`[SEMANTIC BREAKDOWN] Word (Jaccard): ${wordSim}% (weight: 40%)`);
-    console.log(`[SEMANTIC BREAKDOWN] Structural: ${structSim}% (weight: 20%)`);
-    console.log(`[SEMANTIC BREAKDOWN] Keyphrase: ${phraseSim}% (weight: 40%)`);
-    console.log(`[SEMANTIC BREAKDOWN] Final: ${finalScore}% = (${wordSim}*0.4 + ${structSim}*0.2 + ${phraseSim}*0.4)`);
-  }
   
   return finalScore;
 }
@@ -443,16 +389,6 @@ function calculateJaccardSimilarity(text1: string, text2: string): number {
   
   const score = Math.round((intersection.size / union.size) * 100);
   
-  // Debug word extraction and comparison for low Jaccard scores
-  if (score < 50 && (text1.includes('ongelmista') || text2.includes('ongelmista'))) {
-    console.log(`[JACCARD DEBUG] Word comparison details:`);
-    console.log(`[JACCARD DEBUG] Text1: "${text1}"`);
-    console.log(`[JACCARD DEBUG] Text2: "${text2}"`);
-    console.log(`[JACCARD DEBUG] Words1 (${words1.size}): [${Array.from(words1).slice(0, 8).join(', ')}${words1.size > 8 ? '...' : ''}]`);
-    console.log(`[JACCARD DEBUG] Words2 (${words2.size}): [${Array.from(words2).slice(0, 8).join(', ')}${words2.size > 8 ? '...' : ''}]`);
-    console.log(`[JACCARD DEBUG] Common words (${intersection.size}): [${Array.from(intersection).join(', ')}]`);
-    console.log(`[JACCARD DEBUG] Total unique (${union.size}): ${intersection.size}/${union.size} = ${score}%`);
-  }
   
   return score;
 }

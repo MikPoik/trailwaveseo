@@ -57,14 +57,6 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
         pageIndex
       });
       
-      // Debug suspicious descriptions (short, numeric, or weird content)
-      if (page.metaDescription.length < 50 || /^\d+/.test(page.metaDescription) || page.metaDescription.includes('1.') || page.metaDescription.includes('2.')) {
-        console.log(`[DESCRIPTION EXTRACT DEBUG] Suspicious meta description for ${page.url}:`);
-        console.log(`[DESCRIPTION EXTRACT DEBUG] Raw: "${page.metaDescription}"`);
-        console.log(`[DESCRIPTION EXTRACT DEBUG] Sanitized: "${sanitizedDescription}"`);
-      }
-    } else {
-      console.log(`[DESCRIPTION EXTRACT DEBUG] No meta description for: ${page.url}`);
     }
 
     // Extract headings by level
@@ -96,14 +88,6 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
     }
   });
 
-  // Debug final extraction results for descriptions
-  console.log(`[DESCRIPTION EXTRACT DEBUG] Final results: ${descriptions.length} descriptions from ${pages.length} pages`);
-  if (descriptions.length > 0) {
-    console.log(`[DESCRIPTION EXTRACT DEBUG] First 3 descriptions:`);
-    descriptions.slice(0, 3).forEach((desc, index) => {
-      console.log(`[DESCRIPTION EXTRACT DEBUG] ${index + 1}: "${desc.content}" - ${desc.url}`);
-    });
-  }
 
   return {
     titles,
