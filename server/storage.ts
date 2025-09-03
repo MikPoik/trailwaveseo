@@ -414,7 +414,11 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
 
-      console.log(`Saving content repetition analysis for ID ${id}, data:`, JSON.stringify(contentRepetitionAnalysis).substring(0, 200) + '...');
+      console.log(`Saving content repetition analysis for ID ${id}`);
+      console.log('Heading examples being saved:', contentRepetitionAnalysis?.headingRepetition?.examples?.length || 0, 'examples');
+      if (contentRepetitionAnalysis?.headingRepetition?.examples) {
+        console.log('First 3 heading examples being saved:', contentRepetitionAnalysis.headingRepetition.examples.slice(0, 3));
+      }
 
       try {
         // Update the analysis with content repetition data
