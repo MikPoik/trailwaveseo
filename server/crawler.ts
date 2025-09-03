@@ -359,6 +359,11 @@ function normalizeUrl(url: string): string {
     // Remove fragment
     urlObj.hash = "";
 
+    // Normalize www subdomain - remove www. prefix for consistency
+    if (urlObj.hostname.startsWith('www.')) {
+      urlObj.hostname = urlObj.hostname.substring(4);
+    }
+
     // Remove default ports
     if (
       (urlObj.protocol === "http:" && urlObj.port === "80") ||
@@ -392,6 +397,11 @@ function normalizeUrl(url: string): string {
     paramsToRemove.forEach((param) => {
       searchParams.delete(param);
     });
+
+    // Remove trailing slash from pathname (except for root)
+    if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
 
     return urlObj.href;
   } catch (error) {

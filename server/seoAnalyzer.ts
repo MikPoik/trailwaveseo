@@ -332,7 +332,11 @@ export async function analyzeSite(
     pages = [...new Set(pages)];
 
     // Always ensure homepage/root is analyzed first for better context
-    const rootUrl = `https://${domain.toLowerCase()}`;
+    // Normalize domain by removing www prefix for consistency
+    const normalizedDomain = domain.toLowerCase().startsWith('www.') 
+      ? domain.toLowerCase().substring(4) 
+      : domain.toLowerCase();
+    const rootUrl = `https://${normalizedDomain}`;
     const normalizedRootUrl = rootUrl.endsWith('/') ? rootUrl.slice(0, -1) : rootUrl;
 
     // Remove any existing homepage variants from the array (case-insensitive)
