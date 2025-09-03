@@ -317,17 +317,41 @@ function parseAIResponse(content: string, contentType: string): DuplicateItem[] 
     const result = JSON.parse(content);
     const duplicateGroups = result.duplicate_groups || result.duplicates || [];
 
-    return duplicateGroups.map((group: any) => ({
-      content: group.content || '',
-      urls: group.affected_urls || group.urls || [],
-      similarityScore: typeof group.similarity_score === 'string' 
-        ? parseInt(group.similarity_score.replace('%', ''))
-        : group.similarity_score || 0,
-      impactLevel: group.impact_level as 'Critical' | 'High' | 'Medium' | 'Low' || 'Medium',
-      priority: mapImpactToPriority(group.impact_level),
-      rootCause: group.root_cause || 'Unknown',
-      improvementStrategy: group.improvement_strategy || 'No specific strategy provided'
-    }));
+    console.log(`[AI PARSE DEBUG] AI returned ${duplicateGroups.length} groups for ${contentType}`);
+
+    const parsedGroups = duplicateGroups.map((group: any, index: number) => {
+      const urls = group.affected_urls || group.urls || [];
+      const duplicateItem = {
+        content: group.content || '',
+        urls: urls,
+        similarityScore: typeof group.similarity_score === 'string' 
+          ? parseInt(group.similarity_score.replace('%', ''))
+          : group.similarity_score || 0,
+        impactLevel: group.impact_level as 'Critical' | 'High' | 'Medium' | 'Low' || 'Medium',
+        priority: mapImpactToPriority(group.impact_level),
+        rootCause: group.root_cause || 'Unknown',
+        improvementStrategy: group.improvement_strategy || 'No specific strategy provided'
+      };
+      
+      console.log(`[AI PARSE DEBUG] AI group ${index}: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
+      if (duplicateItem.urls.length === 1) {
+        console.log(`[AI PARSE DEBUG] ❌ AI CREATED SINGLE-PAGE GROUP: "${duplicateItem.content}"`);
+      }
+      
+      return duplicateItem;
+    });
+
+    // Filter out single-page groups from AI results
+    const validGroups = parsedGroups.filter((item: any) => {
+      const isValid = item.urls.length > 1;
+      if (!isValid) {
+        console.log(`[AI PARSE DEBUG] FILTERING OUT AI single-page group: "${item.content}"`);
+      }
+      return isValid;
+    });
+
+    console.log(`[AI PARSE DEBUG] AI groups after filtering: ${validGroups.length}/${parsedGroups.length} valid`);
+    return validGroups;
 
   } catch (parseError) {
     console.error(`Failed to parse AI response for ${contentType}:`, parseError);
