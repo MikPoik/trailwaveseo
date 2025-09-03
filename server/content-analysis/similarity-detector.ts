@@ -42,8 +42,8 @@ export interface SimilarityOptions {
 
 export const DEFAULT_SIMILARITY_OPTIONS: SimilarityOptions = {
   exactMatchThreshold: 100,
-  fuzzyMatchThreshold: 75, // Lowered from 85 to catch more "similar but not exact" duplicates
-  semanticThreshold: 65,   // Lowered from 75 to detect more semantic similarities  
+  fuzzyMatchThreshold: 40, // Significantly lowered to catch more similarities like TYHY examples
+  semanticThreshold: 30,   // Lowered to catch semantic similarities that score low
   minContentLength: 10     // Standard minimum length for meaningful content
 };
 
