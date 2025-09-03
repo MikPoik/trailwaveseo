@@ -495,6 +495,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         <p className="text-lg font-semibold text-blue-600">
                           {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.repetitiveCount} duplicates
                         </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          {updatedAnalysis.contentRepetitionAnalysis.titleRepetition.totalCount} analyzed
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -507,6 +510,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         <p className="text-lg font-semibold text-purple-600">
                           {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.repetitiveCount} duplicates
                         </p>
+                        <p className="text-xs text-purple-600 mt-1">
+                          {updatedAnalysis.contentRepetitionAnalysis.descriptionRepetition.totalCount} analyzed
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -518,6 +524,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         <h4 className="text-sm font-medium text-teal-800">Headings</h4>
                         <p className="text-lg font-semibold text-teal-600">
                           {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.repetitiveCount} duplicates
+                        </p>
+                        <p className="text-xs text-teal-600 mt-1">
+                          {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.totalCount} analyzed
                         </p>
                       </div>
                     </div>
