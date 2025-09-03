@@ -158,6 +158,57 @@ export async function analyzeSite(
   additionalInfo?: string,
   isCompetitorAnalysis: boolean = false
 ): Promise<number> {
+  console.log(`[MODULAR] Starting enhanced SEO analysis for ${domain} using modular pipeline...`);
+  
+  // Use the new modular analysis orchestrator
+  const { orchestrateAnalysis } = await import('./analysis-pipeline/analysis-orchestrator.js');
+  
+  try {
+    // Convert parameters to modular format
+    const settings = await storage.getSettings(userId);
+    const modularSettings = {
+      ...settings,
+      useSitemap,
+      skipAltTextGeneration,
+      useAI: !skipAltTextGeneration
+    };
+    
+    const result = await orchestrateAnalysis(
+      domain,
+      modularSettings,
+      userId,
+      additionalInfo,
+      isCompetitorAnalysis,
+      events
+    );
+    
+    console.log(`[MODULAR] Analysis completed successfully with ID: ${result.analysisId}`);
+    console.log(`[MODULAR] Enhanced insights generated with scores:`);
+    if (result.enhancedInsights) {
+      console.log(`- Technical SEO: ${result.enhancedInsights.technicalAnalysis?.overallScore || 'N/A'}/100`);
+      console.log(`- Content Quality: ${result.enhancedInsights.contentQualityAnalysis?.overallScore || 'N/A'}/100`);
+      console.log(`- Link Architecture: ${result.enhancedInsights.linkArchitectureAnalysis?.overallScore || 'N/A'}/100`);
+      console.log(`- Performance: ${result.enhancedInsights.performanceAnalysis?.overallScore || 'N/A'}/100`);
+    }
+    
+    return result.analysisId;
+    
+  } catch (error) {
+    console.error(`[MODULAR] Analysis failed for ${domain}:`, error);
+    throw error;
+  }
+}
+
+// Legacy function - keep for backward compatibility during transition
+export async function analyzeSiteLegacy(
+  domain: string,
+  useSitemap: boolean,
+  events: EventEmitter,
+  skipAltTextGeneration: boolean = false,
+  userId?: string,
+  additionalInfo?: string,
+  isCompetitorAnalysis: boolean = false
+): Promise<number> {
   // Set up cancellation token
   const controller = new AbortController();
   ongoingAnalyses.set(domain, controller);
