@@ -40,41 +40,25 @@ export function detectDuplicates(
   options: SimilarityOptions = DEFAULT_SIMILARITY_OPTIONS
 ): DuplicateAnalysisResult {
   
-  console.log(`[SIMILARITY DEBUG] Starting detection with ${content.length} items, minLength: ${options.minContentLength}`);
-  console.log(`[SIMILARITY DEBUG] First 3 items:`, content.slice(0, 3).map(item => ({ content: item.content, length: item.content.length })));
-  
   // Filter out very short content
   const validContent = content.filter(item => 
     item.content.length >= options.minContentLength
   );
 
-  console.log(`[SIMILARITY DEBUG] After length filtering: ${validContent.length}/${content.length} items remaining`);
-  if (content.length > validContent.length) {
-    const filtered = content.filter(item => item.content.length < options.minContentLength);
-    console.log(`[SIMILARITY DEBUG] Filtered out ${filtered.length} short items, examples:`, filtered.slice(0, 3).map(i => i.content));
-  }
-
   if (validContent.length === 0) {
-    console.log(`[SIMILARITY DEBUG] No valid content after filtering, returning empty result`);
     return createEmptyResult();
   }
 
   // Step 1: Find exact matches (fastest)
-  console.log(`[SIMILARITY DEBUG] Step 1: Looking for exact matches...`);
   const exactMatches = findExactMatches(validContent);
-  console.log(`[SIMILARITY DEBUG] Found ${exactMatches.length} exact match groups`);
   
   // Step 2: Find fuzzy matches among remaining content
   const remainingAfterExact = filterProcessedContent(validContent, exactMatches);
-  console.log(`[SIMILARITY DEBUG] Step 2: Looking for fuzzy matches in ${remainingAfterExact.length} remaining items (threshold: ${options.fuzzyMatchThreshold}%)`);
   const fuzzyMatches = findFuzzyMatches(remainingAfterExact, options.fuzzyMatchThreshold);
-  console.log(`[SIMILARITY DEBUG] Found ${fuzzyMatches.length} fuzzy match groups`);
   
   // Step 3: Find semantic matches among remaining content (if needed)
   const remainingAfterFuzzy = filterProcessedContent(remainingAfterExact, fuzzyMatches);
-  console.log(`[SIMILARITY DEBUG] Step 3: Looking for semantic matches in ${remainingAfterFuzzy.length} remaining items (threshold: ${options.semanticThreshold}%)`);
   const semanticMatches = findSemanticMatches(remainingAfterFuzzy, options.semanticThreshold);
-  console.log(`[SIMILARITY DEBUG] Found ${semanticMatches.length} semantic match groups`);
 
   // Combine all results and convert to proper DuplicateItem format
   const allDuplicateGroups: DuplicateItem[] = [
@@ -105,20 +89,6 @@ export function detectDuplicates(
     .map(group => group.content)
     .filter(content => content.trim().length > 0);
 
-  console.log(`[SIMILARITY DEBUG] Final Results Summary:`);
-  console.log(`[SIMILARITY DEBUG] - Total groups found: ${allDuplicateGroups.length}`);
-  console.log(`[SIMILARITY DEBUG] - Total duplicates: ${duplicateCount}`);
-  console.log(`[SIMILARITY DEBUG] - Total analyzed: ${validContent.length}`);
-  console.log(`[SIMILARITY DEBUG] - Examples: ${examples.length}`);
-  console.log(`[SIMILARITY DEBUG] - Stats: exact=${exactMatches.length}, fuzzy=${fuzzyMatches.length}, semantic=${semanticMatches.length}`);
-  
-  if (allDuplicateGroups.length > 0) {
-    console.log(`[SIMILARITY DEBUG] First few groups:`, allDuplicateGroups.slice(0, 2).map(g => ({
-      content: g.content.substring(0, 50) + '...',
-      urlCount: g.urls?.length,
-      similarity: g.similarityScore
-    })));
-  }
 
   return {
     duplicateGroups: allDuplicateGroups,
@@ -137,55 +107,33 @@ export function detectDuplicates(
  * Find exact content matches (case-insensitive, normalized whitespace)
  */
 function findExactMatches(content: ContentItem[]): ContentGroup[] {
-  console.log(`[EXACT MATCH DEBUG] Processing ${content.length} items`);
   const contentMap = new Map<string, ContentItem[]>();
 
   // Group by normalized content
-  content.forEach((item, index) => {
+  content.forEach(item => {
     const normalized = normalizeContent(item.content);
     if (!contentMap.has(normalized)) {
       contentMap.set(normalized, []);
     }
     contentMap.get(normalized)!.push(item);
-    
-    if (index < 5) {
-      console.log(`[EXACT MATCH DEBUG] Item ${index}: "${item.content}" -> normalized: "${normalized}"`);
-    }
   });
-
-  console.log(`[EXACT MATCH DEBUG] Created ${contentMap.size} unique normalized content groups`);
   
   // Return groups with duplicates
-  const duplicateGroups = Array.from(contentMap.entries())
+  return Array.from(contentMap.entries())
     .filter(([_, items]) => items.length > 1)
     .map(([normalizedContent, items]) => ({
       representativeContent: items[0].content, // Use original content
       items,
       similarity: 100
     }));
-    
-  console.log(`[EXACT MATCH DEBUG] Found ${duplicateGroups.length} duplicate groups with exact matches`);
-  if (duplicateGroups.length > 0) {
-    console.log(`[EXACT MATCH DEBUG] First duplicate group:`, {
-      content: duplicateGroups[0].representativeContent,
-      count: duplicateGroups[0].items.length,
-      urls: duplicateGroups[0].items.map(i => i.url).slice(0, 3)
-    });
-  }
-  
-  return duplicateGroups;
 }
 
 /**
  * Find fuzzy matches using advanced string similarity
  */
 function findFuzzyMatches(content: ContentItem[], threshold: number): ContentGroup[] {
-  console.log(`[FUZZY MATCH DEBUG] Processing ${content.length} items with threshold ${threshold}%`);
   const groups: ContentGroup[] = [];
   const processed = new Set<number>();
-  let comparisons = 0;
-  let highestSimilarity = 0;
-  let bestPair: { text1: string, text2: string, score: number } | null = null;
 
   content.forEach((item, index) => {
     if (processed.has(index)) return;
@@ -198,19 +146,10 @@ function findFuzzyMatches(content: ContentItem[], threshold: number): ContentGro
       if (processed.has(i)) continue;
 
       const similarity = calculateAdvancedSimilarity(item.content, content[i].content);
-      comparisons++;
-      
-      if (similarity > highestSimilarity) {
-        highestSimilarity = similarity;
-        bestPair = { text1: item.content, text2: content[i].content, score: similarity };
-      }
       
       if (similarity >= threshold) {
         similarItems.push(content[i]);
         processed.add(i);
-        if (groups.length < 2) {
-          console.log(`[FUZZY MATCH DEBUG] Found match (${similarity}%): "${item.content}" ~ "${content[i].content}"`);
-        }
       }
     }
 
@@ -223,13 +162,6 @@ function findFuzzyMatches(content: ContentItem[], threshold: number): ContentGro
       });
     }
   });
-
-  console.log(`[FUZZY MATCH DEBUG] Made ${comparisons} similarity comparisons`);
-  console.log(`[FUZZY MATCH DEBUG] Highest similarity found: ${highestSimilarity}% (threshold: ${threshold}%)`);
-  if (bestPair) {
-    console.log(`[FUZZY MATCH DEBUG] Best pair: "${bestPair.text1}" ~ "${bestPair.text2}" (${bestPair.score}%)`);
-  }
-  console.log(`[FUZZY MATCH DEBUG] Found ${groups.length} fuzzy match groups`);
 
   return groups;
 }

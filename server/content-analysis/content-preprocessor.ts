@@ -3,6 +3,33 @@
  * Handles extraction, cleaning, and structuring of content from analyzed pages
  */
 
+// URL normalization function (copied from crawler for consistency)
+function normalizeUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    // Remove fragment
+    urlObj.hash = "";
+    // Normalize www subdomain - remove www. prefix for consistency
+    if (urlObj.hostname.startsWith('www.')) {
+      urlObj.hostname = urlObj.hostname.substring(4);
+    }
+    // Remove default ports
+    if (
+      (urlObj.protocol === "http:" && urlObj.port === "80") ||
+      (urlObj.protocol === "https:" && urlObj.port === "443")
+    ) {
+      urlObj.port = "";
+    }
+    // Remove trailing slash from pathname (except for root)
+    if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+    return urlObj.href;
+  } catch (error) {
+    return url;
+  }
+}
+
 export interface ExtractedContent {
   titles: ContentItem[];
   descriptions: ContentItem[];
@@ -42,7 +69,7 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
     if (page.title?.trim()) {
       titles.push({
         content: sanitizeContent(page.title),
-        url: page.url,
+        url: normalizeUrl(page.url),
         pageIndex
       });
     }
@@ -51,7 +78,7 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
     if (page.metaDescription?.trim()) {
       descriptions.push({
         content: sanitizeContent(page.metaDescription),
-        url: page.url,
+        url: normalizeUrl(page.url),
         pageIndex
       });
     }
@@ -63,7 +90,7 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
           const levelKey = `h${heading.level}` as keyof HeadingsByLevel;
           headings[levelKey].push({
             content: sanitizeContent(heading.text),
-            url: page.url,
+            url: normalizeUrl(page.url),
             pageIndex
           });
         }
@@ -78,7 +105,7 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
         .forEach((paragraph: string) => {
           paragraphs.push({
             content: sanitizeContent(paragraph.length > 300 ? paragraph.substring(0, 300) + '...' : paragraph),
-            url: page.url,
+            url: normalizeUrl(page.url),
             pageIndex
           });
         });
