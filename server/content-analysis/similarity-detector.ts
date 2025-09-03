@@ -6,6 +6,33 @@
 import { ContentItem, ContentGroup } from './content-preprocessor.js';
 import { DuplicateItem } from '../../shared/schema.js';
 
+// URL normalization for comparison purposes only
+function normalizeUrlForComparison(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    // Remove fragment
+    urlObj.hash = "";
+    // Normalize www subdomain - remove www. prefix for consistency
+    if (urlObj.hostname.startsWith('www.')) {
+      urlObj.hostname = urlObj.hostname.substring(4);
+    }
+    // Remove default ports
+    if (
+      (urlObj.protocol === "http:" && urlObj.port === "80") ||
+      (urlObj.protocol === "https:" && urlObj.port === "443")
+    ) {
+      urlObj.port = "";
+    }
+    // Remove trailing slash from pathname (except for root)
+    if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+    return urlObj.href;
+  } catch (error) {
+    return url;
+  }
+}
+
 export interface SimilarityOptions {
   exactMatchThreshold: number; // 100 for exact matches
   fuzzyMatchThreshold: number; // 80-95 for near duplicates
@@ -109,23 +136,38 @@ export function detectDuplicates(
 function findExactMatches(content: ContentItem[]): ContentGroup[] {
   const contentMap = new Map<string, ContentItem[]>();
 
-  // Group by normalized content
+  // Group by normalized content only
   content.forEach(item => {
-    const normalized = normalizeContent(item.content);
-    if (!contentMap.has(normalized)) {
-      contentMap.set(normalized, []);
+    const normalizedContent = normalizeContent(item.content);
+    if (!contentMap.has(normalizedContent)) {
+      contentMap.set(normalizedContent, []);
     }
-    contentMap.get(normalized)!.push(item);
+    contentMap.get(normalizedContent)!.push(item);
   });
   
-  // Return groups with duplicates
+  // Return groups with duplicates, but deduplicate URLs
   return Array.from(contentMap.entries())
     .filter(([_, items]) => items.length > 1)
-    .map(([normalizedContent, items]) => ({
-      representativeContent: items[0].content, // Use original content
-      items,
-      similarity: 100
-    }));
+    .map(([normalizedContent, items]) => {
+      // Deduplicate URLs by normalizing them
+      const uniqueItems: ContentItem[] = [];
+      const seenNormalizedUrls = new Set<string>();
+      
+      for (const item of items) {
+        const normalizedUrl = normalizeUrlForComparison(item.url);
+        if (!seenNormalizedUrls.has(normalizedUrl)) {
+          seenNormalizedUrls.add(normalizedUrl);
+          uniqueItems.push(item);
+        }
+      }
+      
+      return {
+        representativeContent: uniqueItems[0].content, // Use original content
+        items: uniqueItems, // Only unique URLs
+        similarity: 100
+      };
+    })
+    .filter(group => group.items.length > 1); // Only groups with actual duplicates after deduplication
 }
 
 /**
