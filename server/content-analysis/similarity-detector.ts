@@ -153,13 +153,18 @@ function findExactMatches(content: ContentItem[]): ContentGroup[] {
       const uniqueItems: ContentItem[] = [];
       const seenNormalizedUrls = new Set<string>();
       
+      console.log(`[URL DEDUP DEBUG] Processing ${items.length} items with same content`);
       for (const item of items) {
         const normalizedUrl = normalizeUrlForComparison(item.url);
+        console.log(`[URL DEDUP DEBUG] Original: "${item.url}" -> Normalized: "${normalizedUrl}"`);
         if (!seenNormalizedUrls.has(normalizedUrl)) {
           seenNormalizedUrls.add(normalizedUrl);
           uniqueItems.push(item);
+        } else {
+          console.log(`[URL DEDUP DEBUG] Skipping duplicate URL: "${item.url}"`);
         }
       }
+      console.log(`[URL DEDUP DEBUG] Result: ${uniqueItems.length} unique URLs from ${items.length} original items`);
       
       return {
         representativeContent: uniqueItems[0].content, // Use original content
@@ -195,13 +200,28 @@ function findFuzzyMatches(content: ContentItem[], threshold: number): ContentGro
       }
     }
 
-    // Only create group if we found duplicates
+    // Only create group if we found duplicates, and deduplicate URLs
     if (similarItems.length > 1) {
-      groups.push({
-        representativeContent: item.content,
-        items: similarItems,
-        similarity: threshold
-      });
+      // Deduplicate URLs by normalizing them
+      const uniqueItems: ContentItem[] = [];
+      const seenNormalizedUrls = new Set<string>();
+      
+      for (const item of similarItems) {
+        const normalizedUrl = normalizeUrlForComparison(item.url);
+        if (!seenNormalizedUrls.has(normalizedUrl)) {
+          seenNormalizedUrls.add(normalizedUrl);
+          uniqueItems.push(item);
+        }
+      }
+      
+      // Only add group if there are still duplicates after URL deduplication
+      if (uniqueItems.length > 1) {
+        groups.push({
+          representativeContent: uniqueItems[0].content,
+          items: uniqueItems,
+          similarity: threshold
+        });
+      }
     }
   });
 
@@ -232,13 +252,28 @@ function findSemanticMatches(content: ContentItem[], threshold: number): Content
       }
     }
 
-    // Only create group if we found duplicates
+    // Only create group if we found duplicates, and deduplicate URLs
     if (similarItems.length > 1) {
-      groups.push({
-        representativeContent: item.content,
-        items: similarItems,
-        similarity: threshold
-      });
+      // Deduplicate URLs by normalizing them
+      const uniqueItems: ContentItem[] = [];
+      const seenNormalizedUrls = new Set<string>();
+      
+      for (const item of similarItems) {
+        const normalizedUrl = normalizeUrlForComparison(item.url);
+        if (!seenNormalizedUrls.has(normalizedUrl)) {
+          seenNormalizedUrls.add(normalizedUrl);
+          uniqueItems.push(item);
+        }
+      }
+      
+      // Only add group if there are still duplicates after URL deduplication
+      if (uniqueItems.length > 1) {
+        groups.push({
+          representativeContent: uniqueItems[0].content,
+          items: uniqueItems,
+          similarity: threshold
+        });
+      }
     }
   });
 
