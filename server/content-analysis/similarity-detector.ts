@@ -438,7 +438,7 @@ function normalizeContent(content: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[^\p{L}\p{N}\s]/gu, ''); // ✅ Preserve Unicode letters (ä, ö, å, etc) and numbers
+    .replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, ''); // ✅ Preserve letters (including accented), numbers and spaces
 }
 
 function extractStructuralPattern(text: string): string {
