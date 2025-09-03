@@ -483,6 +483,14 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           console.log('First 3 heading examples:', contentRepetitionAnalysis.headingRepetition.examples.slice(0, 3));
         }
         
+        // DEBUG: Check the complete headingRepetition structure
+        console.log('Complete headingRepetition data:', JSON.stringify({
+          repetitiveCount: contentRepetitionAnalysis.headingRepetition?.repetitiveCount,
+          totalCount: contentRepetitionAnalysis.headingRepetition?.totalCount,
+          examplesLength: contentRepetitionAnalysis.headingRepetition?.examples?.length || 0,
+          examples: contentRepetitionAnalysis.headingRepetition?.examples?.slice(0, 5) || []
+        }, null, 2));
+        
         // Update the analysis with the content repetition results
         const updatedAnalysis = await storage.updateContentRepetitionAnalysis(id, contentRepetitionAnalysis);
         
