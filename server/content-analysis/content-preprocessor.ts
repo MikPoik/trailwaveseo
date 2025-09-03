@@ -56,8 +56,14 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
         url: page.url, // Keep original URL for display
         pageIndex
       });
+      
+      // Debug suspicious descriptions (short, numeric, or weird content)
+      if (page.metaDescription.length < 50 || /^\d+/.test(page.metaDescription) || page.metaDescription.includes('1.') || page.metaDescription.includes('2.')) {
+        console.log(`[DESCRIPTION EXTRACT DEBUG] Suspicious meta description for ${page.url}:`);
+        console.log(`[DESCRIPTION EXTRACT DEBUG] Raw: "${page.metaDescription}"`);
+        console.log(`[DESCRIPTION EXTRACT DEBUG] Sanitized: "${sanitizedDescription}"`);
+      }
     } else {
-      // Debug missing descriptions
       console.log(`[DESCRIPTION EXTRACT DEBUG] No meta description for: ${page.url}`);
     }
 

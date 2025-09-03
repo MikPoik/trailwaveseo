@@ -440,7 +440,7 @@ function normalizeContent(content: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[^\w\s]/g, '');
+    .replace(/[^\p{L}\p{N}\s]/gu, ''); // ✅ Preserve Unicode letters (ä, ö, å, etc) and numbers
 }
 
 function extractStructuralPattern(text: string): string {
