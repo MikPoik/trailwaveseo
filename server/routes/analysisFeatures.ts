@@ -477,6 +477,12 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         console.log(`Running content duplication analysis for analysis ${id}...`);
         const contentRepetitionAnalysis = await analyzeContentRepetition(analysis.pages);
         
+        // DEBUG: Check what examples are in the analysis before saving
+        console.log('Heading examples before save:', contentRepetitionAnalysis.headingRepetition?.examples?.length || 0, 'examples');
+        if (contentRepetitionAnalysis.headingRepetition?.examples) {
+          console.log('First 3 heading examples:', contentRepetitionAnalysis.headingRepetition.examples.slice(0, 3));
+        }
+        
         // Update the analysis with the content repetition results
         const updatedAnalysis = await storage.updateContentRepetitionAnalysis(id, contentRepetitionAnalysis);
         
