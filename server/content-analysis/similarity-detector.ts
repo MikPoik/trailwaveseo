@@ -76,6 +76,18 @@ export function detectDuplicates(
     return createEmptyResult();
   }
 
+  // Add debugging for descriptions specifically
+  if (content.length > 0 && content[0].url.includes('meta_description') === false) {
+    // This is likely description content - check first few items
+    const isDescriptionAnalysis = content.every(item => item.content.length < 200);
+    if (isDescriptionAnalysis) {
+      console.log(`[DESCRIPTION DEBUG] Analyzing ${validContent.length} descriptions:`);
+      validContent.slice(0, 5).forEach((item, index) => {
+        console.log(`[DESCRIPTION DEBUG] ${index + 1}: "${item.content.substring(0, 100)}..." (${item.content.length} chars) - ${item.url}`);
+      });
+    }
+  }
+
   // Step 1: Find exact matches (fastest)
   const exactMatches = findExactMatches(validContent);
   
@@ -152,6 +164,9 @@ export function detectDuplicates(
 function findExactMatches(content: ContentItem[]): ContentGroup[] {
   const contentMap = new Map<string, ContentItem[]>();
 
+  // Check if this looks like description analysis
+  const isDescriptionAnalysis = content.length > 0 && content.every(item => item.content.length < 200);
+  
   // Group by normalized content only
   content.forEach(item => {
     const normalizedContent = normalizeContent(item.content);
@@ -159,7 +174,22 @@ function findExactMatches(content: ContentItem[]): ContentGroup[] {
       contentMap.set(normalizedContent, []);
     }
     contentMap.get(normalizedContent)!.push(item);
+    
+    // Debug descriptions normalization
+    if (isDescriptionAnalysis && item.content !== normalizedContent) {
+      console.log(`[DESCRIPTION DEBUG] Normalized: "${item.content}" -> "${normalizedContent}"`);
+    }
   });
+
+  // Debug description grouping
+  if (isDescriptionAnalysis) {
+    console.log(`[DESCRIPTION DEBUG] Found ${contentMap.size} unique normalized descriptions from ${content.length} total`);
+    const potentialDuplicates = Array.from(contentMap.entries()).filter(([_, items]) => items.length > 1);
+    console.log(`[DESCRIPTION DEBUG] Potential duplicate groups: ${potentialDuplicates.length}`);
+    potentialDuplicates.forEach(([normalizedContent, items]) => {
+      console.log(`[DESCRIPTION DEBUG] Group: "${normalizedContent}" found on ${items.length} pages`);
+    });
+  }
   
   // Return groups with duplicates, but deduplicate URLs
   return Array.from(contentMap.entries())
@@ -169,35 +199,21 @@ function findExactMatches(content: ContentItem[]): ContentGroup[] {
       const uniqueItems: ContentItem[] = [];
       const seenNormalizedUrls = new Set<string>();
       
-      console.log(`[URL DEDUP DEBUG] Processing ${items.length} items with same content`);
       for (const item of items) {
         const normalizedUrl = normalizeUrlForComparison(item.url);
-        console.log(`[URL DEDUP DEBUG] Original: "${item.url}" -> Normalized: "${normalizedUrl}"`);
         if (!seenNormalizedUrls.has(normalizedUrl)) {
           seenNormalizedUrls.add(normalizedUrl);
           uniqueItems.push(item);
-        } else {
-          console.log(`[URL DEDUP DEBUG] Skipping duplicate URL: "${item.url}"`);
         }
       }
-      console.log(`[URL DEDUP DEBUG] Result: ${uniqueItems.length} unique URLs from ${items.length} original items`);
       
-      const group = {
+      return {
         representativeContent: uniqueItems[0].content, // Use original content
         items: uniqueItems, // Only unique URLs
         similarity: 100
       };
-      
-      console.log(`[URL DEDUP DEBUG] Group created: "${group.representativeContent}" with ${group.items.length} URLs`);
-      return group;
     })
-    .filter(group => {
-      const isValidDuplicate = group.items.length > 1;
-      if (!isValidDuplicate) {
-        console.log(`[URL DEDUP DEBUG] FILTERING OUT single-item group: "${group.representativeContent}"`);
-      }
-      return isValidDuplicate;
-    }); // Only groups with actual duplicates after deduplication
+    .filter(group => group.items.length > 1); // Only groups with actual duplicates after deduplication
 }
 
 /**
@@ -241,14 +257,11 @@ function findFuzzyMatches(content: ContentItem[], threshold: number): ContentGro
       
       // Only add group if there are still duplicates after URL deduplication
       if (uniqueItems.length > 1) {
-        console.log(`[MATCH DEDUP DEBUG] Adding group: "${uniqueItems[0].content}" with ${uniqueItems.length} unique URLs`);
         groups.push({
           representativeContent: uniqueItems[0].content,
           items: uniqueItems,
           similarity: threshold
         });
-      } else {
-        console.log(`[MATCH DEDUP DEBUG] FILTERING OUT single-item group: "${similarItems[0].content}"`);
       }
     }
   });
@@ -296,14 +309,11 @@ function findSemanticMatches(content: ContentItem[], threshold: number): Content
       
       // Only add group if there are still duplicates after URL deduplication
       if (uniqueItems.length > 1) {
-        console.log(`[MATCH DEDUP DEBUG] Adding group: "${uniqueItems[0].content}" with ${uniqueItems.length} unique URLs`);
         groups.push({
           representativeContent: uniqueItems[0].content,
           items: uniqueItems,
           similarity: threshold
         });
-      } else {
-        console.log(`[MATCH DEDUP DEBUG] FILTERING OUT single-item group: "${similarItems[0].content}"`);
       }
     }
   });

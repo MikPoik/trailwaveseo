@@ -50,11 +50,15 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
 
     // Extract meta descriptions
     if (page.metaDescription?.trim()) {
+      const sanitizedDescription = sanitizeContent(page.metaDescription);
       descriptions.push({
-        content: sanitizeContent(page.metaDescription),
+        content: sanitizedDescription,
         url: page.url, // Keep original URL for display
         pageIndex
       });
+    } else {
+      // Debug missing descriptions
+      console.log(`[DESCRIPTION EXTRACT DEBUG] No meta description for: ${page.url}`);
     }
 
     // Extract headings by level
@@ -85,6 +89,15 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
         });
     }
   });
+
+  // Debug final extraction results for descriptions
+  console.log(`[DESCRIPTION EXTRACT DEBUG] Final results: ${descriptions.length} descriptions from ${pages.length} pages`);
+  if (descriptions.length > 0) {
+    console.log(`[DESCRIPTION EXTRACT DEBUG] First 3 descriptions:`);
+    descriptions.slice(0, 3).forEach((desc, index) => {
+      console.log(`[DESCRIPTION EXTRACT DEBUG] ${index + 1}: "${desc.content}" - ${desc.url}`);
+    });
+  }
 
   return {
     titles,
