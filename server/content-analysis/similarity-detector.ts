@@ -85,6 +85,26 @@ export function detectDuplicates(
       validContent.slice(0, 5).forEach((item, index) => {
         console.log(`[DESCRIPTION DEBUG] ${index + 1}: "${item.content.substring(0, 100)}..." (${item.content.length} chars) - ${item.url}`);
       });
+      
+      // Debug similarity calculations for potentially similar pairs
+      if (validContent.length >= 2) {
+        console.log(`[SIMILARITY DEBUG] Testing similarity scores between descriptions:`);
+        for (let i = 0; i < Math.min(3, validContent.length - 1); i++) {
+          for (let j = i + 1; j < Math.min(i + 3, validContent.length); j++) {
+            const item1 = validContent[i];
+            const item2 = validContent[j];
+            const fuzzyScore = calculateAdvancedSimilarity(item1.content, item2.content);
+            const semanticScore = calculateSemanticSimilarity(item1.content, item2.content);
+            
+            // Log pairs that are potentially similar or close to thresholds
+            if (fuzzyScore > 60 || semanticScore > 60) {
+              console.log(`[SIMILARITY DEBUG] "${item1.content.substring(0, 50)}..." vs "${item2.content.substring(0, 50)}..."`);
+              console.log(`[SIMILARITY DEBUG] Fuzzy: ${fuzzyScore}% (need: ${options.fuzzyMatchThreshold}%), Semantic: ${semanticScore}% (need: ${options.semanticThreshold}%)`);
+              console.log(`[SIMILARITY DEBUG] Would be detected: ${fuzzyScore >= options.fuzzyMatchThreshold || semanticScore >= options.semanticThreshold ? 'YES' : 'NO'}`);
+            }
+          }
+        }
+      }
     }
   }
 
