@@ -82,25 +82,29 @@ export function detectDuplicates(
     const isDescriptionAnalysis = content.every(item => item.content.length < 200);
     if (isDescriptionAnalysis) {
       console.log(`[DESCRIPTION DEBUG] Analyzing ${validContent.length} descriptions:`);
-      validContent.slice(0, 5).forEach((item, index) => {
-        console.log(`[DESCRIPTION DEBUG] ${index + 1}: "${item.content.substring(0, 100)}..." (${item.content.length} chars) - ${item.url}`);
+      
+      // Show ALL descriptions, not just first 5
+      validContent.forEach((item, index) => {
+        console.log(`[DESCRIPTION DEBUG] ${index + 1}: "${item.content}" (${item.content.length} chars)`);
       });
       
-      // Debug similarity calculations for ALL pairs (no threshold filtering)
+      // Debug similarity calculations for more pairs
       if (validContent.length >= 2) {
-        console.log(`[SIMILARITY DEBUG] Testing similarity scores between descriptions:`);
-        for (let i = 0; i < Math.min(2, validContent.length - 1); i++) {
-          for (let j = i + 1; j < Math.min(i + 2, validContent.length); j++) {
+        console.log(`[SIMILARITY DEBUG] Testing similarity scores (first 6 pairs):`);
+        let pairCount = 0;
+        for (let i = 0; i < validContent.length - 1 && pairCount < 6; i++) {
+          for (let j = i + 1; j < validContent.length && pairCount < 6; j++) {
             const item1 = validContent[i];
             const item2 = validContent[j];
             const fuzzyScore = calculateAdvancedSimilarity(item1.content, item2.content);
             const semanticScore = calculateSemanticSimilarity(item1.content, item2.content);
             
-            // Log ALL comparisons to see what's happening
-            console.log(`[SIMILARITY DEBUG] "${item1.content.substring(0, 40)}..." vs "${item2.content.substring(0, 40)}..."`);
-            console.log(`[SIMILARITY DEBUG] Fuzzy: ${fuzzyScore}%, Semantic: ${semanticScore}% (need fuzzy: ${options.fuzzyMatchThreshold}%, semantic: ${options.semanticThreshold}%)`);
+            console.log(`[SIMILARITY DEBUG] Pair ${pairCount + 1}: Items ${i + 1} vs ${j + 1}`);
+            console.log(`[SIMILARITY DEBUG] "${item1.content.substring(0, 50)}..." vs "${item2.content.substring(0, 50)}..."`);
+            console.log(`[SIMILARITY DEBUG] Fuzzy: ${fuzzyScore}%, Semantic: ${semanticScore}% (need: ${options.fuzzyMatchThreshold}%/${options.semanticThreshold}%)`);
             console.log(`[SIMILARITY DEBUG] Would detect: ${fuzzyScore >= options.fuzzyMatchThreshold || semanticScore >= options.semanticThreshold ? 'YES' : 'NO'}`);
             console.log(`[SIMILARITY DEBUG] ---`);
+            pairCount++;
           }
         }
       }
