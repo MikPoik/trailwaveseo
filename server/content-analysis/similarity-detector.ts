@@ -358,7 +358,20 @@ function calculateAdvancedSimilarity(text1: string, text2: string): number {
   const lengthSim = calculateLengthSimilarity(text1, text2);
   
   // Weighted combination (Levenshtein gets more weight for fuzzy matching)
-  return Math.round((levenshteinSim * 0.5) + (jaccardSim * 0.3) + (lengthSim * 0.2));
+  const finalScore = Math.round((levenshteinSim * 0.5) + (jaccardSim * 0.3) + (lengthSim * 0.2));
+  
+  // Debug individual components for low scores
+  if (finalScore < 30) {
+    console.log(`[SIMILARITY BREAKDOWN] Advanced similarity debug:`);
+    console.log(`[SIMILARITY BREAKDOWN] Text1: "${text1.substring(0, 60)}..."`); 
+    console.log(`[SIMILARITY BREAKDOWN] Text2: "${text2.substring(0, 60)}..."`); 
+    console.log(`[SIMILARITY BREAKDOWN] Levenshtein: ${levenshteinSim}% (weight: 50%)`);
+    console.log(`[SIMILARITY BREAKDOWN] Jaccard: ${jaccardSim}% (weight: 30%)`);
+    console.log(`[SIMILARITY BREAKDOWN] Length: ${lengthSim}% (weight: 20%)`);
+    console.log(`[SIMILARITY BREAKDOWN] Final: ${finalScore}% = (${levenshteinSim}*0.5 + ${jaccardSim}*0.3 + ${lengthSim}*0.2)`);
+  }
+  
+  return finalScore;
 }
 
 /**
@@ -375,7 +388,20 @@ function calculateSemanticSimilarity(text1: string, text2: string): number {
   const phraseSim = calculateKeyphraseSimilarity(text1, text2);
   
   // Weighted combination for semantic analysis
-  return Math.round((wordSim * 0.4) + (structSim * 0.2) + (phraseSim * 0.4));
+  const finalScore = Math.round((wordSim * 0.4) + (structSim * 0.2) + (phraseSim * 0.4));
+  
+  // Debug individual components for low scores
+  if (finalScore < 30) {
+    console.log(`[SEMANTIC BREAKDOWN] Semantic similarity debug:`);
+    console.log(`[SEMANTIC BREAKDOWN] Text1: "${text1.substring(0, 60)}..."`); 
+    console.log(`[SEMANTIC BREAKDOWN] Text2: "${text2.substring(0, 60)}..."`); 
+    console.log(`[SEMANTIC BREAKDOWN] Word (Jaccard): ${wordSim}% (weight: 40%)`);
+    console.log(`[SEMANTIC BREAKDOWN] Structural: ${structSim}% (weight: 20%)`);
+    console.log(`[SEMANTIC BREAKDOWN] Keyphrase: ${phraseSim}% (weight: 40%)`);
+    console.log(`[SEMANTIC BREAKDOWN] Final: ${finalScore}% = (${wordSim}*0.4 + ${structSim}*0.2 + ${phraseSim}*0.4)`);
+  }
+  
+  return finalScore;
 }
 
 /**
@@ -415,7 +441,20 @@ function calculateJaccardSimilarity(text1: string, text2: string): number {
   const intersection = new Set(Array.from(words1).filter(word => words2.has(word)));
   const union = new Set([...Array.from(words1), ...Array.from(words2)]);
   
-  return Math.round((intersection.size / union.size) * 100);
+  const score = Math.round((intersection.size / union.size) * 100);
+  
+  // Debug word extraction and comparison for low Jaccard scores
+  if (score < 50 && (text1.includes('ongelmista') || text2.includes('ongelmista'))) {
+    console.log(`[JACCARD DEBUG] Word comparison details:`);
+    console.log(`[JACCARD DEBUG] Text1: "${text1}"`);
+    console.log(`[JACCARD DEBUG] Text2: "${text2}"`);
+    console.log(`[JACCARD DEBUG] Words1 (${words1.size}): [${Array.from(words1).slice(0, 8).join(', ')}${words1.size > 8 ? '...' : ''}]`);
+    console.log(`[JACCARD DEBUG] Words2 (${words2.size}): [${Array.from(words2).slice(0, 8).join(', ')}${words2.size > 8 ? '...' : ''}]`);
+    console.log(`[JACCARD DEBUG] Common words (${intersection.size}): [${Array.from(intersection).join(', ')}]`);
+    console.log(`[JACCARD DEBUG] Total unique (${union.size}): ${intersection.size}/${union.size} = ${score}%`);
+  }
+  
+  return score;
 }
 
 /**
