@@ -88,26 +88,42 @@ export function detectDuplicates(
   const semanticMatches = findSemanticMatches(remainingAfterFuzzy, options.semanticThreshold);
 
   // Combine all results and convert to proper DuplicateItem format
+  console.log(`[FINAL DEBUG] Converting to DuplicateItems: exact=${exactMatches.length}, fuzzy=${fuzzyMatches.length}, semantic=${semanticMatches.length}`);
+  
   const allDuplicateGroups: DuplicateItem[] = [
-    ...exactMatches.map(group => ({
-      content: group.representativeContent,
-      urls: group.items.map(item => item.url),
-      similarityScore: 100,
-      impactLevel: determinImpactLevel(group)
-    })),
-    ...fuzzyMatches.map(group => ({
-      content: group.representativeContent,
-      urls: group.items.map(item => item.url),
-      similarityScore: group.similarity,
-      impactLevel: determinImpactLevel(group)
-    })),
-    ...semanticMatches.map(group => ({
-      content: group.representativeContent,
-      urls: group.items.map(item => item.url),
-      similarityScore: group.similarity,
-      impactLevel: determinImpactLevel(group)
-    }))
+    ...exactMatches.map(group => {
+      const duplicateItem = {
+        content: group.representativeContent,
+        urls: group.items.map(item => item.url),
+        similarityScore: 100,
+        impactLevel: determinImpactLevel(group)
+      };
+      console.log(`[FINAL DEBUG] Exact match item: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
+      return duplicateItem;
+    }),
+    ...fuzzyMatches.map(group => {
+      const duplicateItem = {
+        content: group.representativeContent,
+        urls: group.items.map(item => item.url),
+        similarityScore: group.similarity,
+        impactLevel: determinImpactLevel(group)
+      };
+      console.log(`[FINAL DEBUG] Fuzzy match item: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
+      return duplicateItem;
+    }),
+    ...semanticMatches.map(group => {
+      const duplicateItem = {
+        content: group.representativeContent,
+        urls: group.items.map(item => item.url),
+        similarityScore: group.similarity,
+        impactLevel: determinImpactLevel(group)
+      };
+      console.log(`[FINAL DEBUG] Semantic match item: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
+      return duplicateItem;
+    })
   ];
+  
+  console.log(`[FINAL DEBUG] Total DuplicateItems created: ${allDuplicateGroups.length}`);
 
   // Calculate statistics
   const duplicateCount = allDuplicateGroups.reduce((sum, group) => sum + (group.urls?.length || 0) - 1, 0);
@@ -166,13 +182,22 @@ function findExactMatches(content: ContentItem[]): ContentGroup[] {
       }
       console.log(`[URL DEDUP DEBUG] Result: ${uniqueItems.length} unique URLs from ${items.length} original items`);
       
-      return {
+      const group = {
         representativeContent: uniqueItems[0].content, // Use original content
         items: uniqueItems, // Only unique URLs
         similarity: 100
       };
+      
+      console.log(`[URL DEDUP DEBUG] Group created: "${group.representativeContent}" with ${group.items.length} URLs`);
+      return group;
     })
-    .filter(group => group.items.length > 1); // Only groups with actual duplicates after deduplication
+    .filter(group => {
+      const isValidDuplicate = group.items.length > 1;
+      if (!isValidDuplicate) {
+        console.log(`[URL DEDUP DEBUG] FILTERING OUT single-item group: "${group.representativeContent}"`);
+      }
+      return isValidDuplicate;
+    }); // Only groups with actual duplicates after deduplication
 }
 
 /**
@@ -216,11 +241,14 @@ function findFuzzyMatches(content: ContentItem[], threshold: number): ContentGro
       
       // Only add group if there are still duplicates after URL deduplication
       if (uniqueItems.length > 1) {
+        console.log(`[MATCH DEDUP DEBUG] Adding group: "${uniqueItems[0].content}" with ${uniqueItems.length} unique URLs`);
         groups.push({
           representativeContent: uniqueItems[0].content,
           items: uniqueItems,
           similarity: threshold
         });
+      } else {
+        console.log(`[MATCH DEDUP DEBUG] FILTERING OUT single-item group: "${similarItems[0].content}"`);
       }
     }
   });
@@ -268,11 +296,14 @@ function findSemanticMatches(content: ContentItem[], threshold: number): Content
       
       // Only add group if there are still duplicates after URL deduplication
       if (uniqueItems.length > 1) {
+        console.log(`[MATCH DEDUP DEBUG] Adding group: "${uniqueItems[0].content}" with ${uniqueItems.length} unique URLs`);
         groups.push({
           representativeContent: uniqueItems[0].content,
           items: uniqueItems,
           similarity: threshold
         });
+      } else {
+        console.log(`[MATCH DEDUP DEBUG] FILTERING OUT single-item group: "${similarItems[0].content}"`);
       }
     }
   });
