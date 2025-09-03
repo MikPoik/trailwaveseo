@@ -48,7 +48,7 @@ export function determineSamplingStrategy(
   if (contentLength <= 50 && stats.estimatedTokens <= 5000) {
     return {
       method: 'representative',
-      sampleSize: Math.min(25, contentLength),
+      sampleSize: Math.min(50, contentLength),
       reason: 'Medium dataset - representative sampling',
       preserveExactDuplicates: true
     };
@@ -58,7 +58,7 @@ export function determineSamplingStrategy(
   if (contentLength <= 100) {
     return {
       method: 'priority',
-      sampleSize: Math.min(30, contentLength),
+      sampleSize: Math.min(60, contentLength),
       reason: 'Large dataset - priority-based sampling',
       preserveExactDuplicates: true
     };
@@ -67,7 +67,7 @@ export function determineSamplingStrategy(
   // Cluster-based sampling for very large datasets
   return {
     method: 'cluster',
-    sampleSize: Math.min(40, contentLength),
+    sampleSize: Math.min(80, contentLength),
     reason: 'Very large dataset - cluster-based sampling',
     preserveExactDuplicates: true
   };

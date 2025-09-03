@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Bot,
   Badge,
-  Lightbulb
+  Lightbulb,
+  Hash
 } from "lucide-react";
 import PageAnalysisCard from "./PageAnalysisCard";
 import CompetitorAnalysis from "./CompetitorAnalysis";
@@ -686,6 +687,138 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                               </div>
                             )}
                           </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Heading Duplicates */}
+                  {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.length > 0 && (
+                    <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Hash className="w-5 h-5 text-orange-600" />
+                        <h4 className="font-semibold text-orange-900">Duplicate Headings ({updatedAnalysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.length})</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.map((group, index) => {
+                          const duplicateContent = group.content || 'Duplicate heading detected';
+                          
+                          return (
+                            <div key={index} className="bg-white rounded p-3 border border-orange-100">
+                              <p className="font-medium text-sm mb-2">"{duplicateContent}"</p>
+                              <p className="text-xs text-gray-600 mb-2">
+                                Found on {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  return urls.length;
+                                })()} pages • {group.similarityScore}% similar
+                                {group.impactLevel && ` • ${group.impactLevel} impact`}
+                              </p>
+                              <div className="text-xs text-orange-600 space-y-1 mb-2">
+                                {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  
+                                  return urls.slice(0, 3).map((url, urlIndex) => (
+                                    <div key={urlIndex}>• {url}</div>
+                                  ));
+                                })()}
+                                {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  return urls.length > 3 && (
+                                    <div className="text-gray-500">... and {urls.length - 3} more pages</div>
+                                  );
+                                })()}
+                              </div>
+                              {group.improvementStrategy && (
+                                <div className="bg-green-50 rounded p-2">
+                                  <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                                  <p className="text-xs text-green-600">
+                                    {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique headings for each section'}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Paragraph Duplicates */}
+                  {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.length > 0 && (
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="w-5 h-5 text-gray-600" />
+                        <h4 className="font-semibold text-gray-900">Duplicate Paragraphs ({updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.length})</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.map((group, index) => {
+                          const duplicateContent = group.content || 'Duplicate paragraph content detected';
+                          
+                          return (
+                            <div key={index} className="bg-white rounded p-3 border border-gray-100">
+                              <p className="font-medium text-sm mb-2">"{duplicateContent.length > 100 ? duplicateContent.substring(0, 100) + '...' : duplicateContent}"</p>
+                              <p className="text-xs text-gray-600 mb-2">
+                                Found on {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  return urls.length;
+                                })()} pages • {group.similarityScore}% similar
+                                {group.impactLevel && ` • ${group.impactLevel} impact`}
+                              </p>
+                              <div className="text-xs text-gray-600 space-y-1 mb-2">
+                                {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  
+                                  return urls.slice(0, 3).map((url, urlIndex) => (
+                                    <div key={urlIndex}>• {url}</div>
+                                  ));
+                                })()}
+                                {(() => {
+                                  const urls = Array.isArray(group.urls) 
+                                    ? group.urls.flatMap(item => 
+                                        typeof item === 'string' ? item : 
+                                        (item?.urls || [])
+                                      ).filter(url => typeof url === 'string')
+                                    : [];
+                                  return urls.length > 3 && (
+                                    <div className="text-gray-500">... and {urls.length - 3} more pages</div>
+                                  );
+                                })()}
+                              </div>
+                              {group.improvementStrategy && (
+                                <div className="bg-green-50 rounded p-2">
+                                  <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                                  <p className="text-xs text-green-600">
+                                    {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique content for each page'}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>

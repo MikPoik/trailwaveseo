@@ -43,8 +43,8 @@ export const DEFAULT_PROCESSING_OPTIONS: ProcessingOptions = {
   prioritizeByImpact: true,
   similarityOptions: {
     exactMatchThreshold: 100,
-    fuzzyMatchThreshold: 85,
-    semanticThreshold: 75,
+    fuzzyMatchThreshold: 75,
+    semanticThreshold: 65,
     minContentLength: 10
   },
   aiOptions: {

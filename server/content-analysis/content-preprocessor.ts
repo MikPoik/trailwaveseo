@@ -73,8 +73,8 @@ export function extractPageContent(pages: Array<any>): ExtractedContent {
     // Extract paragraph content (limit to prevent overwhelming analysis)
     if (page.paragraphs) {
       page.paragraphs
-        .slice(0, 5) // Limit to first 5 paragraphs per page
-        .filter((p: string) => p.trim().length > 50) // Only substantial paragraphs
+        .slice(0, 10) // Limit to first 10 paragraphs per page
+        .filter((p: string) => p.trim().length > 30) // Only substantial paragraphs
         .forEach((paragraph: string) => {
           paragraphs.push({
             content: sanitizeContent(paragraph.length > 300 ? paragraph.substring(0, 300) + '...' : paragraph),
