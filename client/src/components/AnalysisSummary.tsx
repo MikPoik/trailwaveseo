@@ -486,7 +486,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                 </div>
 
                 {/* Summary Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Copy className="h-5 w-5 text-blue-600" />
@@ -527,6 +527,21 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
                         </p>
                         <p className="text-xs text-teal-600 mt-1">
                           {updatedAnalysis.contentRepetitionAnalysis.headingRepetition.totalCount} analyzed
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <Copy className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <h4 className="text-sm font-medium text-orange-800">Paragraphs</h4>
+                        <p className="text-lg font-semibold text-orange-600">
+                          {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.repetitiveCount} duplicates
+                        </p>
+                        <p className="text-xs text-orange-600 mt-1">
+                          {updatedAnalysis.contentRepetitionAnalysis.paragraphRepetition.totalCount} analyzed
                         </p>
                       </div>
                     </div>
