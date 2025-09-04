@@ -6,7 +6,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import type { AnalysisContext, AnalysisOptions } from './analysis-orchestrator.js';
-import { emitPageProgress, checkQuotaLimits } from './quota-manager.js';
+import { checkQuotaLimits } from './quota-manager.js';
 import { emitPageProgress as emitProgress } from './progress-tracker.js';
 import { Heading, Image, SeoIssue, SeoCategory } from '../../client/src/lib/types.js';
 import { generateBatchImageAltText } from './image-alt-text.js';
