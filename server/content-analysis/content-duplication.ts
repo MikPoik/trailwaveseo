@@ -34,14 +34,14 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
 
     const prompt = `Analyze this website content for duplication and repetition patterns across ${pages.length} pages.
 
-CONTENT SAMPLES:
-${contentSamples.map((page, index) => `
+CONTENT SAMPLES (${contentSamples.length} pages):
+${contentSamples.slice(0, 8).map((page, index) => `
 Page ${index + 1}: ${page.url}
-Title: "${page.title}"
-Meta: "${page.metaDescription}"
-Headings: ${page.headings}
-Content: ${page.paragraphs}
----`).join('\n')}
+Title: "${page.title.substring(0, 100)}"
+Meta: "${page.metaDescription.substring(0, 100)}"
+Headings: ${page.headings.substring(0, 150)}
+Content: ${page.paragraphs.substring(0, 200)}
+---`).join('\n')}${contentSamples.length > 8 ? `\n(+ ${contentSamples.length - 8} more pages analyzed)` : ''}
 
 Analyze for:
 1. Duplicate or very similar titles
@@ -51,6 +51,8 @@ Analyze for:
 5. Overall content strategy recommendations
 
 Identify specific examples of duplication and provide recommendations for improvement.
+
+CRITICAL: Your response MUST be valid JSON. Escape all quotes properly. Keep all examples under 80 characters. Limit to 3 examples max per category.
 
 Respond in JSON format:
 {
@@ -103,11 +105,54 @@ Respond in JSON format:
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.3,
-      max_completion_tokens: 2000
+      temperature: 0.2,
+      max_completion_tokens: 3000
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const content = response.choices[0].message.content;
+    if (!content) {
+      console.error("No content returned from OpenAI for content duplication analysis");
+      return generateBasicContentAnalysis(pages);
+    }
+
+    // Enhanced JSON parsing with robust error handling
+    let result: any;
+    try {
+      // First attempt to parse the response as-is
+      result = JSON.parse(content);
+      console.log('Successfully parsed content duplication response on first attempt');
+    } catch (parseError) {
+      console.error('Failed to parse content duplication response on first attempt:', parseError);
+      console.log('Response preview:', content.substring(0, 200) + '...');
+
+      // Try to fix common JSON issues and retry parsing
+      try {
+        // Remove any trailing commas and fix incomplete JSON
+        let fixedContent = content.trim();
+
+        // Remove trailing comma before closing brace/bracket
+        fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
+
+        // If JSON is incomplete, try to complete it
+        if (!fixedContent.endsWith('}') && !fixedContent.endsWith(']')) {
+          // Find the last complete object structure and close the JSON properly
+          const openBraceCount = (fixedContent.match(/{/g) || []).length;
+          const closeBraceCount = (fixedContent.match(/}/g) || []).length;
+          const missingBraces = openBraceCount - closeBraceCount;
+
+          if (missingBraces > 0) {
+            fixedContent = fixedContent + '}'.repeat(missingBraces);
+          }
+        }
+
+        result = JSON.parse(fixedContent);
+        console.log('Successfully parsed content duplication response after JSON repair');
+      } catch (secondParseError) {
+        console.error('Failed to parse content duplication response even after repair:', secondParseError);
+        console.log('Failed content preview:', content.substring(0, 500));
+        return generateBasicContentAnalysis(pages);
+      }
+    }
 
     return parseContentRepetitionResult(result);
 
@@ -140,7 +185,8 @@ function generateBasicContentAnalysis(pages: Array<any>): ContentDuplicationAnal
       ] : ["Titles appear to be unique across pages"],
       duplicateGroups: titleDuplicates.map(title => ({
         content: title,
-        affected_urls: pages.filter(p => p.title === title).map(p => p.url)
+        urls: pages.filter(p => p.title === title).map(p => p.url),
+        similarityScore: 100
       }))
     },
     descriptionRepetition: {
@@ -154,7 +200,8 @@ function generateBasicContentAnalysis(pages: Array<any>): ContentDuplicationAnal
       ] : ["Meta descriptions appear to be unique across pages"],
       duplicateGroups: descriptionDuplicates.map(desc => ({
         content: desc,
-        affected_urls: pages.filter(p => p.metaDescription === desc).map(p => p.url)
+        urls: pages.filter(p => p.metaDescription === desc).map(p => p.url),
+        similarityScore: 100
       }))
     },
     headingRepetition: {
@@ -212,7 +259,11 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
         if (typeof rec === 'object' && rec?.description) return rec.description;
         return String(rec || '');
       }),
-      duplicateGroups: result.titleRepetition?.duplicateGroups || []
+      duplicateGroups: (result.titleRepetition?.duplicateGroups || []).map((group: any) => ({
+        content: group.content || '',
+        urls: group.urls || group.affected_urls || [],
+        similarityScore: group.similarityScore || 100
+      }))
     },
     descriptionRepetition: {
       repetitiveCount: result.descriptionRepetition?.repetitiveCount || 0,
@@ -223,7 +274,11 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
         if (typeof rec === 'object' && rec?.description) return rec.description;
         return String(rec || '');
       }),
-      duplicateGroups: result.descriptionRepetition?.duplicateGroups || []
+      duplicateGroups: (result.descriptionRepetition?.duplicateGroups || []).map((group: any) => ({
+        content: group.content || '',
+        urls: group.urls || group.affected_urls || [],
+        similarityScore: group.similarityScore || 100
+      }))
     },
     headingRepetition: {
       repetitiveCount: result.headingRepetition?.repetitiveCount || 0,
@@ -234,14 +289,42 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
         if (typeof rec === 'object' && rec?.description) return rec.description;
         return String(rec || '');
       }),
-      duplicateGroups: result.headingRepetition?.duplicateGroups || [],
+      duplicateGroups: (result.headingRepetition?.duplicateGroups || []).map((group: any) => ({
+        content: group.content || '',
+        urls: group.urls || group.affected_urls || [],
+        similarityScore: group.similarityScore || 100
+      })),
       byLevel: {
-        h1: result.headingRepetition?.byLevel?.h1 || [],
-        h2: result.headingRepetition?.byLevel?.h2 || [],
-        h3: result.headingRepetition?.byLevel?.h3 || [],
-        h4: result.headingRepetition?.byLevel?.h4 || [],
-        h5: result.headingRepetition?.byLevel?.h5 || [],
-        h6: result.headingRepetition?.byLevel?.h6 || []
+        h1: (result.headingRepetition?.byLevel?.h1 || []).map((group: any) => ({
+          content: group.content || '',
+          urls: group.urls || group.affected_urls || [],
+          similarityScore: group.similarityScore || 100
+        })),
+        h2: (result.headingRepetition?.byLevel?.h2 || []).map((group: any) => ({
+          content: group.content || '',
+          urls: group.urls || group.affected_urls || [],
+          similarityScore: group.similarityScore || 100
+        })),
+        h3: (result.headingRepetition?.byLevel?.h3 || []).map((group: any) => ({
+          content: group.content || '',
+          urls: group.urls || group.affected_urls || [],
+          similarityScore: group.similarityScore || 100
+        })),
+        h4: (result.headingRepetition?.byLevel?.h4 || []).map((group: any) => ({
+          content: group.content || '',
+          urls: group.urls || group.affected_urls || [],
+          similarityScore: group.similarityScore || 100
+        })),
+        h5: (result.headingRepetition?.byLevel?.h5 || []).map((group: any) => ({
+          content: group.content || '',
+          urls: group.urls || group.affected_urls || [],
+          similarityScore: group.similarityScore || 100
+        })),
+        h6: (result.headingRepetition?.byLevel?.h6 || []).map((group: any) => ({
+          content: group.content || '',
+          urls: group.urls || group.affected_urls || [],
+          similarityScore: group.similarityScore || 100
+        }))
       }
     },
     paragraphRepetition: {
@@ -253,7 +336,11 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
         if (typeof rec === 'object' && rec?.description) return rec.description;
         return String(rec || '');
       }),
-      duplicateGroups: result.paragraphRepetition?.duplicateGroups || []
+      duplicateGroups: (result.paragraphRepetition?.duplicateGroups || []).map((group: any) => ({
+        content: group.content || '',
+        urls: group.urls || group.affected_urls || [],
+        similarityScore: group.similarityScore || 100
+      }))
     },
     overallRecommendations: result.overallRecommendations || []
   };
