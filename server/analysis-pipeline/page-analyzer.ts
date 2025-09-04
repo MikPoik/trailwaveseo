@@ -217,6 +217,15 @@ async function performEnhancedPageAnalysis(
     
     // Generate alt text for images if AI is enabled
     let processedImages = contentElements.images;
+    
+    // Debug logs to verify options
+    console.log(`Alt text generation conditions for ${url}:`);
+    console.log(`- useAI: ${options?.useAI}`);
+    console.log(`- skipAltTextGeneration: ${options?.skipAltTextGeneration}`);
+    console.log(`- isCompetitor: ${isCompetitor}`);
+    console.log(`- Total images: ${contentElements.images.length}`);
+    console.log(`- Images without alt: ${contentElements.images.filter(img => !img.alt).length}`);
+    
     if (options?.useAI && !options?.skipAltTextGeneration && !isCompetitor) {
       const imagesWithoutAlt = contentElements.images.filter(img => !img.alt);
       
@@ -256,7 +265,11 @@ async function performEnhancedPageAnalysis(
           console.error(`Error generating alt text for ${url}:`, error);
           // Continue with original images if alt text generation fails
         }
+      } else {
+        console.log(`No images without alt text found on ${url}`);
       }
+    } else {
+      console.log(`Alt text generation skipped for ${url} due to condition checks`);
     }
     
     // Combine all analysis results

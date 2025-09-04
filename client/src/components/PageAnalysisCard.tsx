@@ -89,7 +89,7 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
           <div className="flex items-center">
             <div className={cn("w-2 h-2 rounded-full mr-3", getStatusColor())}></div>
             <h4 className="text-base font-medium text-gray-900">
-              {page.pageName || page.url.split('/').pop() || 'Homepage'}
+              {page.title || page.url.split('/').pop() || 'Homepage'}
             </h4>
             <span className="ml-3 text-sm text-gray-500">{page.url}</span>
           </div>
