@@ -100,9 +100,9 @@ interface ComparisonResult {
   };
   gaps?: ContentGapAnalysis;
   strategies?: StrategyComparison;
-  insights?: CompetitorInsight[];
-  summary?: CompetitiveSummary;
-  processingStats?: ProcessingStats;
+  detailedInsights?: CompetitorInsight[];  // Backend uses 'detailedInsights'
+  competitiveSummary?: CompetitiveSummary; // Backend uses 'competitiveSummary'
+  stats?: ProcessingStats;                 // Backend uses 'stats'
   recommendations: string[];
   // For detailed comparison
   details?: {
@@ -401,13 +401,13 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               {renderMetricComparison('Technical SEO', (comparison as ComparisonResult).metrics.technicalSEO)}
               {renderMetricComparison('Content Quality', (comparison as ComparisonResult).metrics.contentQuality)}
               
-              {(comparison as ComparisonResult).processingStats && (
+              {(comparison as ComparisonResult).stats && (
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <div className="flex justify-between items-center text-sm">
                     <span>Analysis Confidence:</span>
-                    <span className="font-medium">{(comparison as ComparisonResult).processingStats?.confidence}%</span>
+                    <span className="font-medium">{(comparison as ComparisonResult).stats?.confidence}%</span>
                   </div>
-                  <Progress value={(comparison as ComparisonResult).processingStats?.confidence || 0} className="h-2 mt-2" />
+                  <Progress value={(comparison as ComparisonResult).stats?.confidence || 0} className="h-2 mt-2" />
                 </div>
               )}
               
@@ -594,16 +594,16 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             <TabsContent value="insights" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold">AI-Powered Competitive Insights</h3>
-                {(comparison as ComparisonResult).processingStats && (
+                {(comparison as ComparisonResult).stats && (
                   <div className="text-sm text-muted-foreground">
-                    {(comparison as ComparisonResult).processingStats?.confidence}% confidence
+                    {(comparison as ComparisonResult).stats?.confidence}% confidence
                   </div>
                 )}
               </div>
               
-              {(comparison as ComparisonResult).insights && (comparison as ComparisonResult).insights?.length > 0 ? (
+              {(comparison as ComparisonResult).detailedInsights && (comparison as ComparisonResult).detailedInsights?.length > 0 ? (
                 <div className="space-y-4">
-                  {(comparison as ComparisonResult).insights.map((insight: CompetitorInsight, index: number) => (
+                  {(comparison as ComparisonResult).detailedInsights.map((insight: CompetitorInsight, index: number) => (
                     <Card key={index} className="border-l-4 border-l-primary">
                       <CardContent className="pt-4">
                         <div className="flex justify-between items-start mb-2">
@@ -821,20 +821,20 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             <TabsContent value="summary" className="space-y-4">
               <h3 className="text-xl font-semibold mb-6">Competitive Summary</h3>
               
-              {(comparison as ComparisonResult).summary ? (
+              {(comparison as ComparisonResult).competitiveSummary ? (
                 <div className="space-y-6">
                   {/* Overall Advantage */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-center">
                         <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                          (comparison as ComparisonResult).summary?.overallAdvantage === 'main' ? 'bg-green-100 text-green-800' :
-                          (comparison as ComparisonResult).summary?.overallAdvantage === 'competitor' ? 'bg-red-100 text-red-800' :
+                          (comparison as ComparisonResult).competitiveSummary?.overallAdvantage === 'main' ? 'bg-green-100 text-green-800' :
+                          (comparison as ComparisonResult).competitiveSummary?.overallAdvantage === 'competitor' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {(comparison as ComparisonResult).summary?.overallAdvantage === 'main' ? 
+                          {(comparison as ComparisonResult).competitiveSummary?.overallAdvantage === 'main' ? 
                             `Your site has the overall advantage` :
-                           (comparison as ComparisonResult).summary?.overallAdvantage === 'competitor' ?
+                           (comparison as ComparisonResult).competitiveSummary?.overallAdvantage === 'competitor' ?
                             `Competitor has the overall advantage` :
                             `Both sites are competitive`}
                         </div>
@@ -849,9 +849,9 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardTitle className="text-lg text-green-700">Your Strengths</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).summary?.strengthAreas && (comparison as ComparisonResult).summary?.strengthAreas.length > 0 ? (
+                        {(comparison as ComparisonResult).competitiveSummary?.strengthAreas && (comparison as ComparisonResult).competitiveSummary?.strengthAreas.length > 0 ? (
                           <ul className="space-y-2">
-                            {(comparison as ComparisonResult).summary?.strengthAreas.map((strength: string, index: number) => (
+                            {(comparison as ComparisonResult).competitiveSummary?.strengthAreas.map((strength: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
                                 <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 shrink-0" />
                                 <span>{strength}</span>
@@ -869,9 +869,9 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardTitle className="text-lg text-red-700">Areas for Improvement</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).summary?.weaknessAreas && (comparison as ComparisonResult).summary?.weaknessAreas.length > 0 ? (
+                        {(comparison as ComparisonResult).competitiveSummary?.weaknessAreas && (comparison as ComparisonResult).competitiveSummary?.weaknessAreas.length > 0 ? (
                           <ul className="space-y-2">
-                            {(comparison as ComparisonResult).summary?.weaknessAreas.map((weakness: string, index: number) => (
+                            {(comparison as ComparisonResult).competitiveSummary?.weaknessAreas.map((weakness: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
                                 <AlertTriangle className="h-4 w-4 text-red-500 mr-2 mt-0.5 shrink-0" />
                                 <span>{weakness}</span>
@@ -893,9 +893,9 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardDescription>Easy improvements you can make right away</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).summary?.quickWins && (comparison as ComparisonResult).summary?.quickWins.length > 0 ? (
+                        {(comparison as ComparisonResult).competitiveSummary?.quickWins && (comparison as ComparisonResult).competitiveSummary?.quickWins.length > 0 ? (
                           <ul className="space-y-2">
-                            {(comparison as ComparisonResult).summary?.quickWins.map((win: string, index: number) => (
+                            {(comparison as ComparisonResult).competitiveSummary?.quickWins.map((win: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
                                 <ChevronRight className="h-4 w-4 text-blue-500 mr-2 mt-0.5 shrink-0" />
                                 <span>{win}</span>
@@ -914,9 +914,9 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardDescription>Strategic improvements for sustained advantage</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).summary?.longTermOpportunities && (comparison as ComparisonResult).summary?.longTermOpportunities.length > 0 ? (
+                        {(comparison as ComparisonResult).competitiveSummary?.longTermOpportunities && (comparison as ComparisonResult).competitiveSummary?.longTermOpportunities.length > 0 ? (
                           <ul className="space-y-2">
-                            {(comparison as ComparisonResult).summary?.longTermOpportunities.map((opportunity: string, index: number) => (
+                            {(comparison as ComparisonResult).competitiveSummary?.longTermOpportunities.map((opportunity: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
                                 <ChevronRight className="h-4 w-4 text-purple-500 mr-2 mt-0.5 shrink-0" />
                                 <span>{opportunity}</span>
