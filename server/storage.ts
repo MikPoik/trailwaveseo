@@ -280,11 +280,15 @@ export class DatabaseStorage implements IStorage {
     try {
       if (userId) {
         return db.select().from(analyses)
-          .where(eq(analyses.userId, userId))
+          .where(and(
+            eq(analyses.userId, userId),
+            eq(analyses.isCompetitorAnalysis, false)
+          ))
           .orderBy(desc(analyses.date));
       }
-      // If no userId is provided, return all analyses
+      // If no userId is provided, return all analyses (excluding competitor analyses)
       return db.select().from(analyses)
+        .where(eq(analyses.isCompetitorAnalysis, false))
         .orderBy(desc(analyses.date));
     } catch (error) {
       console.error('Error in getAnalysisHistory:', error);
@@ -302,7 +306,7 @@ export class DatabaseStorage implements IStorage {
       if (userId) {
         query = `SELECT id, domain
                  FROM analyses
-                 WHERE user_id = $1
+                 WHERE user_id = $1 AND is_competitor_analysis = false
                  ORDER BY date DESC
                  LIMIT $2`;
         params = [userId, limit];
@@ -310,7 +314,7 @@ export class DatabaseStorage implements IStorage {
         // If no userId, fetch global recent analyses
         query = `SELECT id, domain
                  FROM analyses
-                 WHERE user_id IS NULL
+                 WHERE user_id IS NULL AND is_competitor_analysis = false
                  ORDER BY date DESC
                  LIMIT $1`;
         params = [limit];
@@ -350,8 +354,8 @@ export class DatabaseStorage implements IStorage {
 
 
     const result = await pool.query(
-      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, keyword_repetition_analysis, competitor_analysis, site_overview)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, keyword_repetition_analysis, competitor_analysis, site_overview, is_competitor_analysis)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
       [
         analysis.userId,
         analysis.domain,
@@ -362,7 +366,8 @@ export class DatabaseStorage implements IStorage {
         analysis.contentRepetitionAnalysis ? JSON.stringify(analysis.contentRepetitionAnalysis) : null,
         analysis.keywordRepetitionAnalysis ? JSON.stringify(analysis.keywordRepetitionAnalysis) : null,
         analysis.competitorAnalysis ? JSON.stringify(analysis.competitorAnalysis) : null,
-        analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null
+        analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null,
+        analysis.isCompetitorAnalysis || false
       ]
     );
 
