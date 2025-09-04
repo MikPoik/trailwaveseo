@@ -62,7 +62,7 @@ export async function aggregateAnalysisResults(
 
     // Prepare final result with complete data including enhanced insights
     const finalResult = {
-      analysisId: savedAnalysis.id,
+      id: savedAnalysis.id,
       domain: context.domain,
       pages: analyzedPages,
       metrics,
