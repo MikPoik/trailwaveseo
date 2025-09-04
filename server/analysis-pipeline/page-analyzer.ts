@@ -226,10 +226,24 @@ async function performEnhancedPageAnalysis(
     console.log(`- Total images: ${contentElements.images.length}`);
     console.log(`- Images without alt: ${contentElements.images.filter(img => !img.alt).length}`);
     
+    // Enhanced logging for each image
+    console.log('Detailed image analysis:');
+    contentElements.images.forEach((img, index) => {
+      const altStatus = img.alt ? 'HAS_ALT' : (img.alt === '' ? 'EMPTY_ALT' : 'NO_ALT');
+      const urlType = img.src.startsWith('data:') ? 'DATA_URI' : 
+                      img.src.startsWith('http') ? 'HTTP_URL' : 'RELATIVE_URL';
+      console.log(`  Image ${index + 1}: ${altStatus} | ${urlType} | ${img.src.substring(0, 80)}...`);
+    });
+    
     if (options?.useAI && !options?.skipAltTextGeneration && !isCompetitor) {
       // Filter out images without alt text AND filter out invalid image sources
       const imagesWithoutAlt = contentElements.images.filter(img => {
-        if (img.alt) return false; // Skip images that already have alt text
+        // Check if image has meaningful alt text
+        const hasAlt = img.alt && img.alt.trim().length > 0;
+        if (hasAlt) {
+          console.log(`Skipping image with alt text: "${img.alt}" | ${img.src.substring(0, 80)}...`);
+          return false;
+        }
         
         // Skip data URIs, SVG placeholders, and invalid URLs
         if (img.src.startsWith('data:') || 
@@ -240,6 +254,7 @@ async function performEnhancedPageAnalysis(
           return false;
         }
         
+        console.log(`Valid image for alt text generation: ${img.src.substring(0, 100)}...`);
         return true;
       });
       
