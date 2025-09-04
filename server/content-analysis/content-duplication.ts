@@ -9,11 +9,8 @@ import { extractPageContent } from './content-preprocessor.js';
 import { processContentHierarchically, DEFAULT_PROCESSING_OPTIONS } from './content-sampler.js';
 import { analyzeContentQuality } from './content-quality-scorer.js';
 
-// the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 /**
- * Analyze content repetition across website pages using AI
+ * Analyze content repetition across website pages using enhanced AI analysis
  * @param pages Array of page analysis results
  * @returns Content duplication analysis with AI-powered insights
  */
@@ -24,149 +21,138 @@ export async function analyzeContentRepetition(pages: Array<any>): Promise<Conte
       return generateBasicContentAnalysis(pages);
     }
 
-    console.log(`Analyzing content repetition across ${pages.length} pages with AI...`);
+    console.log(`Starting enhanced content duplication analysis across ${pages.length} pages...`);
 
-    // Prepare content for analysis
-    const contentSamples = pages.map(page => ({
-      url: page.url,
-      title: page.title || '',
-      metaDescription: page.metaDescription || '',
-      headings: page.headings.map((h: any) => h.text).join(', '),
-      paragraphs: page.paragraphs?.slice(0, 3).join(' ').substring(0, 500) || ''
-    }));
+    // Extract content using the enhanced preprocessor
+    const extractedContent = extractPageContent(pages);
+    
+    // Initialize OpenAI client 
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    // Use enhanced processing options with template and intent detection
+    const processingOptions = {
+      ...DEFAULT_PROCESSING_OPTIONS,
+      useEnhancedAnalysis: true,
+      maxTotalTokens: 12000, // Increased for more thorough analysis
+      enhancedOptions: {
+        useAI: true,
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        maxTokensPerRequest: 2500,
+        batchSize: 15,
+        enableTemplateDetection: true,
+        enableIntentAnalysis: true,
+        enableContentCategorization: true
+      }
+    };
 
-    const prompt = `Analyze this website content for duplication and repetition patterns across ${pages.length} pages.
+    console.log(`Processing content hierarchically with enhanced AI analysis...`);
+    
+    // Run enhanced hierarchical processing
+    const processingResult = await processContentHierarchically(
+      extractedContent,
+      openai,
+      processingOptions
+    );
 
-CONTENT SAMPLES (${contentSamples.length} pages):
-${contentSamples.slice(0, 8).map((page, index) => `
-Page ${index + 1}: ${page.url}
-Title: "${page.title.substring(0, 100)}"
-Meta: "${page.metaDescription.substring(0, 100)}"
-Headings: ${page.headings.substring(0, 150)}
-Content: ${page.paragraphs.substring(0, 200)}
----`).join('\n')}${contentSamples.length > 8 ? `\n(+ ${contentSamples.length - 8} more pages analyzed)` : ''}
+    console.log(`Enhanced analysis complete. Processing time: ${processingResult.performance.totalProcessingTime}ms, AI calls: ${processingResult.performance.aiCallsMade}, tokens used: ${processingResult.performance.tokensUsed}`);
 
-Analyze for:
-1. Duplicate or very similar titles
-2. Duplicate or very similar meta descriptions  
-3. Repetitive heading patterns
-4. Duplicate paragraph content
-5. Overall content strategy recommendations
-
-For each duplicate group, assess:
-- Impact level: "critical" (exact duplicates, major SEO issues), "warning" (similar content, moderate issues), or "minor" (slight similarities)
-- Specific improvement strategy: Actionable advice for fixing this particular duplication
-
-Identify specific examples of duplication and provide detailed recommendations for improvement.
-
-CRITICAL: Your response MUST be valid JSON. Escape all quotes properly. Keep all examples under 80 characters. Limit to 3 examples max per category.
-
-Respond in JSON format:
-{
-  "titleRepetition": {
-    "repetitiveCount": number,
-    "totalCount": number,
-    "examples": ["example1", "example2"],
-    "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "title", "affected_urls": ["url1", "url2"], "impactLevel": "Critical", "improvementStrategy": "strategy"}]
-  },
-  "descriptionRepetition": {
-    "repetitiveCount": number,
-    "totalCount": number,
-    "examples": ["example1", "example2"],
-    "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "description", "affected_urls": ["url1", "url2"], "impactLevel": "High", "improvementStrategy": "strategy"}]
-  },
-  "headingRepetition": {
-    "repetitiveCount": number,
-    "totalCount": number,
-    "examples": ["example1", "example2"],
-    "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "High", "improvementStrategy": "strategy"}],
-    "byLevel": {
-      "h1": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "Critical", "improvementStrategy": "strategy"}],
-      "h2": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "High", "improvementStrategy": "strategy"}],
-      "h3": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "Low", "improvementStrategy": "strategy"}],
-      "h4": [],
-      "h5": [],
-      "h6": []
-    }
-  },
-  "paragraphRepetition": {
-    "repetitiveCount": number,
-    "totalCount": number,
-    "examples": ["example1", "example2"],
-    "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "paragraph", "affected_urls": ["url1", "url2"], "impactLevel": "Low", "improvementStrategy": "strategy"}]
-  },
-  "overallRecommendations": ["rec1", "rec2"]
-}`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
-      messages: [
-        {
-          role: "system",
-          content: "You are a content analysis expert. Identify duplicate and repetitive content patterns with specific examples and actionable recommendations. Focus on SEO impact and content uniqueness."
-        },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_completion_tokens: 3000
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      console.error("No content returned from OpenAI for content duplication analysis");
-      return generateBasicContentAnalysis(pages);
-    }
-
-    // Enhanced JSON parsing with robust error handling
-    let result: any;
-    try {
-      // First attempt to parse the response as-is
-      result = JSON.parse(content);
-      console.log('Successfully parsed content duplication response on first attempt');
-    } catch (parseError) {
-      console.error('Failed to parse content duplication response on first attempt:', parseError);
-      console.log('Response preview:', content.substring(0, 200) + '...');
-
-      // Try to fix common JSON issues and retry parsing
+    // Enhance with quality analysis for additional insights
+    if (extractedContent.titles.length > 0) {
+      console.log(`Running quality analysis on titles for additional insights...`);
       try {
-        // Remove any trailing commas and fix incomplete JSON
-        let fixedContent = content.trim();
-
-        // Remove trailing comma before closing brace/bracket
-        fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
-
-        // If JSON is incomplete, try to complete it
-        if (!fixedContent.endsWith('}') && !fixedContent.endsWith(']')) {
-          // Find the last complete object structure and close the JSON properly
-          const openBraceCount = (fixedContent.match(/{/g) || []).length;
-          const closeBraceCount = (fixedContent.match(/}/g) || []).length;
-          const missingBraces = openBraceCount - closeBraceCount;
-
-          if (missingBraces > 0) {
-            fixedContent = fixedContent + '}'.repeat(missingBraces);
+        const titleQuality = await analyzeContentQuality(
+          extractedContent.titles.slice(0, 10), // Limit for cost control
+          'titles',
+          openai,
+          { 
+            model: "gpt-4o-mini",
+            temperature: 0.2,
+            maxTokensPerRequest: 2000,
+            batchSize: 8,
+            enableDetailedAnalysis: true 
           }
+        );
+        
+        // Merge quality insights into recommendations
+        if (titleQuality.strategicInsights.length > 0) {
+          processingResult.analysis.overallRecommendations.push(
+            ...titleQuality.strategicInsights.slice(0, 2)
+          );
         }
-
-        result = JSON.parse(fixedContent);
-        console.log('Successfully parsed content duplication response after JSON repair');
-      } catch (secondParseError) {
-        console.error('Failed to parse content duplication response even after repair:', secondParseError);
-        console.log('Failed content preview:', content.substring(0, 500));
-        return generateBasicContentAnalysis(pages);
+        
+        console.log(`Quality analysis complete: Average title score ${titleQuality.summary.averageScores.overall}/100`);
+        
+      } catch (qualityError) {
+        console.warn('Quality analysis failed, continuing with main analysis:', qualityError);
       }
     }
 
-    return parseContentRepetitionResult(result);
+    // Add enhanced strategic recommendations
+    const enhancedRecommendations = generateEnhancedRecommendations(
+      processingResult.analysis,
+      pages.length
+    );
+    
+    processingResult.analysis.overallRecommendations.push(...enhancedRecommendations);
+
+    console.log(`Enhanced content analysis complete: Found ${
+      processingResult.analysis.titleRepetition.duplicateGroups.length + 
+      processingResult.analysis.descriptionRepetition.duplicateGroups.length +
+      processingResult.analysis.headingRepetition.duplicateGroups.length +
+      processingResult.analysis.paragraphRepetition.duplicateGroups.length
+    } duplicate groups with ${processingResult.analysis.overallRecommendations.length} strategic recommendations`);
+
+    return processingResult.analysis;
 
   } catch (error) {
-    console.error('Error analyzing content repetition with AI:', error);
+    console.error('Error in enhanced content repetition analysis:', error);
     return generateBasicContentAnalysis(pages);
   }
+}
+
+/**
+ * Generate enhanced strategic recommendations based on analysis results
+ */
+function generateEnhancedRecommendations(
+  analysis: ContentDuplicationAnalysis,
+  totalPages: number
+): string[] {
+  const recommendations: string[] = [];
+  
+  // Analyze duplicate group patterns for template detection insights
+  const allGroups = [
+    ...analysis.titleRepetition.duplicateGroups,
+    ...analysis.descriptionRepetition.duplicateGroups,
+    ...analysis.headingRepetition.duplicateGroups,
+    ...analysis.paragraphRepetition.duplicateGroups
+  ];
+  
+  // Template pattern insights
+  const templateGroups = allGroups.filter(g => g.duplicationType === 'template');
+  if (templateGroups.length > 0) {
+    recommendations.push(`🔍 TEMPLATE PATTERNS: ${templateGroups.length} template patterns detected. Consider diversifying content structure to avoid over-templating.`);
+  }
+  
+  // Intent conflict insights
+  const intentGroups = allGroups.filter(g => g.duplicationType === 'intent');
+  if (intentGroups.length > 0) {
+    recommendations.push(`⚡ INTENT CONFLICTS: ${intentGroups.length} pages competing for same user intent. Consolidate or differentiate these pages.`);
+  }
+  
+  // Boilerplate content insights
+  const boilerplateGroups = allGroups.filter(g => g.duplicationType === 'boilerplate');
+  if (boilerplateGroups.length > 0) {
+    recommendations.push(`📋 BOILERPLATE: ${boilerplateGroups.length} instances of boilerplate content. Focus on unique value propositions.`);
+  }
+  
+  // High-impact recommendations for business strategy
+  const criticalGroups = allGroups.filter(g => g.impactLevel === 'Critical');
+  if (criticalGroups.length > 0) {
+    recommendations.push(`🚨 PRIORITY: ${criticalGroups.length} critical content issues require immediate attention for SEO performance.`);
+  }
+  
+  return recommendations;
 }
 
 /**
@@ -245,134 +231,13 @@ function findSimpleDuplicates(items: string[]): string[] {
   const seen = new Set<string>();
   const duplicates = new Set<string>();
   
-  items.forEach(item => {
+  for (const item of items) {
     if (seen.has(item)) {
       duplicates.add(item);
     } else {
       seen.add(item);
     }
-  });
+  }
   
   return Array.from(duplicates);
-}
-
-/**
- * Parse and validate AI response for content repetition analysis
- */
-function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
-  return {
-    titleRepetition: {
-      repetitiveCount: result.titleRepetition?.repetitiveCount || 0,
-      totalCount: result.titleRepetition?.totalCount || 0,
-      examples: result.titleRepetition?.examples || [],
-      recommendations: (result.titleRepetition?.recommendations || []).map((rec: any) => {
-        if (typeof rec === 'string') return rec;
-        if (typeof rec === 'object' && rec?.description) return rec.description;
-        return String(rec || '');
-      }),
-      duplicateGroups: (result.titleRepetition?.duplicateGroups || []).map((group: any) => ({
-        content: group.content || '',
-        urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100,
-        impactLevel: group.impactLevel || 'Low',
-        improvementStrategy: group.improvementStrategy || 'Create unique, descriptive content for each page'
-      }))
-    },
-    descriptionRepetition: {
-      repetitiveCount: result.descriptionRepetition?.repetitiveCount || 0,
-      totalCount: result.descriptionRepetition?.totalCount || 0,
-      examples: result.descriptionRepetition?.examples || [],
-      recommendations: (result.descriptionRepetition?.recommendations || []).map((rec: any) => {
-        if (typeof rec === 'string') return rec;
-        if (typeof rec === 'object' && rec?.description) return rec.description;
-        return String(rec || '');
-      }),
-      duplicateGroups: (result.descriptionRepetition?.duplicateGroups || []).map((group: any) => ({
-        content: group.content || '',
-        urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100,
-        impactLevel: group.impactLevel || 'Low',
-        improvementStrategy: group.improvementStrategy || 'Write unique meta descriptions with relevant keywords'
-      }))
-    },
-    headingRepetition: {
-      repetitiveCount: result.headingRepetition?.repetitiveCount || 0,
-      totalCount: result.headingRepetition?.totalCount || 0,
-      examples: result.headingRepetition?.examples || [],
-      recommendations: (result.headingRepetition?.recommendations || []).map((rec: any) => {
-        if (typeof rec === 'string') return rec;
-        if (typeof rec === 'object' && rec?.description) return rec.description;
-        return String(rec || '');
-      }),
-      duplicateGroups: (result.headingRepetition?.duplicateGroups || []).map((group: any) => ({
-        content: group.content || '',
-        urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100,
-        impactLevel: group.impactLevel || 'Low',
-        improvementStrategy: group.improvementStrategy || 'Create distinct heading structures for each page'
-      })),
-      byLevel: {
-        h1: (result.headingRepetition?.byLevel?.h1 || []).map((group: any) => ({
-          content: group.content || '',
-          urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100,
-          impactLevel: group.impactLevel || 'Critical',
-          improvementStrategy: group.improvementStrategy || 'Create unique H1 headings that reflect each page\'s specific purpose'
-        })),
-        h2: (result.headingRepetition?.byLevel?.h2 || []).map((group: any) => ({
-          content: group.content || '',
-          urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100,
-          impactLevel: group.impactLevel || 'warning',
-          improvementStrategy: group.improvementStrategy || 'Diversify H2 headings to reflect unique section content'
-        })),
-        h3: (result.headingRepetition?.byLevel?.h3 || []).map((group: any) => ({
-          content: group.content || '',
-          urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100,
-          impactLevel: group.impactLevel || 'Low',
-          improvementStrategy: group.improvementStrategy || 'Vary H3 headings to distinguish subsection topics'
-        })),
-        h4: (result.headingRepetition?.byLevel?.h4 || []).map((group: any) => ({
-          content: group.content || '',
-          urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100,
-          impactLevel: group.impactLevel || 'Low',
-          improvementStrategy: group.improvementStrategy || 'Create specific H4 headings for detailed sections'
-        })),
-        h5: (result.headingRepetition?.byLevel?.h5 || []).map((group: any) => ({
-          content: group.content || '',
-          urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100,
-          impactLevel: group.impactLevel || 'Low',
-          improvementStrategy: group.improvementStrategy || 'Use descriptive H5 headings for fine-grained content organization'
-        })),
-        h6: (result.headingRepetition?.byLevel?.h6 || []).map((group: any) => ({
-          content: group.content || '',
-          urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100,
-          impactLevel: group.impactLevel || 'Low',
-          improvementStrategy: group.improvementStrategy || 'Ensure H6 headings are specific and contextually relevant'
-        }))
-      }
-    },
-    paragraphRepetition: {
-      repetitiveCount: result.paragraphRepetition?.repetitiveCount || 0,
-      totalCount: result.paragraphRepetition?.totalCount || 0,
-      examples: result.paragraphRepetition?.examples || [],
-      recommendations: (result.paragraphRepetition?.recommendations || []).map((rec: any) => {
-        if (typeof rec === 'string') return rec;
-        if (typeof rec === 'object' && rec?.description) return rec.description;
-        return String(rec || '');
-      }),
-      duplicateGroups: (result.paragraphRepetition?.duplicateGroups || []).map((group: any) => ({
-        content: group.content || '',
-        urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100,
-        impactLevel: group.impactLevel || 'Low',
-        improvementStrategy: group.improvementStrategy || 'Rewrite paragraphs to provide unique value and context for each page'
-      }))
-    },
-    overallRecommendations: result.overallRecommendations || []
-  };
 }
