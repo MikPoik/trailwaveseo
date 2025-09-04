@@ -1,4 +1,4 @@
-import { users, type User, type InsertUser, analyses, type Analysis, type InsertAnalysis, settings, type Settings, type InsertSettings } from "@shared/schema";
+import { users, type User, type InsertUser, analyses, type Analysis, type InsertAnalysis, settings, type Settings, type InsertSettings, contentConversations, type ContentConversation, type InsertContentConversation } from "@shared/schema";
 import { z } from "zod";
 import { db } from './db';
 import { eq, desc, and, count, sql } from 'drizzle-orm';
@@ -29,6 +29,12 @@ export interface IStorage {
   // Settings operations
   getSettings(userId?: string): Promise<Settings>;
   updateSettings(newSettings: Partial<Settings>, userId?: string): Promise<Settings>;
+
+  // Content conversation operations
+  getContentConversation(analysisId: number, pageUrl: string, userId: string): Promise<ContentConversation | undefined>;
+  createContentConversation(data: InsertContentConversation): Promise<ContentConversation>;
+  updateContentConversation(id: number, data: Partial<ContentConversation>): Promise<ContentConversation | undefined>;
+  getAnalysis(id: number): Promise<Analysis | undefined>;
 }
 
 // Type for user upsert from Replit Auth
@@ -774,6 +780,42 @@ export class DatabaseStorage implements IStorage {
       console.error("Error in updateSettings:", error);
       throw error;
     }
+  }
+
+  // Content conversation operations
+  async getContentConversation(analysisId: number, pageUrl: string, userId: string): Promise<ContentConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(contentConversations)
+      .where(
+        and(
+          eq(contentConversations.analysisId, analysisId),
+          eq(contentConversations.pageUrl, pageUrl),
+          eq(contentConversations.userId, userId)
+        )
+      );
+    return conversation;
+  }
+
+  async createContentConversation(data: InsertContentConversation): Promise<ContentConversation> {
+    const [conversation] = await db
+      .insert(contentConversations)
+      .values(data)
+      .returning();
+    return conversation;
+  }
+
+  async updateContentConversation(id: number, data: Partial<ContentConversation>): Promise<ContentConversation | undefined> {
+    const [conversation] = await db
+      .update(contentConversations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(contentConversations.id, id))
+      .returning();
+    return conversation;
+  }
+
+  async getAnalysis(id: number): Promise<Analysis | undefined> {
+    return this.getAnalysisById(id);
   }
 }
 

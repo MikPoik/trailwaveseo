@@ -94,6 +94,25 @@ export const insertSettingsSchema = createInsertSchema(settings).pick({
   useAI: true,
 });
 
+// Content conversations for AI chat editor
+export const contentConversations = pgTable("content_conversations", {
+  id: serial("id").primaryKey(),
+  analysisId: integer("analysis_id").references(() => analyses.id).notNull(),
+  pageUrl: text("page_url").notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  messages: jsonb("messages").notNull().default('[]'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Insert schema for content conversations
+export const insertContentConversationSchema = createInsertSchema(contentConversations).pick({
+  analysisId: true,
+  pageUrl: true,
+  userId: true,
+  messages: true,
+});
+
 // Content duplication analysis types
 export interface DuplicateItem {
   content: string;
@@ -214,6 +233,13 @@ export interface KeywordRepetitionAnalysis {
   }[];
 }
 
+// Chat message interface
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -223,3 +249,6 @@ export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 
 export type Settings = typeof settings.$inferSelect;
 export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+
+export type ContentConversation = typeof contentConversations.$inferSelect;
+export type InsertContentConversation = z.infer<typeof insertContentConversationSchema>;

@@ -3,8 +3,9 @@ import { PageAnalysis, IssueType } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image, RefreshCw, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface PageAnalysisCardProps {
   page: PageAnalysis;
@@ -15,9 +16,16 @@ interface PageAnalysisCardProps {
 const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [, setLocation] = useLocation();
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleEditContent = () => {
+    if (!analysisId) return;
+    const encodedUrl = encodeURIComponent(page.url);
+    setLocation(`/content-editor/${analysisId}/${encodedUrl}`);
   };
 
   const handleReanalyze = async () => {
@@ -95,6 +103,20 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
           </div>
           <div className="flex items-center gap-2">
             {getStatusText()}
+            {analysisId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditContent();
+                }}
+                className="h-7 px-2 text-xs"
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                Edit Content
+              </Button>
+            )}
             {analysisId && onReanalyze && (
               <Button
                 variant="outline"

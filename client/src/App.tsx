@@ -11,6 +11,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import Settings from "@/pages/Settings";
 import AnalysisDetails from "@/pages/AnalysisDetails";
 import Account from "@/pages/Account";
+import ContentEditor from "@/pages/ContentEditor";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "./hooks/useAuth";
 
@@ -81,6 +82,13 @@ function Router() {
           <AuthenticatedApp>
             <Account />
           </AuthenticatedApp>
+        </Route>
+        <Route path="/content-editor/:analysisId/:pageUrl">
+          {(params) => (
+            <AuthenticatedApp>
+              <ContentEditor />
+            </AuthenticatedApp>
+          )}
         </Route>
         <Route component={NotFound} />
       </Switch>
