@@ -227,7 +227,21 @@ async function performEnhancedPageAnalysis(
     console.log(`- Images without alt: ${contentElements.images.filter(img => !img.alt).length}`);
     
     if (options?.useAI && !options?.skipAltTextGeneration && !isCompetitor) {
-      const imagesWithoutAlt = contentElements.images.filter(img => !img.alt);
+      // Filter out images without alt text AND filter out invalid image sources
+      const imagesWithoutAlt = contentElements.images.filter(img => {
+        if (img.alt) return false; // Skip images that already have alt text
+        
+        // Skip data URIs, SVG placeholders, and invalid URLs
+        if (img.src.startsWith('data:') || 
+            img.src.includes('placeholder') || 
+            img.src.includes('%3Csvg') ||
+            !img.src.startsWith('http')) {
+          console.log(`Skipping invalid image URL for alt text: ${img.src.substring(0, 100)}...`);
+          return false;
+        }
+        
+        return true;
+      });
       
       if (imagesWithoutAlt.length > 0) {
         console.log(`Generating alt text for ${imagesWithoutAlt.length} images on ${url}`);
