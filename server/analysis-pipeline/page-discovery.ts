@@ -225,20 +225,49 @@ function preparePagesList(
   maxPages: number
 ): string[] {
   
+  // Normalize all URLs first to ensure consistency (remove www, trailing slashes, etc.)
+  let pages = discoveredPages.map(url => normalizeUrlForAnalysis(url));
+  
+  // Remove duplicates after normalization
+  pages = [...new Set(pages)];
+  
   // Limit the number of pages to analyze
-  let pages = discoveredPages.length > maxPages 
-    ? discoveredPages.slice(0, maxPages) 
-    : discoveredPages;
+  pages = pages.length > maxPages 
+    ? pages.slice(0, maxPages) 
+    : pages;
 
   console.log(`Preparing ${pages.length} pages for analysis (max setting: ${maxPages})`);
-
-  // Ensure we don't have duplicate URLs in the pages array
-  pages = [...new Set(pages)];
 
   // Always ensure homepage/root is analyzed first for better context
   pages = ensureHomepageFirst(pages, domain);
   
   return pages;
+}
+
+/**
+ * Normalize URL for consistent analysis - removes www prefix and standardizes format
+ */
+function normalizeUrlForAnalysis(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    
+    // Remove www prefix for consistency
+    if (urlObj.hostname.startsWith('www.')) {
+      urlObj.hostname = urlObj.hostname.substring(4);
+    }
+    
+    // Remove trailing slash from pathname (except for root)
+    if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+    
+    // Remove fragment
+    urlObj.hash = '';
+    
+    return urlObj.href;
+  } catch (error) {
+    return url;
+  }
 }
 
 /**
