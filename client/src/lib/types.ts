@@ -141,6 +141,41 @@ export interface ContentRepetitionAnalysis {
   overallRecommendations: string[];
 }
 
+export interface KeywordDensityItem {
+  keyword: string;
+  density: number;
+  occurrences: number;
+  impactLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+  affectedPages: string[];
+  improvementStrategy: string;
+  alternatives: string[];
+}
+
+export interface KeywordRepetitionAnalysis {
+  overallKeywordHealth: {
+    score: number;
+    issues: number;
+    recommendations: string[];
+  };
+  topProblematicKeywords: KeywordDensityItem[];
+  siteWidePatterns: {
+    repetitiveCount: number;
+    totalAnalyzed: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  readabilityImpact: {
+    affectedPages: number;
+    severityLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+    improvementAreas: string[];
+  };
+  keywordOpportunities: {
+    suggestion: string;
+    benefit: string;
+    implementation: string;
+  }[];
+}
+
 export interface ComparisonMetric {
   main: number;
   competitor: number;
@@ -228,6 +263,7 @@ export interface WebsiteAnalysis {
   metrics: WebsiteAnalysisMetrics;
   pages: PageAnalysis[];
   contentRepetitionAnalysis?: ContentRepetitionAnalysis;
+  keywordRepetitionAnalysis?: KeywordRepetitionAnalysis;
   competitorAnalysis?: CompetitorAnalysisResult;
   enhancedInsights?: EnhancedInsights;
 }

@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { analyzePage } from "../seoAnalyzer";
 import { generateSeoSuggestions } from "../analysis-pipeline/ai-suggestions";
 import { analyzeContentRepetition } from "../content-analysis/content-duplication";
+import { analyzeKeywordRepetition } from "../content-analysis/keyword-repetition";
 import { generateCompetitorInsights } from "../analysis-pipeline/competitor-insights";
 import { analyzeCompetitor } from "../competitive-analysis/competitive-analyzer";
 import OpenAI from "openai";
@@ -576,6 +577,93 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
       }
     } catch (error) {
       res.status(500).json({ error: "Failed to run content duplication analysis" });
+    }
+  });
+
+  // Run keyword repetition analysis for an existing analysis
+  app.post("/api/analysis/:id/keyword-repetition", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+
+      const analysis = await storage.getAnalysisById(id);
+
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      // Check if the analysis belongs to the authenticated user
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to access this analysis" });
+      }
+
+      // Check if analysis has enough pages for keyword analysis
+      if ((analysis.pages as any[])?.length < 1) {
+        return res.status(400).json({ error: "Keyword repetition analysis requires at least 1 page" });
+      }
+
+      // Check if user has enough credits for keyword analysis (2 credits required)
+      const usage = await storage.getUserUsage(userId);
+      if (!usage) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const keywordAnalysisCost = 2;
+      if (usage.credits < keywordAnalysisCost) {
+        return res.status(403).json({
+          error: "Insufficient credits",
+          message: `Keyword repetition analysis requires ${keywordAnalysisCost} credits. You have ${usage.credits} credits remaining.`,
+          creditsNeeded: keywordAnalysisCost,
+          creditsAvailable: usage.credits
+        });
+      }
+
+      // Deduct 2 credits for keyword analysis
+      const creditResult = await storage.atomicDeductCredits(userId, keywordAnalysisCost);
+      if (!creditResult.success) {
+        return res.status(403).json({
+          error: "Insufficient credits",
+          message: `Keyword repetition analysis requires ${keywordAnalysisCost} credits. You have ${creditResult.remainingCredits} credits remaining.`,
+          creditsNeeded: keywordAnalysisCost,
+          creditsAvailable: creditResult.remainingCredits
+        });
+      }
+
+      console.log(`Deducted ${keywordAnalysisCost} credits for keyword repetition analysis. User ${userId} has ${creditResult.remainingCredits} credits remaining.`);
+
+      try {
+        console.log(`Running keyword repetition analysis for analysis ${id}...`);
+        const keywordRepetitionAnalysis = await analyzeKeywordRepetition(analysis.pages as any[]);
+        
+        console.log('Keyword analysis completed:', {
+          overallScore: keywordRepetitionAnalysis.overallKeywordHealth?.score,
+          issues: keywordRepetitionAnalysis.overallKeywordHealth?.issues,
+          problematicKeywords: keywordRepetitionAnalysis.topProblematicKeywords?.length || 0
+        });
+        
+        // Update the analysis with the keyword repetition results
+        const updatedAnalysis = await storage.updateKeywordRepetitionAnalysis(id, keywordRepetitionAnalysis);
+        
+        if (!updatedAnalysis) {
+          return res.status(500).json({ error: "Failed to save keyword repetition analysis" });
+        }
+
+        console.log(`[API RESPONSE DEBUG] Keyword analysis completed:`);
+        console.log(`[API RESPONSE DEBUG] Overall score: ${keywordRepetitionAnalysis.overallKeywordHealth?.score || 0}`);
+        console.log(`[API RESPONSE DEBUG] Problematic keywords: ${keywordRepetitionAnalysis.topProblematicKeywords?.length || 0}`);
+        console.log(`[API RESPONSE DEBUG] Affected pages: ${keywordRepetitionAnalysis.readabilityImpact?.affectedPages || 0}`);
+
+        res.json({ keywordRepetitionAnalysis });
+      } catch (error) {
+        console.error(`Error analyzing keyword repetition for analysis ${id}:`, error);
+        res.status(500).json({ error: "Failed to analyze keyword repetition" });
+      }
+    } catch (error) {
+      console.error("Error in keyword repetition analysis:", error);
+      res.status(500).json({ error: "Failed to analyze keyword repetition" });
     }
   });
 

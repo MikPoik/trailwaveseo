@@ -438,6 +438,38 @@ export class DatabaseStorage implements IStorage {
       }
   }
 
+  async updateKeywordRepetitionAnalysis(id: number, keywordRepetitionAnalysis: any): Promise<Analysis | undefined> {
+      // First check if the analysis exists
+      const analysis = await this.getAnalysisById(id);
+      if (!analysis) {
+        return undefined;
+      }
+
+      console.log(`Saving keyword repetition analysis for ID ${id}`);
+      console.log('Keyword analysis data:', {
+        overallScore: keywordRepetitionAnalysis?.overallKeywordHealth?.score,
+        issues: keywordRepetitionAnalysis?.overallKeywordHealth?.issues,
+        problematicKeywords: keywordRepetitionAnalysis?.topProblematicKeywords?.length || 0
+      });
+
+      try {
+        // Update the analysis with keyword repetition data
+        const [updatedAnalysis] = await db
+          .update(analyses)
+          .set({
+            keywordRepetitionAnalysis: keywordRepetitionAnalysis
+          })
+          .where(eq(analyses.id, id))
+          .returning();
+
+        console.log(`Successfully saved keyword repetition analysis for ID ${id}`);
+        return updatedAnalysis;
+      } catch (error) {
+        console.error(`Error saving keyword repetition analysis for ID ${id}:`, error);
+        return undefined;
+      }
+  }
+
   async updatePageInAnalysis(id: number, pageUrl: string, updatedPageData: any): Promise<Analysis | undefined> {
     // First get the current analysis
     const analysis = await this.getAnalysisById(id);

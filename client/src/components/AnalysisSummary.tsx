@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import OverviewTab from "./analysis-tabs/OverviewTab";
 import PagesTab from "./analysis-tabs/PagesTab";
 import DuplicationTab from "./analysis-tabs/DuplicationTab";
+import KeywordRepetitionTab from "./analysis-tabs/KeywordRepetitionTab";
 import CompetitorTab from "./analysis-tabs/CompetitorTab";
 
 interface AnalysisSummaryProps {
@@ -159,6 +160,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Analysis Overview</TabsTrigger>
           <TabsTrigger value="content-repetition">Content Duplication</TabsTrigger>
+          <TabsTrigger value="keyword-repetition">Keyword Analysis</TabsTrigger>
           <TabsTrigger value="competitor">Competitor Analysis</TabsTrigger>
         </TabsList>
 
@@ -174,6 +176,13 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
 
         <TabsContent value="content-repetition">
           <DuplicationTab
+            analysis={updatedAnalysis}
+            onAnalysisUpdate={handleAnalysisUpdate}
+          />
+        </TabsContent>
+
+        <TabsContent value="keyword-repetition">
+          <KeywordRepetitionTab
             analysis={updatedAnalysis}
             onAnalysisUpdate={handleAnalysisUpdate}
           />

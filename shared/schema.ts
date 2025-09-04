@@ -45,6 +45,7 @@ export const analyses = pgTable("analyses", {
   metrics: jsonb("metrics").notNull(),
   pages: jsonb("pages").notNull(),
   contentRepetitionAnalysis: jsonb("content_repetition_analysis"),
+  keywordRepetitionAnalysis: jsonb("keyword_repetition_analysis"),
   competitorAnalysis: jsonb("competitor_analysis"),
   siteOverview: jsonb("site_overview"),
 });
@@ -57,6 +58,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   metrics: true,
   pages: true,
   contentRepetitionAnalysis: true,
+  keywordRepetitionAnalysis: true,
   competitorAnalysis: true,
   siteOverview: true,
 });
@@ -139,6 +141,42 @@ export interface ContentDuplicationAnalysis {
     duplicateGroups: DuplicateItem[];
   };
   overallRecommendations: string[];
+}
+
+// Keyword repetition analysis types
+export interface KeywordDensityItem {
+  keyword: string;
+  density: number;
+  occurrences: number;
+  impactLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+  affectedPages: string[];
+  improvementStrategy: string;
+  alternatives: string[];
+}
+
+export interface KeywordRepetitionAnalysis {
+  overallKeywordHealth: {
+    score: number; // 1-100, where 100 is optimal
+    issues: number;
+    recommendations: string[];
+  };
+  topProblematicKeywords: KeywordDensityItem[];
+  siteWidePatterns: {
+    repetitiveCount: number;
+    totalAnalyzed: number;
+    examples: string[];
+    recommendations: string[];
+  };
+  readabilityImpact: {
+    affectedPages: number;
+    severityLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+    improvementAreas: string[];
+  };
+  keywordOpportunities: {
+    suggestion: string;
+    benefit: string;
+    implementation: string;
+  }[];
 }
 
 // Export types
