@@ -40,7 +40,13 @@ export async function aggregateAnalysisResults(
       contentRepetitionAnalysis: null, // Will be added in future enhancement
       competitorAnalysis: null, // Will be added in future enhancement
       siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview || null,
-      isCompetitorAnalysis: options.isCompetitorAnalysis || false
+      isCompetitorAnalysis: options.isCompetitorAnalysis || false,
+      enhancedInsights: {
+        technicalAnalysis: insights?.technicalAnalysis,
+        contentQualityAnalysis: insights?.contentQualityAnalysis,
+        linkArchitectureAnalysis: insights?.linkArchitectureAnalysis,
+        performanceAnalysis: insights?.performanceAnalysis
+      }
     };
 
     // Save analysis to database
@@ -54,7 +60,7 @@ export async function aggregateAnalysisResults(
 
     console.log(`Updated user usage: +${analyzedPages.length} pages for user ${context.userId}`);
 
-    // Report completion to frontend
+    // Prepare final result with complete data including enhanced insights
     const finalResult = {
       analysisId: savedAnalysis.id,
       domain: context.domain,
@@ -76,6 +82,7 @@ export async function aggregateAnalysisResults(
       }
     };
 
+    // Only report completion after everything is saved and ready
     await reportAnalysisCompletion(context, finalResult);
 
     return finalResult;

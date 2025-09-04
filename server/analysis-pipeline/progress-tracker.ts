@@ -110,7 +110,7 @@ export function emitFinalProgress(
   context: AnalysisContext,
   totalPages: number,
   analyzedPages: any[],
-  operation: string = 'Finalizing analysis results...'
+  operation: string = 'Saving analysis results...'
 ): void {
   
   const update: ProgressUpdate = {
@@ -120,7 +120,7 @@ export function emitFinalProgress(
     pagesAnalyzed: analyzedPages.length,
     currentPageUrl: operation,
     analyzedPages: analyzedPages.map(p => p.url),
-    percentage: 95
+    percentage: 98 // Higher percentage to show we're almost done but not complete
   };
   
   context.events.emit(context.domain, update);

@@ -10,7 +10,7 @@ const CompetitorTab = ({ analysis }: CompetitorTabProps) => {
   return (
     <Card>
       <CardContent className="pt-6">
-        <CompetitorAnalysis analysis={analysis} />
+        <CompetitorAnalysis mainAnalysis={analysis} />
       </CardContent>
     </Card>
   );
