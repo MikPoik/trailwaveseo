@@ -110,7 +110,7 @@ For each area, provide a specific explanation (2-3 sentences) that:
 2. Identifies the specific biggest problem with numbers
 3. Gives one concrete, actionable fix with expected impact
 
-Response format:
+Please respond with a JSON object in the following format:
 {
   "technicalExplanation": "Your specific Technical SEO explanation with actual data...",
   "contentQualityExplanation": "Your specific Content Quality explanation with actual data...",

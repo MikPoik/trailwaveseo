@@ -133,7 +133,7 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
                     <h5 className="text-sm font-medium text-orange-800">Main Services</h5>
                   </div>
                   <p className="text-sm text-orange-700">
-                    {analysis.siteOverview.mainServices?.length > 0 
+                    {analysis.siteOverview.mainServices && analysis.siteOverview.mainServices.length > 0 
                       ? analysis.siteOverview.mainServices.slice(0, 2).join(', ') + 
                         (analysis.siteOverview.mainServices.length > 2 ? '...' : '')
                       : 'Not detected'

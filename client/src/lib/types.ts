@@ -266,6 +266,20 @@ export interface WebsiteAnalysis {
   keywordRepetitionAnalysis?: KeywordRepetitionAnalysis;
   competitorAnalysis?: CompetitorAnalysisResult;
   enhancedInsights?: EnhancedInsights;
+  siteOverview?: {
+    businessType?: string;
+    industry?: string;
+    targetAudience?: string;
+    mainServices?: string[];
+    location?: string;
+  };
+  processingStats?: {
+    totalProcessingTime?: number;
+    pagesDiscovered?: number;
+    pagesAnalyzed: number;
+    aiCallsMade?: number;
+    creditsUsed?: number;
+  };
 }
 
 // API Types
