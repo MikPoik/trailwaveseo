@@ -277,55 +277,72 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAnalysisHistory(userId?: string): Promise<Analysis[]> {
-    if (userId) {
+    try {
+      if (userId) {
+        return db.select().from(analyses)
+          .where(eq(analyses.userId, userId))
+          .orderBy(desc(analyses.date));
+      }
+      // If no userId is provided, return all analyses
       return db.select().from(analyses)
-        .where(and(eq(analyses.userId, userId), sql`(is_competitor_analysis IS NULL OR is_competitor_analysis = false)`))
         .orderBy(desc(analyses.date));
+    } catch (error) {
+      console.error('Error in getAnalysisHistory:', error);
+      return [];
     }
-    // If no userId is provided, return all non-competitor analyses
-    return db.select().from(analyses)
-      .where(sql`(is_competitor_analysis IS NULL OR is_competitor_analysis = false)`)
-      .orderBy(desc(analyses.date));
   }
 
   async getRecentAnalyses(limit: number = 5, userId?: string): Promise<{id: number, domain: string}[]> {
-    const { pool } = await import('./db');
+    try {
+      const { pool } = await import('./db');
 
-    let query: string;
-    let params: any[];
+      let query: string;
+      let params: any[];
 
-    if (userId) {
-      query = `SELECT id, domain
-               FROM analyses
-               WHERE user_id = $1 AND (is_competitor_analysis IS NULL OR is_competitor_analysis = false)
-               ORDER BY date DESC
-               LIMIT $2`;
-      params = [userId, limit];
-    } else {
-      // If no userId, fetch global recent analyses (which are also not competitor analyses)
-      query = `SELECT id, domain
-               FROM analyses
-               WHERE user_id IS NULL AND (is_competitor_analysis IS NULL OR is_competitor_analysis = false)
-               ORDER BY date DESC
-               LIMIT $1`;
-      params = [limit];
+      if (userId) {
+        query = `SELECT id, domain
+                 FROM analyses
+                 WHERE user_id = $1
+                 ORDER BY date DESC
+                 LIMIT $2`;
+        params = [userId, limit];
+      } else {
+        // If no userId, fetch global recent analyses
+        query = `SELECT id, domain
+                 FROM analyses
+                 WHERE user_id IS NULL
+                 ORDER BY date DESC
+                 LIMIT $1`;
+        params = [limit];
+      }
+
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Error in getRecentAnalyses:', error);
+      return [];
     }
-
-    const result = await pool.query(query, params);
-    return result.rows;
   }
 
 
   async getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null> {
-    let query = db.select().from(analyses)
-      .where(eq(analyses.domain, domain));
+    try {
+      let whereConditions = [eq(analyses.domain, domain)];
+      
+      if (userId) {
+        whereConditions.push(eq(analyses.userId, userId));
+      }
 
-    if (userId) {
-      query = query.where(eq(analyses.userId, userId));
+      const analysisResults = await db.select().from(analyses)
+        .where(and(...whereConditions))
+        .orderBy(desc(analyses.date))
+        .limit(1);
+        
+      return analysisResults.length > 0 ? analysisResults[0] : null;
+    } catch (error) {
+      console.error('Error in getLatestAnalysisByDomain:', error);
+      return null;
     }
-
-    const analysisResults = await query.orderBy(desc(analyses.date)).limit(1);
-    return analysisResults.length > 0 ? analysisResults[0] : null;
   }
 
   async saveAnalysis(analysis: Analysis): Promise<Analysis> {
@@ -333,7 +350,7 @@ export class DatabaseStorage implements IStorage {
 
 
     const result = await pool.query(
-      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, competitor_analysis, site_overview, is_competitor_analysis)
+      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, keyword_repetition_analysis, competitor_analysis, site_overview)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         analysis.userId,
@@ -343,17 +360,17 @@ export class DatabaseStorage implements IStorage {
         JSON.stringify(analysis.metrics),
         JSON.stringify(analysis.pages),
         analysis.contentRepetitionAnalysis ? JSON.stringify(analysis.contentRepetitionAnalysis) : null,
+        analysis.keywordRepetitionAnalysis ? JSON.stringify(analysis.keywordRepetitionAnalysis) : null,
         analysis.competitorAnalysis ? JSON.stringify(analysis.competitorAnalysis) : null,
-        analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null,
-        analysis.isCompetitorAnalysis || false
+        analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null
       ]
     );
 
     const newAnalysis = result.rows[0];
 
-    // Increment user's page usage count if userId is provided and it's not a competitor analysis
-    if (analysis.userId && !analysis.isCompetitorAnalysis) {
-      const pageCount = analysis.pagesCount || analysis.pages.length;
+    // Increment user's page usage count if userId is provided
+    if (analysis.userId) {
+      const pageCount = analysis.pagesCount || (analysis.pages as any[])?.length || 0;
       await this.incrementUserUsage(analysis.userId, pageCount);
     }
 
@@ -375,8 +392,7 @@ export class DatabaseStorage implements IStorage {
       const [updatedAnalysis] = await db
         .update(analyses)
         .set({
-          competitorAnalysis: competitorData,
-          isCompetitorAnalysis: true // Ensure this flag is set
+          competitorAnalysis: competitorData
         })
         .where(eq(analyses.id, id))
         .returning();
@@ -389,7 +405,7 @@ export class DatabaseStorage implements IStorage {
       try {
         const { pool } = await import('./db');
         const result = await pool.query(
-          'UPDATE analyses SET competitor_analysis = $1, is_competitor_analysis = true WHERE id = $2 RETURNING *',
+          'UPDATE analyses SET competitor_analysis = $1 WHERE id = $2 RETURNING *',
           [JSON.stringify(competitorData), id]
         );
 
