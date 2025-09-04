@@ -7,10 +7,13 @@ export function registerAnalysisManagementRoutes(app: Express) {
   app.get("/api/analysis/history", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log('Fetching analysis history for user:', userId);
       const history = await storage.getAnalysisHistory(userId);
+      console.log('Analysis history retrieved:', history.length, 'analyses');
       res.json(history);
     } catch (error) {
-      res.status(500).json({ error: "Failed to retrieve analysis history" });
+      console.error("Error in analysis history endpoint:", error);
+      res.status(500).json({ error: "Failed to retrieve analysis history", details: (error as Error).message });
     }
   });
 
