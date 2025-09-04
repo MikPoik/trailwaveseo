@@ -89,8 +89,6 @@ export function detectDuplicates(
   const semanticMatches = findSemanticMatches(remainingAfterFuzzy, options.semanticThreshold);
 
   // Combine all results and convert to proper DuplicateItem format
-  console.log(`[FINAL DEBUG] Converting to DuplicateItems: exact=${exactMatches.length}, fuzzy=${fuzzyMatches.length}, semantic=${semanticMatches.length}`);
-  
   const allDuplicateGroups: DuplicateItem[] = [
     ...exactMatches.map(group => {
       const duplicateItem = {
@@ -99,7 +97,6 @@ export function detectDuplicates(
         similarityScore: 100,
         impactLevel: determinImpactLevel(group)
       };
-      console.log(`[FINAL DEBUG] Exact match item: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
       return duplicateItem;
     }),
     ...fuzzyMatches.map(group => {
@@ -109,7 +106,6 @@ export function detectDuplicates(
         similarityScore: group.similarity,
         impactLevel: determinImpactLevel(group)
       };
-      console.log(`[FINAL DEBUG] Fuzzy match item: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
       return duplicateItem;
     }),
     ...semanticMatches.map(group => {
@@ -119,12 +115,9 @@ export function detectDuplicates(
         similarityScore: group.similarity,
         impactLevel: determinImpactLevel(group)
       };
-      console.log(`[FINAL DEBUG] Semantic match item: "${duplicateItem.content}" with ${duplicateItem.urls.length} URLs`);
       return duplicateItem;
     })
   ];
-  
-  console.log(`[FINAL DEBUG] Total DuplicateItems created: ${allDuplicateGroups.length}`);
 
   // Calculate statistics
   const duplicateCount = allDuplicateGroups.reduce((sum, group) => sum + (group.urls?.length || 0) - 1, 0);
@@ -164,21 +157,10 @@ function findExactMatches(content: ContentItem[]): ContentGroup[] {
     }
     contentMap.get(normalizedContent)!.push(item);
     
-    // Debug descriptions normalization
-    if (isDescriptionAnalysis && item.content !== normalizedContent) {
-      console.log(`[DESCRIPTION DEBUG] Normalized: "${item.content}" -> "${normalizedContent}"`);
-    }
+    // Normalize content for matching
   });
 
-  // Debug description grouping
-  if (isDescriptionAnalysis) {
-    console.log(`[DESCRIPTION DEBUG] Found ${contentMap.size} unique normalized descriptions from ${content.length} total`);
-    const potentialDuplicates = Array.from(contentMap.entries()).filter(([_, items]) => items.length > 1);
-    console.log(`[DESCRIPTION DEBUG] Potential duplicate groups: ${potentialDuplicates.length}`);
-    potentialDuplicates.forEach(([normalizedContent, items]) => {
-      console.log(`[DESCRIPTION DEBUG] Group: "${normalizedContent}" found on ${items.length} pages`);
-    });
-  }
+  // Process content groups for duplicates
   
   // Return groups with duplicates, but deduplicate URLs
   return Array.from(contentMap.entries())

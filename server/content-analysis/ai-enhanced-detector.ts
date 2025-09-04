@@ -338,7 +338,7 @@ Respond with JSON format:
       ],
       "businessImpact": "high|medium|low",
       "patternType": "beneficial|problematic",
-      "recommendation": "For beneficial patterns: suggest expansion. For problematic patterns: suggest diversification"
+      "recommendation": "Specific action: **DIVERSIFY** - explain why this pattern hurts uniqueness OR **EXPAND** - explain why this structure helps organization"
     }
   ]
 }`;
@@ -439,16 +439,19 @@ function findExactMatchesBasic(content: ContentItem[]): DuplicateItem[] {
 }
 
 function convertTemplatesToDuplicates(patterns: TemplatePattern[]): DuplicateItem[] {
-  return patterns.map(pattern => {
+  return patterns
+    .filter(pattern => pattern.instances.length > 1) // Only actual duplicates (2+ pages)
+    .map(pattern => {
     // Generate smart recommendations based on pattern type
     const isProblematic = (pattern as any).patternType === 'problematic' || 
                           pattern.pattern.toLowerCase().includes('blog') ||
                           pattern.pattern.toLowerCase().includes('artikkeli') ||
                           pattern.instances.length < 3; // Small patterns often problematic
     
+    // Generate specific, actionable recommendations
     const smartRecommendation = isProblematic
-      ? `Diversify this content pattern - repetitive templates hurt uniqueness. Consider varied approaches for better user engagement.`
-      : `This organized pattern could be expanded - consider applying it to more relevant pages for consistency.`;
+      ? `**DIVERSIFY** - This repetitive pattern hurts content uniqueness. Try varied introductions, different phrasings, or more specific content for each page.`
+      : `**EXPAND** - This organized pattern helps site structure. Consider applying this consistent format to similar content areas for better navigation.`;
     
     return {
       content: pattern.pattern,
