@@ -42,7 +42,11 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF }: Over
             <p className="mt-1 text-sm text-gray-500">
               Website: <span>{analysis.domain}</span> • 
               Analyzed <span>{analysis.pages?.length || 0}</span> pages • 
-              <span>{format(new Date(analysis.date), 'MMMM d, yyyy')}</span>
+              <span>
+                {analysis.date 
+                  ? format(new Date(analysis.date), 'MMMM d, yyyy')
+                  : format(new Date(), 'MMMM d, yyyy')}
+              </span>
             </p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
