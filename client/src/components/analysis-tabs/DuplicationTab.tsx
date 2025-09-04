@@ -221,7 +221,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
               <div className="flex items-center gap-2 mb-3">
                 <Copy className="w-5 h-5 text-blue-600" />
                 <h4 className="font-semibold text-blue-900">
-                  Duplicate Page Titles ({analysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.length})
+                  Repeated Page Title Patterns ({analysis.contentRepetitionAnalysis.titleRepetition.duplicateGroups.length})
                 </h4>
               </div>
               <div className="space-y-3">
@@ -250,7 +250,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                         <div className="bg-green-50 rounded p-2">
                           <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                           <p className="text-xs text-green-600">
-                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique titles for each page'}
+                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Develop unique title patterns for each page'}
                           </p>
                         </div>
                       )}
@@ -267,7 +267,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-5 h-5 text-purple-600" />
                 <h4 className="font-semibold text-purple-900">
-                  Duplicate Meta Descriptions ({analysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.length})
+                  Repeated Meta Description Patterns ({analysis.contentRepetitionAnalysis.descriptionRepetition.duplicateGroups.length})
                 </h4>
               </div>
               <div className="space-y-3">
@@ -296,7 +296,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                         <div className="bg-green-50 rounded p-2">
                           <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                           <p className="text-xs text-green-600">
-                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique descriptions for each page'}
+                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Develop unique description patterns for each page'}
                           </p>
                         </div>
                       )}
@@ -313,7 +313,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
               <div className="flex items-center gap-2 mb-3">
                 <Hash className="w-5 h-5 text-teal-600" />
                 <h4 className="font-semibold text-teal-900">
-                  Duplicate Headings ({analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.length})
+                  Repeated Heading Patterns ({analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.length})
                 </h4>
               </div>
               <div className="space-y-3">
@@ -342,7 +342,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                         <div className="bg-green-50 rounded p-2">
                           <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                           <p className="text-xs text-green-600">
-                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique headings for each page'}
+                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Develop unique heading patterns for each page'}
                           </p>
                         </div>
                       )}
@@ -359,7 +359,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
               <div className="flex items-center gap-2 mb-3">
                 <AlignLeft className="w-5 h-5 text-orange-600" />
                 <h4 className="font-semibold text-orange-900">
-                  Duplicate Paragraphs ({analysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.length})
+                  Repeated Paragraph Patterns ({analysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.length})
                 </h4>
               </div>
               <div className="space-y-3">
@@ -388,7 +388,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                         <div className="bg-green-50 rounded p-2">
                           <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                           <p className="text-xs text-green-600">
-                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique paragraph content for each page'}
+                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Develop unique paragraph patterns for each page'}
                           </p>
                         </div>
                       )}
