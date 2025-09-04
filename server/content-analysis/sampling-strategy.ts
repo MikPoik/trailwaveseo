@@ -3,6 +3,7 @@
  * Smart sampling for large sites to stay within token limits while maintaining analysis quality
  */
 
+import OpenAI from "openai";
 import { ContentItem, ContentStats } from './content-preprocessor.js';
 
 export interface SamplingStrategy {
@@ -76,11 +77,11 @@ export function determineSamplingStrategy(
 /**
  * Apply sampling strategy to content
  */
-export function sampleContent(
+export async function sampleContent(
   content: ContentItem[],
   strategy: SamplingStrategy,
   contentType: string
-): SamplingResult {
+): Promise<SamplingResult> {
   
   if (strategy.method === 'none' || content.length <= strategy.sampleSize) {
     return {
@@ -100,7 +101,7 @@ export function sampleContent(
       return applyRepresentativeSampling(content, strategy, contentType);
     
     case 'priority':
-      return applyPrioritySampling(content, strategy, contentType);
+      return await applyPrioritySampling(content, strategy, contentType);
     
     case 'cluster':
       return applyClusterSampling(content, strategy, contentType);
@@ -184,17 +185,19 @@ function applyRepresentativeSampling(
 /**
  * Priority sampling - focuses on high-impact content
  */
-function applyPrioritySampling(
+async function applyPrioritySampling(
   content: ContentItem[],
   strategy: SamplingStrategy,
   contentType: string
-): SamplingResult {
+): Promise<SamplingResult> {
   
-  // Step 1: Calculate priority scores
-  const contentWithPriority = content.map(item => ({
-    ...item,
-    priority: calculateContentPriority(item, contentType)
-  }));
+  // Step 1: Calculate priority scores using AI
+  const contentWithPriority = await Promise.all(
+    content.map(async item => ({
+      ...item,
+      priority: await calculateContentPriority(item, contentType)
+    }))
+  );
 
   // Step 2: Sort by priority (highest first)
   contentWithPriority.sort((a, b) => b.priority - a.priority);
@@ -206,13 +209,13 @@ function applyPrioritySampling(
   const excluded = contentWithPriority.slice(strategy.sampleSize)
     .map(({ priority, ...item }) => item);
 
-  const avgPriority = sampled.reduce((sum, item) => 
-    sum + calculateContentPriority(item, contentType), 0) / sampled.length;
+  const avgPriority = contentWithPriority.slice(0, strategy.sampleSize)
+    .reduce((sum, item) => sum + item.priority, 0) / sampled.length;
 
   const insights = [
-    `Priority-based sample: ${sampled.length}/${content.length} ${contentType}`,
+    `AI-powered priority sample: ${sampled.length}/${content.length} ${contentType}`,
     `Average priority score: ${Math.round(avgPriority)}`,
-    'Focused on homepage, landing pages, and duplicate content'
+    'Dynamically ranked using GPT-4.1-mini for relevance and impact'
   ];
 
   return {
@@ -272,9 +275,66 @@ function applyClusterSampling(
 }
 
 /**
- * Calculate priority score for content item
+ * Calculate priority score for content item using AI
  */
-function calculateContentPriority(item: ContentItem, contentType: string): number {
+async function calculateContentPriority(item: ContentItem, contentType: string): Promise<number> {
+  try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const prompt = `Analyze this ${contentType} content and assign a priority score (0-100) for SEO analysis sampling.
+
+URL: ${item.url}
+Content: "${item.content.substring(0, 200)}${item.content.length > 200 ? '...' : ''}"
+
+Consider:
+- SEO importance (homepage, key pages, product pages)
+- Content uniqueness and quality
+- Page type relevance (landing pages, service pages, etc.)
+- Content length and substance
+
+Return only a JSON object with the priority score:
+{"priority": <number>}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an SEO expert analyzing content priority for sampling. Assign scores based on SEO value and content importance. Be consistent and objective." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_completion_tokens: 50
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      return getFallbackPriority(item, contentType);
+    }
+
+    const result = JSON.parse(content);
+    const priority = result.priority;
+
+    if (typeof priority === 'number' && priority >= 0 && priority <= 100) {
+      return Math.round(priority);
+    }
+
+    return getFallbackPriority(item, contentType);
+
+  } catch (error) {
+    console.error(`Error calculating AI priority for ${item.url}:`, error);
+    return getFallbackPriority(item, contentType);
+  }
+}
+
+/**
+ * Fallback priority calculation when AI fails
+ */
+function getFallbackPriority(item: ContentItem, contentType: string): number {
   let priority = 0;
 
   // Base priority by content type
