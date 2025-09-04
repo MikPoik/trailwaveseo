@@ -7,7 +7,8 @@ import {
   FileText,
   Hash,
   Lightbulb,
-  ExternalLink
+  ExternalLink,
+  AlignLeft
 } from "lucide-react";
 import { WebsiteAnalysis } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -296,6 +297,98 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                           <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
                           <p className="text-xs text-green-600">
                             {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique descriptions for each page'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Heading Duplicates */}
+          {analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.length > 0 && (
+            <div className="border border-teal-200 rounded-lg p-4 bg-teal-50">
+              <div className="flex items-center gap-2 mb-3">
+                <Hash className="w-5 h-5 text-teal-600" />
+                <h4 className="font-semibold text-teal-900">
+                  Duplicate Headings ({analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.length})
+                </h4>
+              </div>
+              <div className="space-y-3">
+                {analysis.contentRepetitionAnalysis.headingRepetition.duplicateGroups.map((group, index) => {
+                  const duplicateContent = group.content || 'Duplicate content detected';
+                  
+                  return (
+                    <div key={index} className="bg-white rounded p-3 border border-teal-100">
+                      <p className="font-medium text-sm mb-2">"{duplicateContent}"</p>
+                      <p className="text-xs text-gray-600 mb-2">
+                        Found on {group.urls?.length || 0} pages • {group.similarityScore}% similar
+                        {group.impactLevel && ` • ${group.impactLevel} impact`}
+                      </p>
+                      <div className="text-xs text-teal-600 space-y-1 mb-2">
+                        {(group.urls || []).slice(0, 3).map((url, urlIndex) => (
+                          <div key={urlIndex} className="flex items-center gap-1">
+                            <ExternalLink className="h-3 w-3" />
+                            {typeof url === 'string' ? url : (url as any).href || 'Unknown URL'}
+                          </div>
+                        ))}
+                        {(group.urls?.length || 0) > 3 && (
+                          <div className="text-gray-500">... and {(group.urls?.length || 0) - 3} more pages</div>
+                        )}
+                      </div>
+                      {group.improvementStrategy && (
+                        <div className="bg-green-50 rounded p-2">
+                          <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                          <p className="text-xs text-green-600">
+                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique headings for each page'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Paragraph Duplicates */}
+          {analysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.length > 0 && (
+            <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+              <div className="flex items-center gap-2 mb-3">
+                <AlignLeft className="w-5 h-5 text-orange-600" />
+                <h4 className="font-semibold text-orange-900">
+                  Duplicate Paragraphs ({analysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.length})
+                </h4>
+              </div>
+              <div className="space-y-3">
+                {analysis.contentRepetitionAnalysis.paragraphRepetition.duplicateGroups.map((group, index) => {
+                  const duplicateContent = group.content || 'Duplicate content detected';
+                  
+                  return (
+                    <div key={index} className="bg-white rounded p-3 border border-orange-100">
+                      <p className="font-medium text-sm mb-2">"{duplicateContent.length > 100 ? duplicateContent.substring(0, 100) + '...' : duplicateContent}"</p>
+                      <p className="text-xs text-gray-600 mb-2">
+                        Found on {group.urls?.length || 0} pages • {group.similarityScore}% similar
+                        {group.impactLevel && ` • ${group.impactLevel} impact`}
+                      </p>
+                      <div className="text-xs text-orange-600 space-y-1 mb-2">
+                        {(group.urls || []).slice(0, 3).map((url, urlIndex) => (
+                          <div key={urlIndex} className="flex items-center gap-1">
+                            <ExternalLink className="h-3 w-3" />
+                            {typeof url === 'string' ? url : (url as any).href || 'Unknown URL'}
+                          </div>
+                        ))}
+                        {(group.urls?.length || 0) > 3 && (
+                          <div className="text-gray-500">... and {(group.urls?.length || 0) - 3} more pages</div>
+                        )}
+                      </div>
+                      {group.improvementStrategy && (
+                        <div className="bg-green-50 rounded p-2">
+                          <p className="text-xs font-medium text-green-700 mb-1">💡 AI Suggestion:</p>
+                          <p className="text-xs text-green-600">
+                            {typeof group.improvementStrategy === 'string' ? group.improvementStrategy : 'Create unique paragraph content for each page'}
                           </p>
                         </div>
                       )}

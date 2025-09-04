@@ -319,6 +319,10 @@ Identify patterns like:
 - "[PRODUCT] - Free Shipping" where only product names change
 - "About [COMPANY]" where only company names change
 
+For each pattern, determine if it's:
+- PROBLEMATIC: Repetitive content that makes pages feel templated (like blog intros, boilerplate text)
+- BENEFICIAL: Structured patterns that help organization (like location-based services)
+
 Respond with JSON format:
 {
   "patterns": [
@@ -333,7 +337,8 @@ Respond with JSON format:
         }
       ],
       "businessImpact": "high|medium|low",
-      "recommendation": "Specific advice for this pattern"
+      "patternType": "beneficial|problematic",
+      "recommendation": "For beneficial patterns: suggest expansion. For problematic patterns: suggest diversification"
     }
   ]
 }`;
@@ -434,18 +439,32 @@ function findExactMatchesBasic(content: ContentItem[]): DuplicateItem[] {
 }
 
 function convertTemplatesToDuplicates(patterns: TemplatePattern[]): DuplicateItem[] {
-  return patterns.map(pattern => ({
-    content: pattern.pattern,
-    urls: pattern.instances.map(inst => inst.url),
-    similarityScore: 85,
-    impactLevel: pattern.businessImpact === 'high' ? 'High' as const : 
-                 pattern.businessImpact === 'medium' ? 'Medium' as const : 'Low' as const,
-    duplicationType: 'template' as const,
-    templatePattern: pattern.pattern,
-    rootCause: `Template pattern detected: ${pattern.pattern}`,
-    improvementStrategy: pattern.recommendation,
-    businessImpact: `Template overuse may hurt SEO rankings and user experience`
-  }));
+  return patterns.map(pattern => {
+    // Generate smart recommendations based on pattern type
+    const isProblematic = (pattern as any).patternType === 'problematic' || 
+                          pattern.pattern.toLowerCase().includes('blog') ||
+                          pattern.pattern.toLowerCase().includes('artikkeli') ||
+                          pattern.instances.length < 3; // Small patterns often problematic
+    
+    const smartRecommendation = isProblematic
+      ? `Diversify this content pattern - repetitive templates hurt uniqueness. Consider varied approaches for better user engagement.`
+      : `This organized pattern could be expanded - consider applying it to more relevant pages for consistency.`;
+    
+    return {
+      content: pattern.pattern,
+      urls: pattern.instances.map(inst => inst.url),
+      similarityScore: 85,
+      impactLevel: pattern.businessImpact === 'high' ? 'High' as const : 
+                   pattern.businessImpact === 'medium' ? 'Medium' as const : 'Low' as const,
+      duplicationType: 'template' as const,
+      templatePattern: pattern.pattern,
+      rootCause: `Template pattern detected: ${pattern.pattern}`,
+      improvementStrategy: pattern.recommendation || smartRecommendation,
+      businessImpact: isProblematic 
+        ? `Repetitive patterns may hurt SEO rankings and user experience`
+        : `Consistent patterns can improve site organization and user navigation`
+    };
+  });
 }
 
 function createContentBatches(content: ContentItem[], batchSize: number): ContentItem[][] {
