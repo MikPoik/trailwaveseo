@@ -8,7 +8,7 @@ import type { AnalysisContext, AnalysisOptions, AnalysisResult } from './analysi
 import type { PageAnalysisResult } from './page-analyzer.js';
 import type { InsightsResult } from './insights-generator.js';
 import { incrementUserUsage } from './quota-manager.js';
-import { emitFinalProgress } from './progress-tracker.js';
+import { emitFinalProgress, reportAnalysisCompletion } from './progress-tracker.js';
 
 /**
  * Aggregate analysis results and save to storage
@@ -33,11 +33,14 @@ export async function aggregateAnalysisResults(
     const analysisData = {
       userId: context.userId,
       domain: context.domain,
-      date: new Date().toISOString(),
+      date: new Date(),
       pagesCount: analyzedPages.length,
       metrics,
       pages: analyzedPages,
-      siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview || null
+      contentRepetitionAnalysis: null, // Will be added in future enhancement
+      competitorAnalysis: null, // Will be added in future enhancement
+      siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview || null,
+      isCompetitorAnalysis: options.isCompetitorAnalysis || false
     };
 
     // Save analysis to database
@@ -51,7 +54,8 @@ export async function aggregateAnalysisResults(
 
     console.log(`Updated user usage: +${analyzedPages.length} pages for user ${context.userId}`);
 
-    return {
+    // Report completion to frontend
+    const finalResult = {
       analysisId: savedAnalysis.id,
       domain: context.domain,
       pages: analyzedPages,
@@ -71,6 +75,10 @@ export async function aggregateAnalysisResults(
         creditsUsed: insights?.aiInsights?.creditsUsed || 0
       }
     };
+
+    await reportAnalysisCompletion(context, finalResult);
+
+    return finalResult;
 
   } catch (error) {
     console.error(`Error aggregating results for ${context.domain}:`, error);
