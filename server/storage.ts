@@ -497,7 +497,8 @@ export class DatabaseStorage implements IStorage {
 
     try {
       // Find and update the specific page in the pages array
-      const updatedPages = analysis.pages.map(page => {
+      const pagesArray = analysis.pages as any[];
+      const updatedPages = pagesArray.map(page => {
         if (page.url === pageUrl) {
           console.log(`Found page to update: ${pageUrl}`);
           return updatedPageData;
@@ -638,48 +639,60 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAnalysis(id: number): Promise<boolean> {
-    const result = await db.delete(analyses).where(eq(analyses.id, id));
-    return result.rowCount > 0;
+    try {
+      const result = await db.delete(analyses).where(eq(analyses.id, id));
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error('Error deleting analysis:', error);
+      return false;
+    }
   }
 
   // Settings operations
   async getSettings(userId?: string): Promise<Settings> {
-    let settingsQuery = db.select().from(settings);
+    try {
+      let settingsResults;
+      
+      if (userId) {
+        settingsResults = await db.select().from(settings)
+          .where(eq(settings.userId, userId))
+          .limit(1);
+      } else {
+        // Get global settings (no userId)
+        settingsResults = await db.select().from(settings)
+          .where(sql`${settings.userId} IS NULL`)
+          .limit(1);
+      }
 
-    if (userId) {
-      settingsQuery = settingsQuery.where(eq(settings.userId, userId));
-    } else {
-      // Get global settings (no userId)
-      settingsQuery = settingsQuery.where(sql`${settings.userId} IS NULL`);
+      if (settingsResults.length > 0) {
+        return settingsResults[0];
+      }
+
+      // If no settings found, create default settings
+      const defaultSettings: Omit<Settings, 'id'> = {
+        userId: userId || null,
+        maxPages: 20,
+        crawlDelay: 500,
+        followExternalLinks: false,
+        analyzeImages: true,
+        analyzeLinkStructure: true,
+        analyzePageSpeed: true,
+        analyzeStructuredData: true,
+        analyzeMobileCompatibility: true,
+        useAI: true
+      };
+
+      // Insert default settings
+      const [newSettings] = await db
+        .insert(settings)
+        .values(defaultSettings)
+        .returning();
+
+      return newSettings;
+    } catch (error) {
+      console.error('Error in getSettings:', error);
+      throw error;
     }
-
-    const settingsResults = await settingsQuery.limit(1);
-
-    if (settingsResults.length > 0) {
-      return settingsResults[0];
-    }
-
-    // If no settings found, create default settings
-    const defaultSettings: Omit<Settings, 'id'> = {
-      userId: userId || null,
-      maxPages: 20,
-      crawlDelay: 500,
-      followExternalLinks: false,
-      analyzeImages: true,
-      analyzeLinkStructure: true,
-      analyzePageSpeed: true,
-      analyzeStructuredData: true,
-      analyzeMobileCompatibility: true,
-      useAI: true
-    };
-
-    // Insert default settings
-    const [newSettings] = await db
-      .insert(settings)
-      .values(defaultSettings)
-      .returning();
-
-    return newSettings;
   }
 
   async updateSettings(newSettings: Partial<Settings>, userId?: string): Promise<Settings> {
@@ -711,13 +724,13 @@ export class DatabaseStorage implements IStorage {
       const values = [
         newSettings.maxPages ?? currentSettings.maxPages,
         newSettings.crawlDelay ?? currentSettings.crawlDelay,
-        newSettings.followExternalLinks ?? currentSettings.followExternalLinks,
-        newSettings.analyzeImages ?? currentSettings.analyzeImages,
-        newSettings.analyzeLinkStructure ?? currentSettings.analyzeLinkStructure,
-        newSettings.useAI ?? currentSettings.useAI,
-        newSettings.analyzePageSpeed ?? currentSettings.analyzePageSpeed ?? true,
-        newSettings.analyzeStructuredData ?? currentSettings.analyzeStructuredData ?? true,
-        newSettings.analyzeMobileCompatibility ?? currentSettings.analyzeMobileCompatibility ?? true
+        Boolean(newSettings.followExternalLinks ?? currentSettings.followExternalLinks),
+        Boolean(newSettings.analyzeImages ?? currentSettings.analyzeImages),
+        Boolean(newSettings.analyzeLinkStructure ?? currentSettings.analyzeLinkStructure),
+        Boolean(newSettings.useAI ?? currentSettings.useAI),
+        Boolean(newSettings.analyzePageSpeed ?? currentSettings.analyzePageSpeed ?? true),
+        Boolean(newSettings.analyzeStructuredData ?? currentSettings.analyzeStructuredData ?? true),
+        Boolean(newSettings.analyzeMobileCompatibility ?? currentSettings.analyzeMobileCompatibility ?? true)
       ];
 
       // Add userId as the last parameter if it exists
