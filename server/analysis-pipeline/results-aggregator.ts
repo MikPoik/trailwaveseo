@@ -38,6 +38,7 @@ export async function aggregateAnalysisResults(
       metrics,
       pages: analyzedPages,
       contentRepetitionAnalysis: null, // Will be added in future enhancement
+      keywordRepetitionAnalysis: null, // Will be added in future enhancement  
       competitorAnalysis: null, // Will be added in future enhancement
       siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview || null,
       isCompetitorAnalysis: options.isCompetitorAnalysis || false,
@@ -62,7 +63,8 @@ export async function aggregateAnalysisResults(
 
     // Prepare final result with complete data including enhanced insights
     const finalResult = {
-      id: savedAnalysis.id,
+      analysisId: savedAnalysis.id,
+      id: savedAnalysis.id, // Also include id for frontend components
       domain: context.domain,
       pages: analyzedPages,
       metrics,
