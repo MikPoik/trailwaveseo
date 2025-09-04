@@ -144,8 +144,14 @@ export async function reportAnalysisCompletion(
     percentage: 100
   };
   
+  console.log(`[PROGRESS] Emitting completion event for domain: ${context.domain}`);
+  console.log(`[PROGRESS] Completion update:`, JSON.stringify(completionUpdate, null, 2));
+  
   context.events.emit(context.domain, completionUpdate);
-  console.log(`Analysis completed for ${context.domain} - ${result.pages.length} pages analyzed`);
+  console.log(`[PROGRESS] Completion event emitted for ${context.domain} - ${result.pages.length} pages analyzed`);
+  
+  // Add a small delay to ensure the event is processed
+  await new Promise(resolve => setTimeout(resolve, 100));
 }
 
 /**

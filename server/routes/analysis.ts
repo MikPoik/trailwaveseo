@@ -114,10 +114,12 @@ export function registerAnalysisRoutes(app: Express) {
 
     // Event handler for this specific domain
     const progressHandler = (data: any) => {
+      console.log(`[SSE] Sending progress update for ${domain}:`, data.status, `${data.percentage}%`);
       res.write(`data: ${JSON.stringify(data)}\n\n`);
 
       // If analysis is completed or errored, end the connection
       if (data.status === 'completed' || data.status === 'error') {
+        console.log(`[SSE] Ending connection for ${domain} - status: ${data.status}`);
         analysisEvents.removeListener(domain, progressHandler);
         res.end();
       }
