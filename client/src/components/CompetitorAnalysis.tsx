@@ -27,22 +27,82 @@ interface CompetitorAnalysisProps {
   mainAnalysis: WebsiteAnalysis;
 }
 
-interface ComparisonMetric {
+interface MetricComparison {
   main: number;
   competitor: number;
   difference: number;
+  percentageDiff: number;
+  advantage: 'main' | 'competitor' | 'neutral';
+  significance: 'critical' | 'important' | 'minor';
+}
+
+interface CompetitorInsight {
+  category: string;
+  priority: 'high' | 'medium' | 'low';
+  impact: number;
+  recommendation: string;
+  evidence: string[];
+  actionItems: string[];
+}
+
+interface ContentGapAnalysis {
+  missingTopics: string[];
+  underOptimizedAreas: string[];
+  opportunityKeywords: string[];
+  contentVolumeGaps: {
+    area: string;
+    mainCount: number;
+    competitorCount: number;
+    gap: number;
+  }[];
+}
+
+interface StrategyAnalysis {
+  mainApproach: string;
+  competitorApproach: string;
+  effectiveness: 'superior' | 'comparable' | 'inferior';
+  recommendations: string[];
+}
+
+interface StrategyComparison {
+  contentStrategy: StrategyAnalysis;
+  keywordStrategy: StrategyAnalysis;
+  technicalStrategy: StrategyAnalysis;
+  userExperience: StrategyAnalysis;
+}
+
+interface CompetitiveSummary {
+  overallAdvantage: 'main' | 'competitor' | 'neutral';
+  strengthAreas: string[];
+  weaknessAreas: string[];
+  quickWins: string[];
+  longTermOpportunities: string[];
+}
+
+interface ProcessingStats {
+  analysisTime: number;
+  tokensUsed: number;
+  aiCallsMade: number;
+  confidence: number;
 }
 
 interface ComparisonResult {
   mainDomain: string;
   competitorDomain: string;
   metrics: {
-    titleOptimization: ComparisonMetric;
-    descriptionOptimization: ComparisonMetric;
-    headingsOptimization: ComparisonMetric;
-    imagesOptimization: ComparisonMetric;
-    criticalIssues: ComparisonMetric;
+    titleOptimization: MetricComparison;
+    descriptionOptimization: MetricComparison;
+    headingsOptimization: MetricComparison;
+    imagesOptimization: MetricComparison;
+    criticalIssues: MetricComparison;
+    technicalSEO: MetricComparison;
+    contentQuality: MetricComparison;
   };
+  gaps?: ContentGapAnalysis;
+  strategies?: StrategyComparison;
+  insights?: CompetitorInsight[];
+  summary?: CompetitiveSummary;
+  processingStats?: ProcessingStats;
   recommendations: string[];
   // For detailed comparison
   details?: {
@@ -202,47 +262,52 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     competitorMutation.mutate(data);
   };
 
-  // Helper function to determine if a metric is better or worse than competitor
-  const getMetricStatus = (difference: number) => {
-    if (difference > 5) return 'better';
-    if (difference < -5) return 'worse';
-    return 'similar';
+  // Enhanced status function that uses the modular system's advantage data
+  const getMetricStatus = (metric: MetricComparison) => {
+    return metric.advantage === 'main' ? 'better' : 
+           metric.advantage === 'competitor' ? 'worse' : 'similar';
   };
 
-  // Special handling for critical issues where lower is better
-  const getCriticalIssuesStatus = (difference: number) => {
-    // For critical issues, a positive difference means we have FEWER issues (good)
-    if (difference > 0) return 'better';
-    if (difference < 0) return 'worse';
-    return 'similar';
+  // Get significance badge styling
+  const getSignificanceBadge = (significance: string) => {
+    return significance === 'critical' ? 'bg-red-100 text-red-800' :
+           significance === 'important' ? 'bg-yellow-100 text-yellow-800' :
+           'bg-gray-100 text-gray-800';
   };
 
   const renderMetricComparison = (
     title: string, 
-    metric: ComparisonMetric, 
-    statusFn: (diff: number) => string = getMetricStatus
+    metric: MetricComparison
   ) => {
-    const status = statusFn(metric.difference);
+    const status = getMetricStatus(metric);
     
     return (
       <div className="space-y-2 mb-4">
-        <div className="flex justify-between">
-          <h4 className="font-medium">{title}</h4>
-          <div className="flex items-center">
-            <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <h4 className="font-medium">{title}</h4>
+            <span className={`px-2 py-1 text-xs rounded-full ${
+              getSignificanceBadge(metric.significance)
+            }`}>
+              {metric.significance}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className={`inline-block w-3 h-3 rounded-full ${
               status === 'better' ? 'bg-green-500' : 
               status === 'worse' ? 'bg-red-500' : 
               'bg-yellow-500'
             }`}></span>
-            <span className={
+            <span className={`text-sm font-medium ${
               status === 'better' ? 'text-green-600' : 
               status === 'worse' ? 'text-red-600' : 
               'text-yellow-600'
-            }>
-              {status === 'better' ? 'Better than competitor' : 
-               status === 'worse' ? 'Needs improvement' : 
-               'Similar to competitor'}
+            }`}>
+              {status === 'better' ? 'Better' : 
+               status === 'worse' ? 'Needs work' : 
+               'Similar'}
             </span>
+            <span className="text-xs text-muted-foreground">({metric.percentageDiff > 0 ? '+' : ''}{metric.percentageDiff}%)</span>
           </div>
         </div>
         
@@ -312,10 +377,13 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
           </Form>
         ) : (
           <Tabs defaultValue="metrics">
-            <TabsList className="mb-4">
-              <TabsTrigger value="metrics">Metrics Comparison</TabsTrigger>
-              <TabsTrigger value="detailed">Detailed Comparison</TabsTrigger>
-              <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+            <TabsList className="mb-4 grid grid-cols-2 md:grid-cols-6">
+              <TabsTrigger value="metrics">Metrics</TabsTrigger>
+              <TabsTrigger value="insights">AI Insights</TabsTrigger>
+              <TabsTrigger value="gaps">Content Gaps</TabsTrigger>
+              <TabsTrigger value="strategies">Strategies</TabsTrigger>
+              <TabsTrigger value="detailed">Details</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
             </TabsList>
             
             <TabsContent value="metrics" className="space-y-4">
@@ -329,7 +397,19 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               {renderMetricComparison('Meta Description', (comparison as ComparisonResult).metrics.descriptionOptimization)}
               {renderMetricComparison('Heading Structure', (comparison as ComparisonResult).metrics.headingsOptimization)}
               {renderMetricComparison('Image Optimization', (comparison as ComparisonResult).metrics.imagesOptimization)}
-              {renderMetricComparison('Critical Issues', (comparison as ComparisonResult).metrics.criticalIssues, getCriticalIssuesStatus)}
+              {renderMetricComparison('Critical Issues', (comparison as ComparisonResult).metrics.criticalIssues)}
+              {renderMetricComparison('Technical SEO', (comparison as ComparisonResult).metrics.technicalSEO)}
+              {renderMetricComparison('Content Quality', (comparison as ComparisonResult).metrics.contentQuality)}
+              
+              {(comparison as ComparisonResult).processingStats && (
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Analysis Confidence:</span>
+                    <span className="font-medium">{(comparison as ComparisonResult).processingStats?.confidence}%</span>
+                  </div>
+                  <Progress value={(comparison as ComparisonResult).processingStats?.confidence || 0} className="h-2 mt-2" />
+                </div>
+              )}
               
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
@@ -501,6 +581,361 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   <h3 className="font-medium text-lg">Good job!</h3>
                   <p className="text-muted-foreground">
                     Your site is performing well compared to this competitor. Keep up the good work!
+                  </p>
+                </div>
+              )}
+              
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
+                Compare with Another Competitor
+              </Button>
+            </TabsContent>
+            
+            {/* AI Insights Tab */}
+            <TabsContent value="insights" className="space-y-4">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">AI-Powered Competitive Insights</h3>
+                {(comparison as ComparisonResult).processingStats && (
+                  <div className="text-sm text-muted-foreground">
+                    {(comparison as ComparisonResult).processingStats?.confidence}% confidence
+                  </div>
+                )}
+              </div>
+              
+              {(comparison as ComparisonResult).insights && (comparison as ComparisonResult).insights?.length > 0 ? (
+                <div className="space-y-4">
+                  {(comparison as ComparisonResult).insights.map((insight: CompetitorInsight, index: number) => (
+                    <Card key={index} className="border-l-4 border-l-primary">
+                      <CardContent className="pt-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-medium">{insight.category}</h4>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              insight.priority === 'high' ? 'bg-red-100 text-red-800' :
+                              insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {insight.priority} priority
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs text-muted-foreground">Impact:</span>
+                            <span className="text-sm font-medium">{insight.impact}/10</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">{insight.recommendation}</p>
+                        
+                        {insight.evidence && insight.evidence.length > 0 && (
+                          <div className="mb-3">
+                            <h5 className="text-xs font-medium text-muted-foreground mb-1">Evidence:</h5>
+                            <ul className="text-xs space-y-1">
+                              {insight.evidence.slice(0, 3).map((evidence: string, i: number) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="text-primary mr-1">•</span>
+                                  <span>{evidence}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {insight.actionItems && insight.actionItems.length > 0 && (
+                          <div>
+                            <h5 className="text-xs font-medium text-muted-foreground mb-1">Action Items:</h5>
+                            <ul className="text-xs space-y-1">
+                              {insight.actionItems.slice(0, 3).map((action: string, i: number) => (
+                                <li key={i} className="flex items-start">
+                                  <ChevronRight className="h-3 w-3 text-primary mr-1 mt-0.5 shrink-0" />
+                                  <span>{action}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <InfoIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <h3 className="font-medium text-lg">No AI insights available</h3>
+                  <p className="text-muted-foreground">
+                    AI-powered insights were not generated for this comparison.
+                  </p>
+                </div>
+              )}
+              
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
+                Compare with Another Competitor
+              </Button>
+            </TabsContent>
+            
+            {/* Content Gaps Tab */}
+            <TabsContent value="gaps" className="space-y-4">
+              <h3 className="text-xl font-semibold mb-6">Content Gap Analysis</h3>
+              
+              {(comparison as ComparisonResult).gaps ? (
+                <div className="space-y-6">
+                  {/* Missing Topics */}
+                  {(comparison as ComparisonResult).gaps?.missingTopics && (comparison as ComparisonResult).gaps?.missingTopics.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Missing Topics</CardTitle>
+                        <CardDescription>Topics your competitor covers that you don't</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-2">
+                          {(comparison as ComparisonResult).gaps?.missingTopics.map((topic: string, index: number) => (
+                            <div key={index} className="flex items-center space-x-2 p-2 bg-red-50 border border-red-200 rounded">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              <span className="text-sm">{topic}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {/* Under-optimized Areas */}
+                  {(comparison as ComparisonResult).gaps?.underOptimizedAreas && (comparison as ComparisonResult).gaps?.underOptimizedAreas.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Under-optimized Areas</CardTitle>
+                        <CardDescription>Areas where you could improve compared to competitor</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-2">
+                          {(comparison as ComparisonResult).gaps?.underOptimizedAreas.map((area: string, index: number) => (
+                            <div key={index} className="flex items-center space-x-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                              <AlertCircle className="h-4 w-4 text-yellow-500" />
+                              <span className="text-sm">{area}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {/* Opportunity Keywords */}
+                  {(comparison as ComparisonResult).gaps?.opportunityKeywords && (comparison as ComparisonResult).gaps?.opportunityKeywords.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Opportunity Keywords</CardTitle>
+                        <CardDescription>Keywords your competitor targets that you could explore</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {(comparison as ComparisonResult).gaps?.opportunityKeywords.map((keyword: string, index: number) => (
+                            <span key={index} className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                              {keyword}
+                            </span>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <InfoIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <h3 className="font-medium text-lg">No gap analysis available</h3>
+                  <p className="text-muted-foreground">
+                    Content gap analysis was not generated for this comparison.
+                  </p>
+                </div>
+              )}
+              
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
+                Compare with Another Competitor
+              </Button>
+            </TabsContent>
+            
+            {/* Strategies Tab */}
+            <TabsContent value="strategies" className="space-y-4">
+              <h3 className="text-xl font-semibold mb-6">Strategy Comparison</h3>
+              
+              {(comparison as ComparisonResult).strategies ? (
+                <div className="space-y-6">
+                  {Object.entries((comparison as ComparisonResult).strategies || {}).map(([strategyKey, strategy]) => {
+                    const typedStrategy = strategy as StrategyAnalysis;
+                    return (
+                    <Card key={strategyKey}>
+                      <CardHeader>
+                        <CardTitle className="text-lg capitalize">{strategyKey.replace(/([A-Z])/g, ' $1').trim()}</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            typedStrategy.effectiveness === 'superior' ? 'bg-green-100 text-green-800' :
+                            typedStrategy.effectiveness === 'comparable' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {typedStrategy.effectiveness}
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <h5 className="font-medium text-sm mb-2">Your Approach:</h5>
+                            <p className="text-sm text-muted-foreground bg-blue-50 p-3 rounded">{typedStrategy.mainApproach}</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-sm mb-2">Competitor's Approach:</h5>
+                            <p className="text-sm text-muted-foreground bg-orange-50 p-3 rounded">{typedStrategy.competitorApproach}</p>
+                          </div>
+                        </div>
+                        
+                        {typedStrategy.recommendations && typedStrategy.recommendations.length > 0 && (
+                          <div>
+                            <h5 className="font-medium text-sm mb-2">Recommendations:</h5>
+                            <ul className="space-y-1">
+                              {typedStrategy.recommendations.map((rec: string, index: number) => (
+                                <li key={index} className="flex items-start text-sm">
+                                  <ChevronRight className="h-4 w-4 text-primary mr-1 mt-0.5 shrink-0" />
+                                  <span>{rec}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <InfoIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <h3 className="font-medium text-lg">No strategy analysis available</h3>
+                  <p className="text-muted-foreground">
+                    Strategy comparison was not generated for this analysis.
+                  </p>
+                </div>
+              )}
+              
+              <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
+                Compare with Another Competitor
+              </Button>
+            </TabsContent>
+
+            {/* Summary Tab */}
+            <TabsContent value="summary" className="space-y-4">
+              <h3 className="text-xl font-semibold mb-6">Competitive Summary</h3>
+              
+              {(comparison as ComparisonResult).summary ? (
+                <div className="space-y-6">
+                  {/* Overall Advantage */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                          (comparison as ComparisonResult).summary?.overallAdvantage === 'main' ? 'bg-green-100 text-green-800' :
+                          (comparison as ComparisonResult).summary?.overallAdvantage === 'competitor' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {(comparison as ComparisonResult).summary?.overallAdvantage === 'main' ? 
+                            `Your site has the overall advantage` :
+                           (comparison as ComparisonResult).summary?.overallAdvantage === 'competitor' ?
+                            `Competitor has the overall advantage` :
+                            `Both sites are competitive`}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Strengths and Weaknesses */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg text-green-700">Your Strengths</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {(comparison as ComparisonResult).summary?.strengthAreas && (comparison as ComparisonResult).summary?.strengthAreas.length > 0 ? (
+                          <ul className="space-y-2">
+                            {(comparison as ComparisonResult).summary?.strengthAreas.map((strength: string, index: number) => (
+                              <li key={index} className="flex items-start text-sm">
+                                <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 shrink-0" />
+                                <span>{strength}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No specific strengths identified</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg text-red-700">Areas for Improvement</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {(comparison as ComparisonResult).summary?.weaknessAreas && (comparison as ComparisonResult).summary?.weaknessAreas.length > 0 ? (
+                          <ul className="space-y-2">
+                            {(comparison as ComparisonResult).summary?.weaknessAreas.map((weakness: string, index: number) => (
+                              <li key={index} className="flex items-start text-sm">
+                                <AlertTriangle className="h-4 w-4 text-red-500 mr-2 mt-0.5 shrink-0" />
+                                <span>{weakness}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No specific weaknesses identified</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {/* Quick Wins and Long-term Opportunities */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg text-blue-700">Quick Wins</CardTitle>
+                        <CardDescription>Easy improvements you can make right away</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {(comparison as ComparisonResult).summary?.quickWins && (comparison as ComparisonResult).summary?.quickWins.length > 0 ? (
+                          <ul className="space-y-2">
+                            {(comparison as ComparisonResult).summary?.quickWins.map((win: string, index: number) => (
+                              <li key={index} className="flex items-start text-sm">
+                                <ChevronRight className="h-4 w-4 text-blue-500 mr-2 mt-0.5 shrink-0" />
+                                <span>{win}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No quick wins identified</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg text-purple-700">Long-term Opportunities</CardTitle>
+                        <CardDescription>Strategic improvements for sustained advantage</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {(comparison as ComparisonResult).summary?.longTermOpportunities && (comparison as ComparisonResult).summary?.longTermOpportunities.length > 0 ? (
+                          <ul className="space-y-2">
+                            {(comparison as ComparisonResult).summary?.longTermOpportunities.map((opportunity: string, index: number) => (
+                              <li key={index} className="flex items-start text-sm">
+                                <ChevronRight className="h-4 w-4 text-purple-500 mr-2 mt-0.5 shrink-0" />
+                                <span>{opportunity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No long-term opportunities identified</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <InfoIcon className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <h3 className="font-medium text-lg">No summary analysis available</h3>
+                  <p className="text-muted-foreground">
+                    Competitive summary was not generated for this analysis.
                   </p>
                 </div>
               )}

@@ -298,7 +298,7 @@ Return only a JSON object with the priority score:
 {"priority": <number>}`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
+      model: "gpt-4.1-mini", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
       messages: [
         { 
           role: "system", 
