@@ -3,7 +3,7 @@
  * Similar to competitive-analysis/competitive-analyzer.ts but focused on comprehensive site analysis
  */
 
-import type { EventEmitter } from 'events';
+import { EventEmitter } from 'events';
 import type { OpenAI } from 'openai';
 
 // Types for analysis pipeline
@@ -78,8 +78,12 @@ export async function orchestrateAnalysis(
   const options: AnalysisOptions = {
     useSitemap: settings.useSitemap || true,
     useAI: settings.useAI || !settings.skipAltTextGeneration,
+    skipAltTextGeneration: settings.skipAltTextGeneration || false,
     isCompetitorAnalysis,
-    additionalInfo
+    additionalInfo,
+    maxPages: settings.maxPages || 25,
+    crawlDelay: settings.crawlDelay || 1000,
+    followExternalLinks: settings.followExternalLinks || true
   };
   
   try {
@@ -118,11 +122,11 @@ export async function orchestrateAnalysis(
     const totalTime = Date.now() - startTime;
     console.log(`Analysis pipeline completed for ${domain} in ${totalTime}ms`);
     
-    return result.analysisId;
+    return result;
     
   } catch (error) {
     console.error(`Analysis pipeline failed for ${domain}:`, error);
-    await handlePipelineError(controller, domain, events, error);
+    await handlePipelineError(controller, domain, analysisEvents, error);
     throw error;
   } finally {
     // Clean up ongoing analysis tracking
@@ -142,8 +146,8 @@ async function initializeAnalysisContext(
   settings: any
 ): Promise<AnalysisContext> {
   
-  const { initializeQuotaContext } = await import('./quota-manager.js');
-  const quotaContext = await initializeQuotaContext(userId, settings);
+  const { initializeQuotas } = await import('./quota-manager.js');
+  const quotaContext = await initializeQuotas(userId, settings);
   
   return {
     domain,
