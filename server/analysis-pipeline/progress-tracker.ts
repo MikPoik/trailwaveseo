@@ -134,18 +134,19 @@ export async function reportAnalysisCompletion(
   result: AnalysisResult
 ): Promise<void> {
   
-  const completionUpdate: ProgressUpdate = {
+  const completionUpdate: ProgressUpdate & { analysis?: AnalysisResult } = {
     status: 'completed',
     domain: context.domain,
     pagesFound: result.pages.length,
     pagesAnalyzed: result.pages.length,
     currentPageUrl: 'Analysis completed successfully',
     analyzedPages: result.pages.map(p => p.url),
-    percentage: 100
+    percentage: 100,
+    analysis: result // Include the full analysis data that frontend expects
   };
   
   console.log(`[PROGRESS] Emitting completion event for domain: ${context.domain}`);
-  console.log(`[PROGRESS] Completion update:`, JSON.stringify(completionUpdate, null, 2));
+  console.log(`[PROGRESS] Completion with analysis data - pages: ${result.pages.length}, enhancedInsights:`, !!result.enhancedInsights);
   
   context.events.emit(context.domain, completionUpdate);
   console.log(`[PROGRESS] Completion event emitted for ${context.domain} - ${result.pages.length} pages analyzed`);
