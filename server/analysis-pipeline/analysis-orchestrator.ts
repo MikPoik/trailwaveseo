@@ -228,7 +228,7 @@ async function generateInsights(
     try {
       console.log(`Generating AI explanations for enhanced insights...`);
       
-      const { generateInsightsExplanations } = await import('../openai.js');
+      const { generateInsightsExplanations } = await import('./insights-explanations.js');
       const explanations = await generateInsightsExplanations(
         context.domain,
         technicalAnalysis,

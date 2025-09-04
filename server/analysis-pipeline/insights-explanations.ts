@@ -1,0 +1,155 @@
+/**
+ * Enhanced Insights Explanations Module
+ * Generates AI-powered explanations for modular analysis scores
+ */
+
+import OpenAI from "openai";
+
+// the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+/**
+ * Generate AI explanations for each enhanced insights area
+ */
+export async function generateInsightsExplanations(
+  domain: string,
+  technicalAnalysis: any,
+  contentQualityAnalysis: any,
+  linkArchitectureAnalysis: any,
+  performanceAnalysis: any,
+  pages: any[]
+): Promise<{
+  technicalExplanation: string;
+  contentQualityExplanation: string;
+  linkArchitectureExplanation: string;
+  performanceExplanation: string;
+}> {
+  
+  try {
+    console.log(`Generating AI explanations for enhanced insights on ${domain}...`);
+
+    // Extract specific metrics from each analysis area for detailed insights
+    const technicalDetails = {
+      score: technicalAnalysis.overallScore,
+      coreWebVitals: technicalAnalysis.coreWebVitals?.score || 0,
+      mobileScore: technicalAnalysis.mobileOptimization?.mobileScore || 0,
+      securityScore: technicalAnalysis.securityAnalysis?.securityScore || 0,
+      technicalScore: technicalAnalysis.technicalElements?.technicalScore || 0,
+      httpsEnabled: technicalAnalysis.securityAnalysis?.httpsEnabled,
+      hasViewportMeta: technicalAnalysis.mobileOptimization?.hasViewportMeta,
+      xmlSitemap: technicalAnalysis.technicalElements?.xmlSitemap,
+      recommendations: technicalAnalysis.recommendations?.length || 0
+    };
+
+    const contentDetails = {
+      score: contentQualityAnalysis.overallScore,
+      averageWordCount: contentQualityAnalysis.contentDepthAnalysis?.averageWordCount || 0,
+      readabilityScore: contentQualityAnalysis.readabilityAnalysis?.readabilityScore || 0,
+      optimizationScore: contentQualityAnalysis.keywordOptimization?.optimizationScore || 0,
+      engagementScore: contentQualityAnalysis.engagementFactors?.engagementScore || 0,
+      gradeLevel: contentQualityAnalysis.readabilityAnalysis?.gradeLevel,
+      keywordCount: contentQualityAnalysis.keywordOptimization?.keywordDensity?.length || 0,
+      recommendations: contentQualityAnalysis.recommendations?.length || 0
+    };
+
+    const linkDetails = {
+      score: linkArchitectureAnalysis.overallScore,
+      totalInternalLinks: linkArchitectureAnalysis.linkDistribution?.totalInternalLinks || 0,
+      averageLinksPerPage: linkArchitectureAnalysis.linkDistribution?.averageLinksPerPage || 0,
+      orphanPages: linkArchitectureAnalysis.linkDistribution?.orphanPages?.length || 0,
+      anchorTextScore: linkArchitectureAnalysis.anchorTextAnalysis?.anchorTextScore || 0,
+      navigationScore: linkArchitectureAnalysis.navigationStructure?.navigationScore || 0,
+      genericAnchors: linkArchitectureAnalysis.anchorTextAnalysis?.genericAnchors || 0,
+      recommendations: linkArchitectureAnalysis.recommendations?.length || 0
+    };
+
+    const performanceDetails = {
+      score: performanceAnalysis.overallScore,
+      imageOptimization: performanceAnalysis.resourceOptimization?.imageOptimization || 0,
+      totalImages: performanceAnalysis.resourceOptimization?.resourceCount?.images || 0,
+      loadingScore: performanceAnalysis.loadingPatterns?.loadingScore || 0,
+      uxScore: performanceAnalysis.userExperienceMetrics?.uxScore || 0,
+      accessibilityScore: performanceAnalysis.userExperienceMetrics?.contentAccessibility || 0,
+      recommendations: performanceAnalysis.recommendations?.length || 0
+    };
+
+    const prompt = `You are an SEO expert analyzing ${domain}. Provide specific, data-driven explanations for each score using the actual metrics provided.
+
+WEBSITE: ${domain} (${pages.length} pages analyzed)
+
+TECHNICAL SEO DATA (Score: ${technicalDetails.score}/100):
+- Core Web Vitals: ${technicalDetails.coreWebVitals}/100
+- Mobile Optimization: ${technicalDetails.mobileScore}/100 (${technicalDetails.hasViewportMeta ? 'Has' : 'Missing'} viewport meta tag)
+- Security: ${technicalDetails.securityScore}/100 (HTTPS: ${technicalDetails.httpsEnabled ? 'Enabled' : 'Disabled'})
+- Technical Elements: ${technicalDetails.technicalScore}/100 (XML Sitemap: ${technicalDetails.xmlSitemap ? 'Present' : 'Missing'})
+- Issues found: ${technicalDetails.recommendations} recommendations
+
+CONTENT QUALITY DATA (Score: ${contentDetails.score}/100):
+- Average word count: ${contentDetails.averageWordCount} words per page
+- Readability: ${contentDetails.readabilityScore}/100 (Grade level: ${contentDetails.gradeLevel || 'Unknown'})
+- Keyword optimization: ${contentDetails.optimizationScore}/100 (${contentDetails.keywordCount} keywords identified)
+- Engagement factors: ${contentDetails.engagementScore}/100
+- Issues found: ${contentDetails.recommendations} recommendations
+
+LINK ARCHITECTURE DATA (Score: ${linkDetails.score}/100):
+- Total internal links: ${linkDetails.totalInternalLinks} (${linkDetails.averageLinksPerPage.toFixed(1)} per page)
+- Orphan pages: ${linkDetails.orphanPages} pages with no incoming links
+- Anchor text quality: ${linkDetails.anchorTextScore}/100 (${Math.round(linkDetails.genericAnchors)}% generic anchors)
+- Navigation structure: ${linkDetails.navigationScore}/100
+- Issues found: ${linkDetails.recommendations} recommendations
+
+PERFORMANCE DATA (Score: ${performanceDetails.score}/100):
+- Image optimization: ${performanceDetails.imageOptimization}/100 (${performanceDetails.totalImages} total images)
+- Loading patterns: ${performanceDetails.loadingScore}/100
+- User experience: ${performanceDetails.uxScore}/100
+- Accessibility: ${performanceDetails.accessibilityScore}/100
+- Issues found: ${performanceDetails.recommendations} recommendations
+
+For each area, provide a specific explanation (2-3 sentences) that:
+1. States the exact reason for the score using the provided data
+2. Identifies the specific biggest problem with numbers
+3. Gives one concrete, actionable fix with expected impact
+
+Response format:
+{
+  "technicalExplanation": "Your specific Technical SEO explanation with actual data...",
+  "contentQualityExplanation": "Your specific Content Quality explanation with actual data...",
+  "linkArchitectureExplanation": "Your specific Link Architecture explanation with actual data...", 
+  "performanceExplanation": "Your specific Performance explanation with actual data..."
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an SEO expert providing data-driven insights. Use specific numbers and metrics in your explanations. Be concrete and actionable, not generic. Help users understand exactly what to fix first." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_completion_tokens: 1200
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+
+    console.log("Generated AI explanations for enhanced insights");
+
+    return {
+      technicalExplanation: result.technicalExplanation || `Technical SEO scored ${technicalAnalysis.overallScore}/100. Focus on improving technical elements for better search engine visibility.`,
+      contentQualityExplanation: result.contentQualityExplanation || `Content Quality scored ${contentQualityAnalysis.overallScore}/100. Enhance content depth and optimization for better engagement.`,
+      linkArchitectureExplanation: result.linkArchitectureExplanation || `Link Architecture scored ${linkArchitectureAnalysis.overallScore}/100. Improve internal linking structure for better navigation.`,
+      performanceExplanation: result.performanceExplanation || `Performance scored ${performanceAnalysis.overallScore}/100. Optimize loading speed and user experience metrics.`
+    };
+
+  } catch (error) {
+    console.error('Error generating insights explanations:', error);
+    return {
+      technicalExplanation: `Technical SEO scored ${technicalAnalysis.overallScore}/100. Focus on improving technical elements for better search engine visibility.`,
+      contentQualityExplanation: `Content Quality scored ${contentQualityAnalysis.overallScore}/100. Enhance content depth and optimization for better engagement.`,
+      linkArchitectureExplanation: `Link Architecture scored ${linkArchitectureAnalysis.overallScore}/100. Improve internal linking structure for better navigation.`,
+      performanceExplanation: `Performance scored ${performanceAnalysis.overallScore}/100. Optimize loading speed and user experience metrics.`
+    };
+  }
+}

@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { analyzeSite } from "../seoAnalyzer";
-import { generateSeoSuggestions, analyzeContentRepetition, generateCompetitorInsights } from "../openai";
+import { analyzePage } from "../seoAnalyzer";
+import { generateSeoSuggestions } from "../analysis-pipeline/ai-suggestions";
+import { analyzeContentRepetition } from "../content-analysis/content-duplication";
+import { generateCompetitorInsights } from "../analysis-pipeline/competitor-insights";
 import { analyzeCompetitor } from "../competitive-analysis/competitive-analyzer";
 import OpenAI from "openai";
 import { isAuthenticated } from "../replitAuth";
@@ -300,7 +302,8 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
 
         // Analyze the competitor domain
         // For simplicity, we'll reuse the existing analysis flow but mark as competitor to skip alt text generation
-        const competitorAnalysisId = await analyzeSite(competitorDomain, true, analysisEvents, true, userId!, undefined, true);
+        // Use the modular competitor analysis
+        const competitorAnalysisId = await analyzeCompetitor(competitorDomain, analysisEvents, userId!);
 
         // Get the competitor analysis results
         const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId) as any;

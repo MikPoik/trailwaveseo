@@ -158,7 +158,6 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Analysis Overview</TabsTrigger>
-          <TabsTrigger value="pages">Page Details</TabsTrigger>
           <TabsTrigger value="content-repetition">Content Duplication</TabsTrigger>
           <TabsTrigger value="competitor">Competitor Analysis</TabsTrigger>
         </TabsList>
@@ -169,12 +168,6 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
             onNewAnalysis={onNewAnalysis}
             onExportCSV={exportCSV}
             onExportPDF={exportPDF}
-          />
-        </TabsContent>
-
-        <TabsContent value="pages">
-          <PagesTab
-            analysis={updatedAnalysis}
             onPageReanalyze={handlePageReanalyze}
           />
         </TabsContent>

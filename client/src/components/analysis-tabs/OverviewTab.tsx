@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -10,17 +11,24 @@ import {
   FileText 
 } from "lucide-react";
 import { format } from "date-fns";
-import { WebsiteAnalysis } from "@/lib/types";
+import { WebsiteAnalysis, PageAnalysis } from "@/lib/types";
 import EnhancedInsights from "../EnhancedInsights";
+import PageAnalysisCard from "../PageAnalysisCard";
 
 interface OverviewTabProps {
   analysis: WebsiteAnalysis;
   onNewAnalysis: () => void;
   onExportCSV: () => void;
   onExportPDF: () => void;
+  onPageReanalyze: (pageUrl: string, updatedPage: PageAnalysis) => void;
 }
 
-const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF }: OverviewTabProps) => {
+const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPageReanalyze }: OverviewTabProps) => {
+  const [displayedPages, setDisplayedPages] = useState(10);
+
+  const loadMorePages = () => {
+    setDisplayedPages(prev => prev + 5);
+  };
   
   const getCategoryOptimizationPercentage = (category: string): number => {
     const allPagesWithIssues = analysis.pages.filter(page => 
@@ -34,6 +42,7 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF }: Over
   };
 
   return (
+    <>
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -194,6 +203,32 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF }: Over
         </div>
       </CardContent>
     </Card>
+
+    {/* Page Details Section */}
+    <div className="mt-6">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Page-by-Page Analysis</h3>
+
+      {analysis.pages.slice(0, displayedPages).map((page, index) => (
+        <PageAnalysisCard 
+          key={index} 
+          page={page} 
+          analysisId={analysis.id}
+          onReanalyze={onPageReanalyze}
+        />
+      ))}
+
+      {displayedPages < analysis.pages.length && (
+        <div className="flex justify-center mt-4">
+          <Button 
+            variant="outline" 
+            onClick={loadMorePages}
+          >
+            Load More Pages ({analysis.pages.length - displayedPages} remaining)
+          </Button>
+        </div>
+      )}
+    </div>
+    </>
   );
 };
 

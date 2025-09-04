@@ -168,7 +168,7 @@ Respond in JSON format:
       ],
       response_format: { type: "json_object" },
       temperature: 0.3,
-      max_tokens: 1500
+      max_completion_tokens: 1500
     });
 
     const content = response.choices[0].message.content;
@@ -511,7 +511,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           ],
           response_format: { type: "json_object" },
           temperature: 0.4,
-          max_tokens: 1500
+          max_completion_tokens: 1500
         });
 
         // If we get here, the request succeeded
@@ -1745,48 +1745,108 @@ export async function generateInsightsExplanations(
   try {
     console.log(`Generating AI explanations for enhanced insights on ${domain}...`);
 
-    const prompt = `You are an SEO expert analyzing a website. Provide clear, actionable explanations for each analysis area score.
+    // Extract specific metrics from each analysis area for detailed insights
+    const technicalDetails = {
+      score: technicalAnalysis.overallScore,
+      coreWebVitals: technicalAnalysis.coreWebVitals?.score || 0,
+      mobileScore: technicalAnalysis.mobileOptimization?.mobileScore || 0,
+      securityScore: technicalAnalysis.securityAnalysis?.securityScore || 0,
+      technicalScore: technicalAnalysis.technicalElements?.technicalScore || 0,
+      httpsEnabled: technicalAnalysis.securityAnalysis?.httpsEnabled,
+      hasViewportMeta: technicalAnalysis.mobileOptimization?.hasViewportMeta,
+      xmlSitemap: technicalAnalysis.technicalElements?.xmlSitemap,
+      recommendations: technicalAnalysis.recommendations?.length || 0
+    };
 
-Website: ${domain}
-Pages analyzed: ${pages.length}
+    const contentDetails = {
+      score: contentQualityAnalysis.overallScore,
+      averageWordCount: contentQualityAnalysis.contentDepthAnalysis?.averageWordCount || 0,
+      readabilityScore: contentQualityAnalysis.readabilityAnalysis?.readabilityScore || 0,
+      optimizationScore: contentQualityAnalysis.keywordOptimization?.optimizationScore || 0,
+      engagementScore: contentQualityAnalysis.engagementFactors?.engagementScore || 0,
+      gradeLevel: contentQualityAnalysis.readabilityAnalysis?.gradeLevel,
+      keywordCount: contentQualityAnalysis.keywordOptimization?.keywordDensity?.length || 0,
+      recommendations: contentQualityAnalysis.recommendations?.length || 0
+    };
 
-ANALYSIS SCORES:
-- Technical SEO: ${technicalAnalysis.overallScore}/100
-- Content Quality: ${contentQualityAnalysis.overallScore}/100  
-- Link Architecture: ${linkArchitectureAnalysis.overallScore}/100
-- Performance: ${performanceAnalysis.overallScore}/100
+    const linkDetails = {
+      score: linkArchitectureAnalysis.overallScore,
+      totalInternalLinks: linkArchitectureAnalysis.linkDistribution?.totalInternalLinks || 0,
+      averageLinksPerPage: linkArchitectureAnalysis.linkDistribution?.averageLinksPerPage || 0,
+      orphanPages: linkArchitectureAnalysis.linkDistribution?.orphanPages?.length || 0,
+      anchorTextScore: linkArchitectureAnalysis.anchorTextAnalysis?.anchorTextScore || 0,
+      navigationScore: linkArchitectureAnalysis.navigationStructure?.navigationScore || 0,
+      genericAnchors: linkArchitectureAnalysis.anchorTextAnalysis?.genericAnchors || 0,
+      recommendations: linkArchitectureAnalysis.recommendations?.length || 0
+    };
 
-DETAILED FINDINGS:
-Technical SEO findings: ${JSON.stringify(technicalAnalysis.findings || [], null, 2)}
-Content Quality findings: ${JSON.stringify(contentQualityAnalysis.findings || [], null, 2)}
-Link Architecture findings: ${JSON.stringify(linkArchitectureAnalysis.findings || [], null, 2)}
-Performance findings: ${JSON.stringify(performanceAnalysis.findings || [], null, 2)}
+    const performanceDetails = {
+      score: performanceAnalysis.overallScore,
+      imageOptimization: performanceAnalysis.resourceOptimization?.imageOptimization || 0,
+      totalImages: performanceAnalysis.resourceOptimization?.resourceCount?.images || 0,
+      loadingScore: performanceAnalysis.loadingPatterns?.loadingScore || 0,
+      uxScore: performanceAnalysis.userExperienceMetrics?.uxScore || 0,
+      accessibilityScore: performanceAnalysis.userExperienceMetrics?.contentAccessibility || 0,
+      recommendations: performanceAnalysis.recommendations?.length || 0
+    };
 
-Provide explanations in JSON format for each area. Each explanation should be 2-3 sentences that:
-1. Explain why the score is what it is
-2. Highlight the main issue(s) affecting the score
-3. Give one key actionable improvement tip
+    const prompt = `You are an SEO expert analyzing ${domain}. Provide specific, data-driven explanations for each score using the actual metrics provided.
+
+WEBSITE: ${domain} (${pages.length} pages analyzed)
+
+TECHNICAL SEO DATA (Score: ${technicalDetails.score}/100):
+- Core Web Vitals: ${technicalDetails.coreWebVitals}/100
+- Mobile Optimization: ${technicalDetails.mobileScore}/100 (${technicalDetails.hasViewportMeta ? 'Has' : 'Missing'} viewport meta tag)
+- Security: ${technicalDetails.securityScore}/100 (HTTPS: ${technicalDetails.httpsEnabled ? 'Enabled' : 'Disabled'})
+- Technical Elements: ${technicalDetails.technicalScore}/100 (XML Sitemap: ${technicalDetails.xmlSitemap ? 'Present' : 'Missing'})
+- Issues found: ${technicalDetails.recommendations} recommendations
+
+CONTENT QUALITY DATA (Score: ${contentDetails.score}/100):
+- Average word count: ${contentDetails.averageWordCount} words per page
+- Readability: ${contentDetails.readabilityScore}/100 (Grade level: ${contentDetails.gradeLevel || 'Unknown'})
+- Keyword optimization: ${contentDetails.optimizationScore}/100 (${contentDetails.keywordCount} keywords identified)
+- Engagement factors: ${contentDetails.engagementScore}/100
+- Issues found: ${contentDetails.recommendations} recommendations
+
+LINK ARCHITECTURE DATA (Score: ${linkDetails.score}/100):
+- Total internal links: ${linkDetails.totalInternalLinks} (${linkDetails.averageLinksPerPage.toFixed(1)} per page)
+- Orphan pages: ${linkDetails.orphanPages} pages with no incoming links
+- Anchor text quality: ${linkDetails.anchorTextScore}/100 (${Math.round(linkDetails.genericAnchors)}% generic anchors)
+- Navigation structure: ${linkDetails.navigationScore}/100
+- Issues found: ${linkDetails.recommendations} recommendations
+
+PERFORMANCE DATA (Score: ${performanceDetails.score}/100):
+- Image optimization: ${performanceDetails.imageOptimization}/100 (${performanceDetails.totalImages} total images)
+- Loading patterns: ${performanceDetails.loadingScore}/100
+- User experience: ${performanceDetails.uxScore}/100
+- Accessibility: ${performanceDetails.accessibilityScore}/100
+- Issues found: ${performanceDetails.recommendations} recommendations
+
+For each area, provide a specific explanation (2-3 sentences) that:
+1. States the exact reason for the score using the provided data
+2. Identifies the specific biggest problem with numbers
+3. Gives one concrete, actionable fix with expected impact
 
 Response format:
 {
-  "technicalExplanation": "Your Technical SEO explanation here...",
-  "contentQualityExplanation": "Your Content Quality explanation here...",
-  "linkArchitectureExplanation": "Your Link Architecture explanation here...", 
-  "performanceExplanation": "Your Performance explanation here..."
+  "technicalExplanation": "Your specific Technical SEO explanation with actual data...",
+  "contentQualityExplanation": "Your specific Content Quality explanation with actual data...",
+  "linkArchitectureExplanation": "Your specific Link Architecture explanation with actual data...", 
+  "performanceExplanation": "Your specific Performance explanation with actual data..."
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      model: "gpt-4.1", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
       messages: [
         { 
           role: "system", 
-          content: "You are an SEO expert. Provide clear, concise explanations that help users understand their scores and next steps. Keep explanations simple and actionable for non-technical users." 
+          content: "You are an SEO expert providing data-driven insights. Use specific numbers and metrics in your explanations. Be concrete and actionable, not generic. Help users understand exactly what to fix first." 
         },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 1000
+      temperature: 0.3,
+      max_completion_tokens: 1200
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
@@ -1794,10 +1854,10 @@ Response format:
     console.log("Generated AI explanations for enhanced insights");
 
     return {
-      technicalExplanation: result.technicalExplanation || "Technical SEO analysis completed successfully.",
-      contentQualityExplanation: result.contentQualityExplanation || "Content quality analysis completed successfully.",
-      linkArchitectureExplanation: result.linkArchitectureExplanation || "Link architecture analysis completed successfully.",
-      performanceExplanation: result.performanceExplanation || "Performance analysis completed successfully."
+      technicalExplanation: result.technicalExplanation || `Technical SEO scored ${technicalAnalysis.overallScore}/100. Focus on improving technical elements for better search engine visibility.`,
+      contentQualityExplanation: result.contentQualityExplanation || `Content Quality scored ${contentQualityAnalysis.overallScore}/100. Enhance content depth and optimization for better engagement.`,
+      linkArchitectureExplanation: result.linkArchitectureExplanation || `Link Architecture scored ${linkArchitectureAnalysis.overallScore}/100. Improve internal linking structure for better navigation.`,
+      performanceExplanation: result.performanceExplanation || `Performance scored ${performanceAnalysis.overallScore}/100. Optimize loading speed and user experience metrics.`
     };
 
   } catch (error) {

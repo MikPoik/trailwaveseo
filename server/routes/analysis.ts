@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { analyzeSite, cancelAnalysis } from "../seoAnalyzer";
+import { cancelAnalysis } from "../seoAnalyzer";
+import { orchestrateAnalysis } from "../analysis-pipeline/analysis-orchestrator";
 import { isAuthenticated } from "../replitAuth";
 import { analysisEvents, crawlLimiter } from "./index";
 import { analyzeRequestSchema } from "./schemas";
@@ -39,9 +40,26 @@ export function registerAnalysisRoutes(app: Express) {
         });
       }
 
-      // Start analysis in the background with error handling and credit refund
-      analyzeSite(domain, useSitemap, analysisEvents, false, userId, additionalInfo)
-        .catch(async error => {
+      // Start modular analysis in the background with error handling and credit refund
+      (async () => {
+        try {
+          const settings = await storage.getSettings(userId);
+          const modularSettings = {
+            ...settings,
+            useSitemap,
+            skipAltTextGeneration: false,
+            useAI: true
+          };
+          
+          await orchestrateAnalysis(
+            domain,
+            modularSettings,
+            userId,
+            additionalInfo,
+            false, // isCompetitorAnalysis
+            analysisEvents
+          );
+        } catch (error) {
           console.error(`Analysis error for ${domain}:`, error);
           
           // Refund the 5 credits since analysis failed
@@ -57,7 +75,8 @@ export function registerAnalysisRoutes(app: Express) {
             analyzedPages: [],
             percentage: 0
           });
-        });
+        }
+      })();
 
       // Return immediately with 202 Accepted
       res.status(202).json({ 

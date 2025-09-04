@@ -3,7 +3,8 @@
  * Handles AI-powered suggestion generation and business context analysis
  */
 
-import { generateSeoSuggestions, analyzeSiteOverview } from '../openai.js';
+import { generateSeoSuggestions } from './ai-suggestions.js';
+import { analyzeSiteOverview } from './site-overview.js';
 import { deductAICredits } from './quota-manager.js';
 import { emitAIProgress } from './progress-tracker.js';
 import type { AnalysisContext, AnalysisOptions } from './analysis-orchestrator.js';

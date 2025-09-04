@@ -202,7 +202,7 @@ export async function analyzeContentBatch(
       ],
       response_format: { type: "json_object" },
       temperature: options.temperature,
-      max_tokens: options.maxTokensPerRequest
+      max_completion_tokens: options.maxTokensPerRequest
     });
 
     const content = response.choices[0].message.content;
