@@ -41,7 +41,22 @@ export function cleanupAnalysis(domain: string): void {
 export function cancelAnalysis(domain: string): boolean {
   const controller = ongoingAnalyses.get(domain);
   if (controller) {
+    console.log(`Cancelling analysis for domain: ${domain}`);
     controller.abort();
+    
+    // Emit cancellation event
+    const update: ProgressUpdate = {
+      status: 'cancelled',
+      domain,
+      pagesFound: 0,
+      pagesAnalyzed: 0,
+      currentPageUrl: 'Analysis cancelled by user',
+      analyzedPages: [],
+      percentage: 0
+    };
+    
+    // We need to emit to all possible event emitters
+    // The specific emitter will be handled in the orchestrator
     cleanupAnalysis(domain);
     return true;
   }

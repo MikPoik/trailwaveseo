@@ -74,6 +74,10 @@ export async function orchestrateAnalysis(
   // Create default EventEmitter if not provided
   const analysisEvents = events || new EventEmitter();
   
+  // Register this analysis for cancellation
+  const { registerAnalysis } = await import('./progress-tracker.js');
+  registerAnalysis(domain, controller);
+  
   // Create analysis options from settings
   const options: AnalysisOptions = {
     useSitemap: settings.useSitemap || true,
@@ -97,17 +101,37 @@ export async function orchestrateAnalysis(
       settings
     );
     
+    // Check for cancellation
+    if (controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
+    
     // Step 2: Discover pages to analyze
     console.log('Step 2: Discovering pages...');
     const pages = await discoverPages(context, options);
+    
+    // Check for cancellation
+    if (controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
     
     // Step 3: Analyze individual pages
     console.log('Step 3: Analyzing pages...');
     const analyzedPages = await analyzePages(context, pages, options);
     
+    // Check for cancellation
+    if (controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
+    
     // Step 4: Generate insights and suggestions  
     console.log('Step 4: Generating insights...');
     const insights = await generateInsights(context, analyzedPages, options);
+    
+    // Check for cancellation
+    if (controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
     
     // Step 5: Aggregate results and save
     console.log('Step 5: Aggregating results...');
@@ -125,8 +149,28 @@ export async function orchestrateAnalysis(
     return result;
     
   } catch (error) {
-    console.error(`Analysis pipeline failed for ${domain}:`, error);
-    await handlePipelineError(controller, domain, analysisEvents, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes('cancelled') || controller.signal.aborted) {
+      console.log(`Analysis cancelled for ${domain}`);
+      
+      // Emit cancelled status
+      const cancelledUpdate = {
+        status: 'cancelled' as const,
+        domain,
+        pagesFound: 0,
+        pagesAnalyzed: 0,
+        currentPageUrl: 'Analysis cancelled by user',
+        analyzedPages: [],
+        percentage: 0
+      };
+      
+      analysisEvents.emit(domain, cancelledUpdate);
+    } else {
+      console.error(`Analysis pipeline failed for ${domain}:`, error);
+      await handlePipelineError(controller, domain, analysisEvents, error);
+    }
+    
     throw error;
   } finally {
     // Clean up ongoing analysis tracking

@@ -100,9 +100,19 @@ export function registerAnalysisRoutes(app: Express) {
         return res.status(400).json({ error: "Domain is required" });
       }
 
-      cancelAnalysis(domain);
-      res.json({ message: "Analysis cancelled" });
+      // Use the progress tracker's cancel function
+      const { cancelAnalysis: cancelProgressAnalysis } = await import("../analysis-pipeline/progress-tracker");
+      const cancelled = cancelProgressAnalysis(domain);
+      
+      if (cancelled) {
+        console.log(`Successfully cancelled analysis for ${domain}`);
+        res.json({ message: "Analysis cancelled" });
+      } else {
+        console.log(`No active analysis found for ${domain} to cancel`);
+        res.json({ message: "No active analysis found to cancel" });
+      }
     } catch (error) {
+      console.error("Error cancelling analysis:", error);
       res.status(500).json({ error: "Failed to cancel analysis" });
     }
   });

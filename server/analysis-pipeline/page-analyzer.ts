@@ -55,15 +55,19 @@ export async function analyzePagesBatch(
   pages: string[],
   options: AnalysisOptions
 ): Promise<PageAnalysisResult[]> {
-  
+
+  const startTime = Date.now();
   const analyzedPages: PageAnalysisResult[] = [];
-  const totalPages = pages.length;
-  const concurrencyLimit = 3; // Process 3 pages concurrently
 
   console.log(`Analyzing ${pages.length} pages for ${context.domain}`);
 
+  // Check for cancellation before starting
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
+
   // Process pages in batches with the concurrency limit
-  for (let i = 0; i < totalPages; i += concurrencyLimit) {
+  for (let i = 0; i < pages.length; i += 3) { // Process 3 pages concurrently
     // Check if analysis was cancelled
     if (context.controller.signal.aborted) {
       throw new Error('Analysis cancelled');
@@ -76,20 +80,20 @@ export async function analyzePagesBatch(
       context.remainingQuota,
       context.settings
     );
-    
+
     if (!canContinue) {
       console.log(`Stopping analysis - reached page quota limit`);
       break;
     }
 
-    const batch = pages.slice(i, i + concurrencyLimit);
+    const batch = pages.slice(i, i + 3);
     const batchPromises = batch.map((pageUrl, index) => 
       analyzeSinglePage(context, pageUrl, analyzedPages, options)
     );
 
     // Wait for all pages in this batch to complete
     const batchResults = await Promise.all(batchPromises);
-    
+
     // Add successful results to analyzed pages
     batchResults.forEach(result => {
       if (result) {
@@ -98,18 +102,18 @@ export async function analyzePagesBatch(
     });
 
     // Emit progress update
-    emitProgress(context, totalPages, analyzedPages);
+    emitProgress(context, pages.length, analyzedPages);
 
     // Add delay between batches if more batches remain and we haven't hit the quota
-    const hasMorePages = i + concurrencyLimit < totalPages;
+    const hasMorePages = i + 3 < pages.length;
     const withinQuota = !context.userId || analyzedPages.length < context.remainingQuota;
-    
+
     if (hasMorePages && withinQuota) {
       await new Promise(resolve => setTimeout(resolve, context.settings.crawlDelay));
     }
   }
 
-  console.log(`Completed page analysis: ${analyzedPages.length}/${totalPages} pages analyzed`);
+  console.log(`Completed page analysis: ${analyzedPages.length}/${pages.length} pages analyzed`);
   return analyzedPages;
 }
 
@@ -122,7 +126,7 @@ async function analyzeSinglePage(
   analyzedPages: PageAnalysisResult[],
   options: AnalysisOptions
 ): Promise<PageAnalysisResult | null> {
-  
+
   if (context.controller.signal.aborted) {
     throw new Error('Analysis cancelled');
   }
@@ -134,14 +138,14 @@ async function analyzeSinglePage(
     context.remainingQuota,
     context.settings
   );
-  
+
   if (!canAnalyze) {
     return null;
   }
 
   try {
     console.log(`Analyzing page: ${pageUrl}`);
-    
+
     // Perform enhanced page analysis
     const pageAnalysis = await performEnhancedPageAnalysis(
       pageUrl, 
@@ -151,7 +155,7 @@ async function analyzeSinglePage(
       options.additionalInfo,
       { useAI: options.useAI, skipAltTextGeneration: options.skipAltTextGeneration }
     );
-    
+
     if (pageAnalysis) {
       console.log(`Successfully analyzed: ${pageUrl} (${pageAnalysis.wordCount} words, ${pageAnalysis.issues.length} issues)`);
     }
@@ -174,7 +178,7 @@ async function performEnhancedPageAnalysis(
   additionalInfo?: string,
   options?: { useAI?: boolean; skipAltTextGeneration?: boolean }
 ): Promise<PageAnalysisResult | null> {
-  
+
   try {
     // Fetch page content
     const response = await axios.get(url, {
@@ -199,33 +203,33 @@ async function performEnhancedPageAnalysis(
 
     // Extract basic SEO elements
     const basicElements = extractBasicSeoElements($, url);
-    
+
     // Extract content elements
     const contentElements = extractContentElements($, url, settings);
-    
+
     // Extract link structure
     const linkElements = extractLinkElements($, url, settings);
-    
+
     // Extract CTA elements
     const ctaElements = extractCtaElements($, url);
-    
+
     // Analyze content quality
     const contentQuality = analyzeContentQuality(contentElements);
-    
+
     // Detect SEO issues
     const issues = await detectSeoIssues(basicElements, contentElements, contentQuality);
-    
+
     // Generate alt text for images if AI is enabled
     let processedImages = contentElements.images;
-    
-    
+
+
     if (options?.useAI && !options?.skipAltTextGeneration && !isCompetitor) {
       // Filter out images without alt text AND filter out invalid image sources
       const imagesWithoutAlt = contentElements.images.filter(img => {
         // Check if image has meaningful alt text
         const hasAlt = img.alt && img.alt.trim().length > 0;
         if (hasAlt) return false;
-        
+
         // Skip data URIs, SVG placeholders, and invalid URLs
         if (img.src.startsWith('data:') || 
             img.src.includes('placeholder') || 
@@ -233,13 +237,13 @@ async function performEnhancedPageAnalysis(
             !img.src.startsWith('http')) {
           return false;
         }
-        
+
         return true;
       });
-      
+
       if (imagesWithoutAlt.length > 0) {
         console.log(`Generating alt text for ${imagesWithoutAlt.length} images on ${url}`);
-        
+
         // Prepare context data for alt text generation
         const imagesForAltText = imagesWithoutAlt.map(img => ({
           src: img.src,
@@ -251,11 +255,11 @@ async function performEnhancedPageAnalysis(
             industry: undefined       // Could be enhanced with industry context
           }
         }));
-        
+
         try {
           // Generate alt text in batch
           const altTextResults = await generateBatchImageAltText(imagesForAltText);
-          
+
           // Update images with generated alt text
           processedImages = contentElements.images.map(img => {
             const altTextResult = altTextResults.find(result => result.src === img.src);
@@ -267,7 +271,7 @@ async function performEnhancedPageAnalysis(
             }
             return img;
           });
-          
+
           console.log(`Generated alt text for ${altTextResults.filter(r => r.altText).length} images`);
         } catch (error) {
           console.error(`Error generating alt text for ${url}:`, error);
@@ -279,7 +283,7 @@ async function performEnhancedPageAnalysis(
     } else {
       console.log(`Alt text generation skipped for ${url} due to condition checks`);
     }
-    
+
     // Combine all analysis results
     return {
       url,
@@ -549,19 +553,19 @@ function extractCtaElements($: cheerio.CheerioAPI, url: string) {
  */
 function analyzeContentQuality(contentElements: any) {
   const { paragraphs, sentences, headings, allTextContent } = contentElements;
-  
+
   // Calculate word count
   const wordCount = allTextContent.split(/\s+/).filter(word => word.length > 0).length;
-  
+
   // Calculate readability score
   const readabilityScore = calculateReadabilityScore(sentences);
-  
+
   // Extract keyword density
   const keywordDensity = extractKeywordDensity(allTextContent);
-  
+
   // Calculate content depth
   const contentDepth = calculateContentDepth(paragraphs, headings);
-  
+
   // Extract semantic keywords
   const semanticKeywords = extractSemanticKeywords(allTextContent);
 
@@ -582,7 +586,7 @@ async function detectSeoIssues(
   contentElements: any,
   contentQuality: any
 ): Promise<SeoIssue[]> {
-  
+
   const issues: SeoIssue[] = [];
   const { title, metaDescription, headings, images } = { ...basicElements, ...contentElements };
 
@@ -714,7 +718,7 @@ function calculateReadabilityScore(sentences: string[]): number {
   const avgWordsPerSentence = totalWords / sentences.length;
   const avgSyllablesPerWord = totalSyllables / totalWords;
   const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
-  
+
   return Math.max(0, Math.min(100, score));
 }
 

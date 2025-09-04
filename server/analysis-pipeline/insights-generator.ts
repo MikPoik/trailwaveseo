@@ -33,6 +33,11 @@ export async function generateComprehensiveInsights(
   let aiCallsMade = 0;
   let creditsUsed = 0;
 
+  // Check for cancellation
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
+
   if (!settings.useAI || analyzedPages.length === 0) {
     return {
       siteOverview,
@@ -49,12 +54,22 @@ export async function generateComprehensiveInsights(
 
     console.log(`Analyzing site overview and generating SEO suggestions for ${context.domain}...`);
 
+    // Check for cancellation
+    if (context.controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
+
     // Step 1: Generate business context analysis
     const businessContext = await generateBusinessContext(analyzedPages, options.additionalInfo);
     siteOverview = businessContext.siteOverview;
     aiCallsMade += businessContext.aiCallsMade;
 
     console.log(`Business context detected - Industry: ${siteOverview.industry}, Type: ${siteOverview.businessType}, Target: ${siteOverview.targetAudience}`);
+
+    // Check for cancellation
+    if (context.controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
 
     // Step 2: Generate page-specific suggestions
     const suggestionResults = await generatePageSuggestions(
