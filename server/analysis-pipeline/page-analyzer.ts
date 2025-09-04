@@ -9,6 +9,7 @@ import type { AnalysisContext, AnalysisOptions } from './analysis-orchestrator.j
 import { emitPageProgress, checkQuotaLimits } from './quota-manager.js';
 import { emitPageProgress as emitProgress } from './progress-tracker.js';
 import { Heading, Image, SeoIssue, SeoCategory } from '../../client/src/lib/types.js';
+import { generateBatchImageAltText } from './image-alt-text.js';
 
 // Extend the Image interface to include suggestedAlt
 interface AnalysisImage extends Image {
@@ -147,7 +148,8 @@ async function analyzeSinglePage(
       context.settings, 
       context.controller.signal, 
       options.isCompetitorAnalysis,
-      options.additionalInfo
+      options.additionalInfo,
+      { useAI: options.useAI, skipAltTextGeneration: options.skipAltTextGeneration }
     );
     
     if (pageAnalysis) {
@@ -169,7 +171,8 @@ async function performEnhancedPageAnalysis(
   settings: any,
   signal: AbortSignal,
   isCompetitor: boolean = false,
-  additionalInfo?: string
+  additionalInfo?: string,
+  options?: { useAI?: boolean; skipAltTextGeneration?: boolean }
 ): Promise<PageAnalysisResult | null> {
   
   try {
@@ -212,11 +215,56 @@ async function performEnhancedPageAnalysis(
     // Detect SEO issues
     const issues = await detectSeoIssues(basicElements, contentElements, contentQuality);
     
+    // Generate alt text for images if AI is enabled
+    let processedImages = contentElements.images;
+    if (options?.useAI && !options?.skipAltTextGeneration && !isCompetitor) {
+      const imagesWithoutAlt = contentElements.images.filter(img => !img.alt);
+      
+      if (imagesWithoutAlt.length > 0) {
+        console.log(`Generating alt text for ${imagesWithoutAlt.length} images on ${url}`);
+        
+        // Prepare context data for alt text generation
+        const imagesForAltText = imagesWithoutAlt.map(img => ({
+          src: img.src,
+          context: {
+            url,
+            title: basicElements.title || undefined,
+            headings: contentElements.headings || [],
+            businessType: undefined, // Could be enhanced with business context
+            industry: undefined       // Could be enhanced with industry context
+          }
+        }));
+        
+        try {
+          // Generate alt text in batch
+          const altTextResults = await generateBatchImageAltText(imagesForAltText);
+          
+          // Update images with generated alt text
+          processedImages = contentElements.images.map(img => {
+            const altTextResult = altTextResults.find(result => result.src === img.src);
+            if (altTextResult && altTextResult.altText) {
+              return {
+                ...img,
+                suggestedAlt: altTextResult.altText
+              };
+            }
+            return img;
+          });
+          
+          console.log(`Generated alt text for ${altTextResults.filter(r => r.altText).length} images`);
+        } catch (error) {
+          console.error(`Error generating alt text for ${url}:`, error);
+          // Continue with original images if alt text generation fails
+        }
+      }
+    }
+    
     // Combine all analysis results
     return {
       url,
       ...basicElements,
       ...contentElements,
+      images: processedImages, // Use processed images with alt text
       ...linkElements,
       ctaElements,
       issues,
