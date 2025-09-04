@@ -300,10 +300,26 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           });
         }
 
-        // Analyze the competitor domain
-        // For simplicity, we'll reuse the existing analysis flow but mark as competitor to skip alt text generation
-        // Use the modular competitor analysis
-        const competitorAnalysisId = await analyzeCompetitor(competitorDomain, analysisEvents, userId!);
+        // Analyze the competitor domain using the modular orchestrator
+        const { orchestrateAnalysis } = await import("../analysis-pipeline/analysis-orchestrator");
+        const settings = await storage.getSettings(userId!);
+        const competitorSettings = {
+          ...settings,
+          useSitemap: true,
+          skipAltTextGeneration: true, // Skip alt text for competitors
+          useAI: false // Skip AI for basic competitor analysis
+        };
+        
+        const competitorResult = await orchestrateAnalysis(
+          competitorDomain,
+          competitorSettings,
+          userId!,
+          undefined,
+          true, // isCompetitorAnalysis
+          analysisEvents
+        );
+        
+        const competitorAnalysisId = competitorResult.analysisId;
 
         // Get the competitor analysis results
         const competitorAnalysis = await storage.getAnalysisById(competitorAnalysisId) as any;
@@ -320,12 +336,13 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         }
         
-        // Run comprehensive competitive analysis
+        // Run comprehensive competitive analysis using proper function signature
+        const { analyzeCompetitor } = await import("../competitive-analysis/competitive-analyzer");
         const competitiveResult = await analyzeCompetitor(
           mainAnalysis,
           competitorAnalysis,
           openaiClient,
-          { includeAI: false } // We'll handle AI separately for credit control
+          { includeAI: false, maxTokens: 8000, analysisDepth: 'standard', focusAreas: ['SEO', 'Content'] }
         );
         
         // Create enhanced comparison result
