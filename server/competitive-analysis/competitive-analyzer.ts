@@ -322,7 +322,14 @@ function createCompetitiveSummary(
   const weaknesses = Object.entries(metrics).filter(([_, m]) => m.advantage === 'competitor').map(([k, _]) => k);
   
   const highPriorityInsights = insights.filter(i => i.priority === 'high');
-  const quickWins = insights.filter(i => i.impact >= 7 && i.category.includes('optimization'));
+  const quickWins = insights.filter(i => i.impact >= 7 && (
+    i.priority === 'high' || 
+    i.category === 'content-gaps' ||
+    i.category.includes('Optimization') ||
+    i.category.includes('titleOptimization') ||
+    i.category.includes('descriptionOptimization') ||
+    i.category.includes('imagesOptimization')
+  ));
   
   return {
     overallAdvantage: advantages.length > weaknesses.length ? 'main' : 
