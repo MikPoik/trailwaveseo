@@ -8,6 +8,7 @@ import type { PageAnalysisResult } from './page-analyzer.js';
 
 export interface TechnicalSeoAnalysis {
   overallScore: number;
+  explanation?: string;
   coreWebVitals: CoreWebVitalsAnalysis;
   mobileOptimization: MobileOptimizationAnalysis;
   securityAnalysis: SecurityAnalysis;

@@ -7,6 +7,7 @@ import type { PageAnalysisResult } from './page-analyzer.js';
 
 export interface LinkArchitectureAnalysis {
   overallScore: number;
+  explanation?: string;
   linkDistribution: LinkDistributionAnalysis;
   anchorTextAnalysis: AnchorTextAnalysis;
   navigationStructure: NavigationStructureAnalysis;

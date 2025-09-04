@@ -217,16 +217,44 @@ async function generateInsights(
     import('./performance-analyzer.js').then(m => m.analyzePerformance(analyzedPages))
   ]);
 
-  insights.technicalAnalysis = technicalAnalysis;
-  insights.contentQualityAnalysis = contentQualityAnalysis;
-  insights.linkArchitectureAnalysis = linkArchitectureAnalysis;
-  insights.performanceAnalysis = performanceAnalysis;
-
   console.log(`Generated comprehensive insights:`);
   console.log(`- Technical SEO Score: ${technicalAnalysis.overallScore}/100`);
   console.log(`- Content Quality Score: ${contentQualityAnalysis.overallScore}/100`);
   console.log(`- Link Architecture Score: ${linkArchitectureAnalysis.overallScore}/100`);
   console.log(`- Performance Score: ${performanceAnalysis.overallScore}/100`);
+
+  // Generate AI explanations for each analysis area (only if AI is enabled)
+  if (options.useAI && !options.isCompetitorAnalysis && context.settings.useAI) {
+    try {
+      console.log(`Generating AI explanations for enhanced insights...`);
+      
+      const { generateInsightsExplanations } = await import('../openai.js');
+      const explanations = await generateInsightsExplanations(
+        context.domain,
+        technicalAnalysis,
+        contentQualityAnalysis, 
+        linkArchitectureAnalysis,
+        performanceAnalysis,
+        analyzedPages
+      );
+      
+      // Add explanations to each analysis area
+      technicalAnalysis.explanation = explanations.technicalExplanation;
+      contentQualityAnalysis.explanation = explanations.contentQualityExplanation;
+      linkArchitectureAnalysis.explanation = explanations.linkArchitectureExplanation;
+      performanceAnalysis.explanation = explanations.performanceExplanation;
+      
+      console.log(`AI explanations added to enhanced insights`);
+      
+    } catch (error) {
+      console.error('Error generating AI explanations, proceeding without them:', error);
+    }
+  }
+
+  insights.technicalAnalysis = technicalAnalysis;
+  insights.contentQualityAnalysis = contentQualityAnalysis;
+  insights.linkArchitectureAnalysis = linkArchitectureAnalysis;
+  insights.performanceAnalysis = performanceAnalysis;
 
   return insights;
 }

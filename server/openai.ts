@@ -3,7 +3,7 @@ import axios from "axios";
 import crypto from "crypto";
 import { ContentDuplicationAnalysis, DuplicateItem } from '@shared/schema';
 
-// Using gpt-4o as the OpenAI model for better reliability
+// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Cache for storing generated alt text to avoid regenerating for the same images
@@ -1723,6 +1723,92 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
     chunks.push(array.slice(i, i + chunkSize));
   }
   return chunks;
+}
+
+/**
+ * Generate AI explanations for each enhanced insights area
+ */
+export async function generateInsightsExplanations(
+  domain: string,
+  technicalAnalysis: any,
+  contentQualityAnalysis: any,
+  linkArchitectureAnalysis: any,
+  performanceAnalysis: any,
+  pages: any[]
+): Promise<{
+  technicalExplanation: string;
+  contentQualityExplanation: string;
+  linkArchitectureExplanation: string;
+  performanceExplanation: string;
+}> {
+  
+  try {
+    console.log(`Generating AI explanations for enhanced insights on ${domain}...`);
+
+    const prompt = `You are an SEO expert analyzing a website. Provide clear, actionable explanations for each analysis area score.
+
+Website: ${domain}
+Pages analyzed: ${pages.length}
+
+ANALYSIS SCORES:
+- Technical SEO: ${technicalAnalysis.overallScore}/100
+- Content Quality: ${contentQualityAnalysis.overallScore}/100  
+- Link Architecture: ${linkArchitectureAnalysis.overallScore}/100
+- Performance: ${performanceAnalysis.overallScore}/100
+
+DETAILED FINDINGS:
+Technical SEO findings: ${JSON.stringify(technicalAnalysis.findings || [], null, 2)}
+Content Quality findings: ${JSON.stringify(contentQualityAnalysis.findings || [], null, 2)}
+Link Architecture findings: ${JSON.stringify(linkArchitectureAnalysis.findings || [], null, 2)}
+Performance findings: ${JSON.stringify(performanceAnalysis.findings || [], null, 2)}
+
+Provide explanations in JSON format for each area. Each explanation should be 2-3 sentences that:
+1. Explain why the score is what it is
+2. Highlight the main issue(s) affecting the score
+3. Give one key actionable improvement tip
+
+Response format:
+{
+  "technicalExplanation": "Your Technical SEO explanation here...",
+  "contentQualityExplanation": "Your Content Quality explanation here...",
+  "linkArchitectureExplanation": "Your Link Architecture explanation here...", 
+  "performanceExplanation": "Your Performance explanation here..."
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an SEO expert. Provide clear, concise explanations that help users understand their scores and next steps. Keep explanations simple and actionable for non-technical users." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+
+    console.log("Generated AI explanations for enhanced insights");
+
+    return {
+      technicalExplanation: result.technicalExplanation || "Technical SEO analysis completed successfully.",
+      contentQualityExplanation: result.contentQualityExplanation || "Content quality analysis completed successfully.",
+      linkArchitectureExplanation: result.linkArchitectureExplanation || "Link architecture analysis completed successfully.",
+      performanceExplanation: result.performanceExplanation || "Performance analysis completed successfully."
+    };
+
+  } catch (error) {
+    console.error('Error generating insights explanations:', error);
+    return {
+      technicalExplanation: `Technical SEO scored ${technicalAnalysis.overallScore}/100. Focus on improving technical elements for better search engine visibility.`,
+      contentQualityExplanation: `Content Quality scored ${contentQualityAnalysis.overallScore}/100. Enhance content depth and optimization for better engagement.`,
+      linkArchitectureExplanation: `Link Architecture scored ${linkArchitectureAnalysis.overallScore}/100. Improve internal linking structure for better navigation.`,
+      performanceExplanation: `Performance scored ${performanceAnalysis.overallScore}/100. Optimize loading speed and user experience metrics.`
+    };
+  }
 }
 
 // Helper function to merge analysis results from batches

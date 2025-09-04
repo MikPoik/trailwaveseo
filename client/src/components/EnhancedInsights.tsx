@@ -96,9 +96,18 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
                   className="h-2 mb-2"
                 />
                 
-                <p className="text-xs text-gray-600 leading-relaxed">
+                <p className="text-xs text-gray-600 leading-relaxed mb-2">
                   {category.description}
                 </p>
+                
+                {/* AI Explanation */}
+                {category.data?.explanation && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded border-l-4 border-blue-200">
+                    <p className="text-xs text-blue-900 leading-relaxed">
+                      <strong>AI Insights:</strong> {category.data.explanation}
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -106,7 +115,7 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
 
         {/* Detailed findings for each category */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {analysisCategories.filter(cat => cat.data?.findings?.length > 0).map((category) => (
+          {analysisCategories.filter(cat => cat.data?.findings && cat.data.findings.length > 0).map((category) => (
             <Card key={category.title} className="border-gray-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center space-x-2">

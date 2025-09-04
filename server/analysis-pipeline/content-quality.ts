@@ -8,6 +8,7 @@ import type { PageAnalysisResult } from './page-analyzer.js';
 
 export interface ContentQualityAnalysis {
   overallScore: number;
+  explanation?: string;
   readabilityAnalysis: ReadabilityAnalysis;
   keywordOptimization: KeywordOptimizationAnalysis;
   contentDepthAnalysis: ContentDepthAnalysis;

@@ -8,6 +8,7 @@ import type { PageAnalysisResult } from './page-analyzer.js';
 
 export interface PerformanceAnalysis {
   overallScore: number;
+  explanation?: string;
   resourceOptimization: ResourceOptimizationAnalysis;
   loadingPatterns: LoadingPatternsAnalysis;
   userExperienceMetrics: UserExperienceMetrics;

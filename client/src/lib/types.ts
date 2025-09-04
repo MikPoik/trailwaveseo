@@ -180,6 +180,7 @@ export interface CompetitorAnalysisResult {
 export interface EnhancedInsights {
   technicalAnalysis?: {
     overallScore: number;
+    explanation?: string;
     findings: Array<{
       category: string;
       score: number;
@@ -189,6 +190,7 @@ export interface EnhancedInsights {
   };
   contentQualityAnalysis?: {
     overallScore: number;
+    explanation?: string;
     findings: Array<{
       category: string;
       score: number;
@@ -198,6 +200,7 @@ export interface EnhancedInsights {
   };
   linkArchitectureAnalysis?: {
     overallScore: number;
+    explanation?: string;
     findings: Array<{
       category: string;
       score: number;
@@ -207,6 +210,7 @@ export interface EnhancedInsights {
   };
   performanceAnalysis?: {
     overallScore: number;
+    explanation?: string;
     findings: Array<{
       category: string;
       score: number;
