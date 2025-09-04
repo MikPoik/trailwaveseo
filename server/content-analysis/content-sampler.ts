@@ -7,6 +7,12 @@ import OpenAI from 'openai';
 import { ExtractedContent, ContentStats, calculateContentStats } from './content-preprocessor.js';
 import { detectDuplicates, SimilarityOptions, DuplicateAnalysisResult } from './similarity-detector.js';
 import { 
+  detectDuplicatesWithAI, 
+  EnhancedAnalysisResult, 
+  EnhancedAnalysisOptions,
+  DEFAULT_ENHANCED_OPTIONS 
+} from './ai-enhanced-detector.js';
+import { 
   createTokenBudget, 
   createAnalysisBatches, 
   analyzeContentBatch, 
@@ -22,9 +28,11 @@ import { ContentDuplicationAnalysis, DuplicateItem } from '../../shared/schema.j
 export interface ProcessingOptions {
   maxTotalTokens: number;
   useAIAnalysis: boolean;
+  useEnhancedAnalysis: boolean;
   prioritizeByImpact: boolean;
   similarityOptions: SimilarityOptions;
   aiOptions: AIAnalysisOptions;
+  enhancedOptions: EnhancedAnalysisOptions;
 }
 
 export interface ProcessingResult {
@@ -40,6 +48,7 @@ export interface ProcessingResult {
 export const DEFAULT_PROCESSING_OPTIONS: ProcessingOptions = {
   maxTotalTokens: 15000,
   useAIAnalysis: true,
+  useEnhancedAnalysis: true,
   prioritizeByImpact: true,
   similarityOptions: {
     exactMatchThreshold: 100,
@@ -53,7 +62,8 @@ export const DEFAULT_PROCESSING_OPTIONS: ProcessingOptions = {
     maxTokensPerRequest: 4000,
     batchSize: 15,
     prioritizeByImpact: true
-  }
+  },
+  enhancedOptions: DEFAULT_ENHANCED_OPTIONS
 };
 
 /**
@@ -191,41 +201,81 @@ async function processContentType(
   
   // Step 2: Determine if sampling is needed
   const samplingStrategy = determineSamplingStrategy(contentStats, content.length);
-  const samplingResult = sampleContent(content, samplingStrategy, type);
+  const samplingResult = await sampleContent(content, samplingStrategy, type);
   
   console.log(`${type}: sampled ${samplingResult.sampled.length}/${content.length} items (${samplingResult.representativeness}% representative)`);
 
-  // Step 3: Rule-based duplicate detection (fast, no tokens)
-  const duplicateAnalysis = detectDuplicates(samplingResult.sampled, options.similarityOptions);
-  
+  let duplicateAnalysis: DuplicateAnalysisResult;
   let tokensUsed = 0;
   let aiCallsMade = 0;
 
-  // Step 4: AI enhancement if enabled and we have budget
-  if (options.useAIAnalysis && tokenBudget > 500 && duplicateAnalysis.duplicateGroups.length > 0) {
+  // Step 3: Choose analysis method
+  if (options.useEnhancedAnalysis && tokenBudget > 1000 && samplingResult.sampled.length > 2) {
+    console.log(`Using enhanced AI analysis for ${type}...`);
+    
     try {
-      const budget = createTokenBudget(contentStats);
-      budget.availableTokens = Math.min(budget.availableTokens, tokenBudget);
+      // Use enhanced AI-powered analysis
+      const enhancedResult = await detectDuplicatesWithAI(
+        samplingResult.sampled, 
+        type, 
+        openai, 
+        options.enhancedOptions
+      );
       
-      const batches = createAnalysisBatches(samplingResult.sampled, type, budget, options.aiOptions);
+      // Convert enhanced result to standard format
+      duplicateAnalysis = {
+        duplicateGroups: enhancedResult.duplicateGroups,
+        duplicateCount: enhancedResult.duplicateCount,
+        totalAnalyzed: enhancedResult.totalAnalyzed,
+        examples: enhancedResult.duplicateGroups.slice(0, 5).map(group => group.content),
+        stats: {
+          exactMatches: enhancedResult.stats.exactMatches,
+          fuzzyMatches: enhancedResult.stats.templateMatches,
+          semanticMatches: enhancedResult.stats.intentConflicts
+        }
+      };
       
-      for (const batch of batches) {
-        if (tokensUsed >= tokenBudget) break;
-        
-        const aiResults = await analyzeContentBatch(batch, openai, options.aiOptions);
-        
-        // Merge AI insights with rule-based results
-        mergeAIInsights(duplicateAnalysis.duplicateGroups, aiResults);
-        
-        tokensUsed += batch.estimatedTokens;
-        aiCallsMade++;
-        
-        // Add small delay between AI calls
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // Estimate token usage for enhanced analysis
+      tokensUsed = Math.min(tokenBudget, estimateEnhancedTokenUsage(samplingResult.sampled.length));
+      aiCallsMade = Math.ceil(samplingResult.sampled.length / options.enhancedOptions.batchSize);
+      
+      console.log(`Enhanced AI analysis complete for ${type}: ${enhancedResult.duplicateGroups.length} groups, ${enhancedResult.templatePatterns.length} templates, ${enhancedResult.strategicInsights.length} insights`);
       
     } catch (aiError) {
-      console.warn(`AI analysis failed for ${type}, using rule-based results only:`, aiError);
+      console.warn(`Enhanced AI analysis failed for ${type}, falling back to rule-based:`, aiError);
+      duplicateAnalysis = detectDuplicates(samplingResult.sampled, options.similarityOptions);
+    }
+    
+  } else {
+    // Step 4: Fall back to rule-based analysis
+    duplicateAnalysis = detectDuplicates(samplingResult.sampled, options.similarityOptions);
+    
+    // Step 5: Legacy AI enhancement if enabled
+    if (options.useAIAnalysis && tokenBudget > 500 && duplicateAnalysis.duplicateGroups.length > 0) {
+      try {
+        const budget = createTokenBudget(contentStats);
+        budget.availableTokens = Math.min(budget.availableTokens, tokenBudget);
+        
+        const batches = createAnalysisBatches(samplingResult.sampled, type, budget, options.aiOptions);
+        
+        for (const batch of batches) {
+          if (tokensUsed >= tokenBudget) break;
+          
+          const aiResults = await analyzeContentBatch(batch, openai, options.aiOptions);
+          
+          // Merge AI insights with rule-based results
+          mergeAIInsights(duplicateAnalysis.duplicateGroups, aiResults);
+          
+          tokensUsed += batch.estimatedTokens;
+          aiCallsMade++;
+          
+          // Add small delay between AI calls
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+      } catch (aiError) {
+        console.warn(`AI analysis failed for ${type}, using rule-based results only:`, aiError);
+      }
     }
   }
 
@@ -235,6 +285,15 @@ async function processContentType(
     aiCallsMade,
     samplingResult
   };
+}
+
+/**
+ * Estimate token usage for enhanced analysis
+ */
+function estimateEnhancedTokenUsage(contentLength: number): number {
+  // Rough estimation for enhanced analysis
+  const baseTokens = contentLength * 15; // More tokens per item due to complex analysis
+  return Math.min(baseTokens, 3000); // Cap at 3000 tokens
 }
 
 /**

@@ -1,10 +1,13 @@
 /**
  * Content Duplication Analysis Module
- * Handles AI-powered content duplication detection and analysis
+ * Handles enhanced AI-powered content duplication detection and analysis
  */
 
 import OpenAI from "openai";
 import { ContentDuplicationAnalysis, DuplicateItem } from '@shared/schema';
+import { extractPageContent } from './content-preprocessor.js';
+import { processContentHierarchically, DEFAULT_PROCESSING_OPTIONS } from './content-sampler.js';
+import { analyzeContentQuality } from './content-quality-scorer.js';
 
 // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

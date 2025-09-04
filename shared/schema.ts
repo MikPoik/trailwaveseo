@@ -103,6 +103,39 @@ export interface DuplicateItem {
   priority?: number; // 1-5, where 1 is most urgent
   rootCause?: string;
   improvementStrategy?: string;
+  duplicationType?: 'exact' | 'template' | 'intent' | 'boilerplate';
+  templatePattern?: string;
+  businessImpact?: string;
+}
+
+// Enhanced analysis types
+export interface ContentCategory {
+  type: 'boilerplate' | 'navigation' | 'value' | 'cta' | 'template';
+  confidence: number;
+  reason: string;
+}
+
+export interface TemplatePattern {
+  pattern: string;
+  variables: string[];
+  instances: Array<{
+    content: string;
+    url: string;
+    extractedVariables: Record<string, string>;
+  }>;
+  businessImpact: 'high' | 'medium' | 'low';
+  recommendation: string;
+}
+
+export interface IntentAnalysis {
+  intent: string;
+  confidence: number;
+  competingPages: Array<{
+    url: string;
+    content: string;
+    intentMatch: number;
+  }>;
+  consolidationSuggestion?: string;
 }
 
 export interface ContentDuplicationAnalysis {
