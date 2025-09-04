@@ -177,6 +177,45 @@ export interface CompetitorAnalysisResult {
   };
 }
 
+export interface EnhancedInsights {
+  technicalAnalysis?: {
+    overallScore: number;
+    findings: Array<{
+      category: string;
+      score: number;
+      issues: string[];
+      recommendations: string[];
+    }>;
+  };
+  contentQualityAnalysis?: {
+    overallScore: number;
+    findings: Array<{
+      category: string;
+      score: number;
+      issues: string[];
+      recommendations: string[];
+    }>;
+  };
+  linkArchitectureAnalysis?: {
+    overallScore: number;
+    findings: Array<{
+      category: string;
+      score: number;
+      issues: string[];
+      recommendations: string[];
+    }>;
+  };
+  performanceAnalysis?: {
+    overallScore: number;
+    findings: Array<{
+      category: string;
+      score: number;
+      issues: string[];
+      recommendations: string[];
+    }>;
+  };
+}
+
 export interface WebsiteAnalysis {
   id?: number;
   domain: string;
@@ -186,6 +225,7 @@ export interface WebsiteAnalysis {
   pages: PageAnalysis[];
   contentRepetitionAnalysis?: ContentRepetitionAnalysis;
   competitorAnalysis?: CompetitorAnalysisResult;
+  enhancedInsights?: EnhancedInsights;
 }
 
 // API Types
