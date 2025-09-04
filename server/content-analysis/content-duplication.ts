@@ -50,7 +50,11 @@ Analyze for:
 4. Duplicate paragraph content
 5. Overall content strategy recommendations
 
-Identify specific examples of duplication and provide recommendations for improvement.
+For each duplicate group, assess:
+- Impact level: "critical" (exact duplicates, major SEO issues), "warning" (similar content, moderate issues), or "minor" (slight similarities)
+- Specific improvement strategy: Actionable advice for fixing this particular duplication
+
+Identify specific examples of duplication and provide detailed recommendations for improvement.
 
 CRITICAL: Your response MUST be valid JSON. Escape all quotes properly. Keep all examples under 80 characters. Limit to 3 examples max per category.
 
@@ -61,25 +65,25 @@ Respond in JSON format:
     "totalCount": number,
     "examples": ["example1", "example2"],
     "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "title", "affected_urls": ["url1", "url2"]}]
+    "duplicateGroups": [{"content": "title", "affected_urls": ["url1", "url2"], "impactLevel": "Critical", "improvementStrategy": "strategy"}]
   },
   "descriptionRepetition": {
     "repetitiveCount": number,
     "totalCount": number,
     "examples": ["example1", "example2"],
     "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "description", "affected_urls": ["url1", "url2"]}]
+    "duplicateGroups": [{"content": "description", "affected_urls": ["url1", "url2"], "impactLevel": "High", "improvementStrategy": "strategy"}]
   },
   "headingRepetition": {
     "repetitiveCount": number,
     "totalCount": number,
     "examples": ["example1", "example2"],
     "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "heading", "affected_urls": ["url1", "url2"]}],
+    "duplicateGroups": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "High", "improvementStrategy": "strategy"}],
     "byLevel": {
-      "h1": [{"content": "heading", "affected_urls": ["url1", "url2"]}],
-      "h2": [{"content": "heading", "affected_urls": ["url1", "url2"]}],
-      "h3": [{"content": "heading", "affected_urls": ["url1", "url2"]}],
+      "h1": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "Critical", "improvementStrategy": "strategy"}],
+      "h2": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "High", "improvementStrategy": "strategy"}],
+      "h3": [{"content": "heading", "affected_urls": ["url1", "url2"], "impactLevel": "Low", "improvementStrategy": "strategy"}],
       "h4": [],
       "h5": [],
       "h6": []
@@ -90,7 +94,7 @@ Respond in JSON format:
     "totalCount": number,
     "examples": ["example1", "example2"],
     "recommendations": ["rec1", "rec2"],
-    "duplicateGroups": [{"content": "paragraph", "affected_urls": ["url1", "url2"]}]
+    "duplicateGroups": [{"content": "paragraph", "affected_urls": ["url1", "url2"], "impactLevel": "Low", "improvementStrategy": "strategy"}]
   },
   "overallRecommendations": ["rec1", "rec2"]
 }`;
@@ -186,7 +190,9 @@ function generateBasicContentAnalysis(pages: Array<any>): ContentDuplicationAnal
       duplicateGroups: titleDuplicates.map(title => ({
         content: title,
         urls: pages.filter(p => p.title === title).map(p => p.url),
-        similarityScore: 100
+        similarityScore: 100,
+        impactLevel: 'Critical',
+        improvementStrategy: 'Create unique, descriptive titles that reflect each page\'s specific content and purpose'
       }))
     },
     descriptionRepetition: {
@@ -201,7 +207,9 @@ function generateBasicContentAnalysis(pages: Array<any>): ContentDuplicationAnal
       duplicateGroups: descriptionDuplicates.map(desc => ({
         content: desc,
         urls: pages.filter(p => p.metaDescription === desc).map(p => p.url),
-        similarityScore: 100
+        similarityScore: 100,
+        impactLevel: 'High',
+        improvementStrategy: 'Write unique meta descriptions with relevant keywords and compelling calls-to-action'
       }))
     },
     headingRepetition: {
@@ -262,7 +270,9 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
       duplicateGroups: (result.titleRepetition?.duplicateGroups || []).map((group: any) => ({
         content: group.content || '',
         urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100
+        similarityScore: group.similarityScore || 100,
+        impactLevel: group.impactLevel || 'Low',
+        improvementStrategy: group.improvementStrategy || 'Create unique, descriptive content for each page'
       }))
     },
     descriptionRepetition: {
@@ -277,7 +287,9 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
       duplicateGroups: (result.descriptionRepetition?.duplicateGroups || []).map((group: any) => ({
         content: group.content || '',
         urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100
+        similarityScore: group.similarityScore || 100,
+        impactLevel: group.impactLevel || 'Low',
+        improvementStrategy: group.improvementStrategy || 'Write unique meta descriptions with relevant keywords'
       }))
     },
     headingRepetition: {
@@ -292,38 +304,52 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
       duplicateGroups: (result.headingRepetition?.duplicateGroups || []).map((group: any) => ({
         content: group.content || '',
         urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100
+        similarityScore: group.similarityScore || 100,
+        impactLevel: group.impactLevel || 'Low',
+        improvementStrategy: group.improvementStrategy || 'Create distinct heading structures for each page'
       })),
       byLevel: {
         h1: (result.headingRepetition?.byLevel?.h1 || []).map((group: any) => ({
           content: group.content || '',
           urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100
+          similarityScore: group.similarityScore || 100,
+          impactLevel: group.impactLevel || 'Critical',
+          improvementStrategy: group.improvementStrategy || 'Create unique H1 headings that reflect each page\'s specific purpose'
         })),
         h2: (result.headingRepetition?.byLevel?.h2 || []).map((group: any) => ({
           content: group.content || '',
           urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100
+          similarityScore: group.similarityScore || 100,
+          impactLevel: group.impactLevel || 'warning',
+          improvementStrategy: group.improvementStrategy || 'Diversify H2 headings to reflect unique section content'
         })),
         h3: (result.headingRepetition?.byLevel?.h3 || []).map((group: any) => ({
           content: group.content || '',
           urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100
+          similarityScore: group.similarityScore || 100,
+          impactLevel: group.impactLevel || 'Low',
+          improvementStrategy: group.improvementStrategy || 'Vary H3 headings to distinguish subsection topics'
         })),
         h4: (result.headingRepetition?.byLevel?.h4 || []).map((group: any) => ({
           content: group.content || '',
           urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100
+          similarityScore: group.similarityScore || 100,
+          impactLevel: group.impactLevel || 'Low',
+          improvementStrategy: group.improvementStrategy || 'Create specific H4 headings for detailed sections'
         })),
         h5: (result.headingRepetition?.byLevel?.h5 || []).map((group: any) => ({
           content: group.content || '',
           urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100
+          similarityScore: group.similarityScore || 100,
+          impactLevel: group.impactLevel || 'Low',
+          improvementStrategy: group.improvementStrategy || 'Use descriptive H5 headings for fine-grained content organization'
         })),
         h6: (result.headingRepetition?.byLevel?.h6 || []).map((group: any) => ({
           content: group.content || '',
           urls: group.urls || group.affected_urls || [],
-          similarityScore: group.similarityScore || 100
+          similarityScore: group.similarityScore || 100,
+          impactLevel: group.impactLevel || 'Low',
+          improvementStrategy: group.improvementStrategy || 'Ensure H6 headings are specific and contextually relevant'
         }))
       }
     },
@@ -339,7 +365,9 @@ function parseContentRepetitionResult(result: any): ContentDuplicationAnalysis {
       duplicateGroups: (result.paragraphRepetition?.duplicateGroups || []).map((group: any) => ({
         content: group.content || '',
         urls: group.urls || group.affected_urls || [],
-        similarityScore: group.similarityScore || 100
+        similarityScore: group.similarityScore || 100,
+        impactLevel: group.impactLevel || 'Low',
+        improvementStrategy: group.improvementStrategy || 'Rewrite paragraphs to provide unique value and context for each page'
       }))
     },
     overallRecommendations: result.overallRecommendations || []

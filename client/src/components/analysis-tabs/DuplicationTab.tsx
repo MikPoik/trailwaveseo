@@ -198,7 +198,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
               {analysis.contentRepetitionAnalysis.overallRecommendations.slice(0, 3).map((recommendation, index) => {
                 const recommendationText = typeof recommendation === 'string' 
                   ? recommendation 
-                  : (recommendation?.text || recommendation?.recommendation || 'Improve content uniqueness across pages');
+                  : ((recommendation as any)?.text || (recommendation as any)?.recommendation || 'Improve content uniqueness across pages');
                 
                 return (
                   <div key={index} className="flex items-start gap-3">
@@ -238,7 +238,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                         {(group.urls || []).slice(0, 3).map((url, urlIndex) => (
                           <div key={urlIndex} className="flex items-center gap-1">
                             <ExternalLink className="h-3 w-3" />
-                            {typeof url === 'string' ? url : url.href || 'Unknown URL'}
+                            {typeof url === 'string' ? url : (url as any).href || 'Unknown URL'}
                           </div>
                         ))}
                         {(group.urls?.length || 0) > 3 && (
@@ -284,7 +284,7 @@ const DuplicationTab = ({ analysis, onAnalysisUpdate }: DuplicationTabProps) => 
                         {(group.urls || []).slice(0, 3).map((url, urlIndex) => (
                           <div key={urlIndex} className="flex items-center gap-1">
                             <ExternalLink className="h-3 w-3" />
-                            {typeof url === 'string' ? url : url.href || 'Unknown URL'}
+                            {typeof url === 'string' ? url : (url as any).href || 'Unknown URL'}
                           </div>
                         ))}
                         {(group.urls?.length || 0) > 3 && (
