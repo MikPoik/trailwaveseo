@@ -105,13 +105,13 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
               <div className="flex items-center gap-2">
                 <Copy className="h-4 w-4 text-blue-600" />
                 <span className="text-sm text-blue-800">
-                  Duplication Score: <strong>{analysisData.overallHealth.duplicationScore || 0}/100</strong>
+                  Content Score: <strong>{analysisData.overallHealth.contentScore || analysisData.contentUniqueness?.uniquenessScore || 0}/100</strong>
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Hash className="h-4 w-4 text-blue-600" />
                 <span className="text-sm text-blue-800">
-                  Keyword Score: <strong>{analysisData.overallHealth.keywordScore || 0}/100</strong>
+                  Keyword Score: <strong>{analysisData.overallHealth.keywordScore || analysisData.keywordQuality?.healthScore || 0}/100</strong>
                 </span>
               </div>
             </div>
@@ -138,8 +138,8 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
               <div>
                 <h4 className="text-sm font-medium text-red-800">Critical Issues</h4>
                 <p className="text-lg font-semibold text-red-600">
-                  {(analysisData.duplicationPatterns?.critical?.length || 0) + 
-                   (analysisData.keywordIssues?.problematicKeywords?.filter((k: any) => k.severity === 'critical')?.length || 0)}
+                  {((analysisData.contentUniqueness?.duplicateContent?.titles?.filter((d: any) => d.impactLevel === 'Critical')?.length || 0) + 
+                    (analysisData.keywordQuality?.overOptimization?.filter((k: any) => k.impactLevel === 'Critical')?.length || 0))}
                 </p>
                 <p className="text-xs text-red-600 mt-1">Need immediate attention</p>
               </div>
@@ -152,7 +152,7 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
               <div>
                 <h4 className="text-sm font-medium text-orange-800">Content Issues</h4>
                 <p className="text-lg font-semibold text-orange-600">
-                  {analysisData.findings?.filter((f: any) => f.category.includes('Content')).length || 0}
+                  {analysisData.contentUniqueness?.totalDuplicates || 0}
                 </p>
                 <p className="text-xs text-orange-600 mt-1">Areas identified</p>
               </div>
@@ -165,7 +165,7 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
               <div>
                 <h4 className="text-sm font-medium text-yellow-800">Findings</h4>
                 <p className="text-lg font-semibold text-yellow-600">
-                  {analysisData.findings?.length || 0}
+                  {analysisData.strategicRecommendations?.length || 0}
                 </p>
                 <p className="text-xs text-yellow-600 mt-1">Total issues found</p>
               </div>
@@ -178,7 +178,7 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
               <div>
                 <h4 className="text-sm font-medium text-green-800">Opportunities</h4>
                 <p className="text-lg font-semibold text-green-600">
-                  {analysisData.findings?.reduce((acc: number, f: any) => acc + (f.recommendations?.length || 0), 0) || 0}
+                  {analysisData.keywordQuality?.underOptimization?.length || 0}
                 </p>
                 <p className="text-xs text-green-600 mt-1">Recommendations</p>
               </div>
@@ -186,62 +186,92 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
           </div>
         </div>
 
-        {/* Content Quality Findings */}
-        {analysisData.findings?.length > 0 && (
+        {/* Strategic Recommendations */}
+        {analysisData.strategicRecommendations?.length > 0 && (
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FileText className="h-5 w-5 text-blue-600" />
-              Content Quality Findings
+              Strategic Recommendations
             </h4>
             
             <div className="space-y-4">
-              {analysisData.findings.map((finding: any, index: number) => (
+              {analysisData.strategicRecommendations.map((recommendation: any, index: number) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h5 className="font-medium text-gray-900">{finding.category}</h5>
-                        <Badge className={`text-xs ${finding.score >= 80 ? 'bg-green-100 text-green-800' : finding.score >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                          Score: {finding.score}/100
+                        <h5 className="font-medium text-gray-900">{recommendation.title}</h5>
+                        <Badge className={`text-xs ${getImpactLevelColor(recommendation.priority)}`}>
+                          {recommendation.priority} Priority
                         </Badge>
                       </div>
-                      {finding.issues?.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-700 mb-1">Issues Found:</p>
-                          <ul className="text-sm text-gray-600 space-y-1">
-                            {finding.issues.slice(0, 3).map((issue: string, issueIndex: number) => (
-                              <li key={issueIndex} className="flex items-start gap-2">
-                                <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                                {issue}
-                              </li>
-                            ))}
-                            {finding.issues.length > 3 && (
-                              <li className="text-gray-500">... and {finding.issues.length - 3} more issues</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                      {finding.recommendations?.length > 0 && (
-                        <div className="bg-green-50 rounded p-3">
-                          <p className="text-sm font-medium text-green-700 mb-2">💡 Recommendations:</p>
-                          <ul className="text-sm text-green-600 space-y-1">
-                            {finding.recommendations.slice(0, 3).map((rec: string, recIndex: number) => (
-                              <li key={recIndex} className="flex items-start gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                {rec}
-                              </li>
-                            ))}
-                            {finding.recommendations.length > 3 && (
-                              <li className="text-green-500">... and {finding.recommendations.length - 3} more recommendations</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
+                      <p className="text-sm text-gray-600 mb-3">{recommendation.description}</p>
+                      
+                      <div className="bg-blue-50 rounded p-3 mb-3">
+                        <p className="text-sm font-medium text-blue-700 mb-1">🎯 Implementation:</p>
+                        <p className="text-sm text-blue-600">{recommendation.implementation}</p>
+                      </div>
+                      
+                      <div className="bg-green-50 rounded p-3">
+                        <p className="text-sm font-medium text-green-700 mb-1">📈 Expected Impact:</p>
+                        <p className="text-sm text-green-600">{recommendation.expectedImpact}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Keyword Quality Issues */}
+        {(analysisData.keywordQuality?.overOptimization?.length > 0 || analysisData.keywordQuality?.underOptimization?.length > 0) && (
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Hash className="h-5 w-5 text-blue-600" />
+              Keyword Quality Analysis
+            </h4>
+            
+            {/* Over-optimization Issues */}
+            {analysisData.keywordQuality.overOptimization?.length > 0 && (
+              <div className="mb-4">
+                <h5 className="font-medium text-red-800 mb-2">⚠️ Over-optimization Issues</h5>
+                <div className="space-y-2">
+                  {analysisData.keywordQuality.overOptimization.map((issue: any, index: number) => (
+                    <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-red-800">"{issue.keyword}"</span>
+                        <Badge className="bg-red-100 text-red-800">
+                          {issue.density}% density
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-red-700 mb-2">{issue.improvementStrategy}</p>
+                      {issue.alternatives?.length > 0 && (
+                        <p className="text-xs text-red-600">
+                          Alternatives: {issue.alternatives.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Under-optimization Opportunities */}
+            {analysisData.keywordQuality.underOptimization?.length > 0 && (
+              <div className="mb-4">
+                <h5 className="font-medium text-green-800 mb-2">🚀 Optimization Opportunities</h5>
+                <div className="space-y-2">
+                  {analysisData.keywordQuality.underOptimization.map((opportunity: any, index: number) => (
+                    <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <h6 className="font-medium text-green-800 mb-1">{opportunity.suggestion}</h6>
+                      <p className="text-sm text-green-700 mb-2">{opportunity.opportunity}</p>
+                      <p className="text-xs text-green-600">{opportunity.implementation}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
