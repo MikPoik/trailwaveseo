@@ -168,7 +168,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask for help with your content... (Press Enter to send, Shift+Enter for new line)"
-              className="flex-1 min-h-[600px] max-h-[920px] resize-none"
+              className="flex-1 min-h-[80px] max-h-[120px] resize-none"
               disabled={sendMessageMutation.isPending}
             />
             <Button
