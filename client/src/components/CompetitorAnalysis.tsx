@@ -264,6 +264,11 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
 
   // Enhanced status function that uses the modular system's advantage data
   const getMetricStatus = (metric: MetricComparison) => {
+    // Handle case where metric object is undefined or null
+    if (!metric) {
+      return 'similar';
+    }
+    
     // Handle legacy data that might not have the advantage property
     if (!metric.advantage) {
       // Fallback to calculating advantage based on difference
@@ -291,6 +296,18 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     title: string, 
     metric: MetricComparison
   ) => {
+    // Handle case where metric is undefined
+    if (!metric) {
+      return (
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between items-center">
+            <h4 className="font-medium">{title}</h4>
+            <span className="text-sm text-gray-500">Data not available</span>
+          </div>
+        </div>
+      );
+    }
+    
     const status = getMetricStatus(metric);
     
     return (
@@ -299,9 +316,9 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
           <div className="flex items-center space-x-2">
             <h4 className="font-medium">{title}</h4>
             <span className={`px-2 py-1 text-xs rounded-full ${
-              getSignificanceBadge(metric.significance)
+              getSignificanceBadge(metric?.significance)
             }`}>
-              {metric.significance || 'minor'}
+              {metric?.significance || 'minor'}
             </span>
           </div>
           <div className="flex items-center space-x-2">
@@ -319,20 +336,20 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                status === 'worse' ? 'Needs work' : 
                'Similar'}
             </span>
-            <span className="text-xs text-muted-foreground">({(metric.percentageDiff || 0) > 0 ? '+' : ''}{metric.percentageDiff || 0}%)</span>
+            <span className="text-xs text-muted-foreground">({(metric?.percentageDiff || 0) > 0 ? '+' : ''}{metric?.percentageDiff || 0}%)</span>
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
             <div className="text-sm font-medium">Your Site:</div>
-            <Progress value={metric.main} className="h-2" />
-            <div className="text-sm font-medium">{Math.round(metric.main)}%</div>
+            <Progress value={metric?.main || 0} className="h-2" />
+            <div className="text-sm font-medium">{Math.round(metric?.main || 0)}%</div>
           </div>
           <div className="flex items-center space-x-2">
             <div className="text-sm font-medium">Competitor:</div>
-            <Progress value={metric.competitor} className="h-2" />
-            <div className="text-sm font-medium">{Math.round(metric.competitor)}%</div>
+            <Progress value={metric?.competitor || 0} className="h-2" />
+            <div className="text-sm font-medium">{Math.round(metric?.competitor || 0)}%</div>
           </div>
         </div>
       </div>
