@@ -112,8 +112,8 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full">
-      <Card className="flex flex-col w-full max-w-full h-[800px]">
+    <div className="flex flex-col h-full w-full">
+      <Card className="flex flex-col w-full h-[800px]">
         <CardHeader className="flex-shrink-0 border-b">
           <CardTitle className="flex items-center text-lg">
             <MessageCircle className="h-5 w-5 mr-2 text-blue-600" />
