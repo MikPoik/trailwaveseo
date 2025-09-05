@@ -213,7 +213,7 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
               <div className="ml-4">
                 <h4 className="text-sm font-medium text-green-800">Good Practices</h4>
                 <div className="mt-1 text-3xl font-semibold text-green-600">
-                  {analysis.metrics.goodPractices}
+                  {analysis.metrics?.goodPractices || 0}
                 </div>
                 <p className="mt-1 text-sm text-green-700">SEO elements that meet best practices</p>
               </div>
@@ -228,7 +228,7 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
               <div className="ml-4">
                 <h4 className="text-sm font-medium text-yellow-800">Warnings</h4>
                 <div className="mt-1 text-3xl font-semibold text-yellow-600">
-                  {analysis.metrics.warnings}
+                  {analysis.metrics?.warnings || 0}
                 </div>
                 <p className="mt-1 text-sm text-yellow-700">Issues that should be improved</p>
               </div>
@@ -243,7 +243,7 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
               <div className="ml-4">
                 <h4 className="text-sm font-medium text-red-800">Critical Issues</h4>
                 <div className="mt-1 text-3xl font-semibold text-red-600">
-                  {analysis.metrics.criticalIssues}
+                  {analysis.metrics?.criticalIssues || 0}
                 </div>
                 <p className="mt-1 text-sm text-red-700">Urgent SEO problems to fix</p>
               </div>
