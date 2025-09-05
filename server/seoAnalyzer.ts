@@ -15,6 +15,8 @@ function calculateReadabilityScore(sentences: string[]): number {
     return count + sentence.split(/\s+/).filter(word => word.length > 0).length;
   }, 0);
 
+  if (totalWords === 0) return 0;
+
   const totalSyllables = sentences.reduce((count, sentence) => {
     const words = sentence.split(/\s+/).filter(word => word.length > 0);
     return count + words.reduce((syllableCount, word) => {
@@ -22,22 +24,69 @@ function calculateReadabilityScore(sentences: string[]): number {
     }, 0);
   }, 0);
 
-  // Simplified Flesch Reading Ease Score
+  // Language-agnostic readability calculation
   const avgWordsPerSentence = totalWords / sentences.length;
   const avgSyllablesPerWord = totalSyllables / totalWords;
 
-  const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
-  return Math.max(0, Math.min(100, score));
+  // Modified formula that's more language-agnostic
+  // Base it more on sentence length than syllable complexity
+  let score = 100;
+  
+  // Penalty for long sentences (universal readability factor)
+  if (avgWordsPerSentence > 20) {
+    score -= Math.min(40, (avgWordsPerSentence - 20) * 2);
+  } else if (avgWordsPerSentence > 15) {
+    score -= (avgWordsPerSentence - 15) * 1;
+  }
+  
+  // Penalty for complex words (syllable-based, but less aggressive)
+  if (avgSyllablesPerWord > 2.0) {
+    score -= Math.min(30, (avgSyllablesPerWord - 2.0) * 15);
+  }
+  
+  // Bonus for moderate sentence length (12-18 words is generally good)
+  if (avgWordsPerSentence >= 12 && avgWordsPerSentence <= 18) {
+    score += 5;
+  }
+  
+  console.log(`Readability calculation: ${sentences.length} sentences, ${totalWords} words, avg ${avgWordsPerSentence.toFixed(1)} words/sentence, ${avgSyllablesPerWord.toFixed(2)} syllables/word, score: ${Math.round(score)}`);
+  
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function countSyllables(word: string): number {
-  word = word.toLowerCase();
-  if (word.length <= 3) return 1;
+  // Remove punctuation and convert to lowercase
+  word = word.toLowerCase().replace(/[^a-zäöüßáéíóúàèìòùâêîôûãñç]/gi, '');
   
-  word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
-  word = word.replace(/^y/, '');
-  const matches = word.match(/[aeiouy]{1,2}/g);
-  return matches ? matches.length : 1;
+  if (word.length <= 2) return 1;
+  if (word.length <= 4) return Math.max(1, Math.ceil(word.length / 2));
+  
+  // Language-agnostic approach: count vowel groups
+  // Extended vowels for multiple languages (including Nordic, Germanic, Romance)
+  const vowels = /[aeiouyäöüáéíóúàèìòùâêîôûãñæø]/gi;
+  const vowelMatches = word.match(vowels);
+  
+  if (!vowelMatches) return 1;
+  
+  // Count vowel clusters as single syllables
+  let syllableCount = 0;
+  let prevWasVowel = false;
+  
+  for (let i = 0; i < word.length; i++) {
+    const isVowel = vowels.test(word[i]);
+    if (isVowel && !prevWasVowel) {
+      syllableCount++;
+    }
+    prevWasVowel = isVowel;
+  }
+  
+  // Handle silent 'e' in various languages (less aggressive than English-only)
+  if (word.endsWith('e') && syllableCount > 1 && !word.match(/[aeiou]e$/i)) {
+    syllableCount--;
+  }
+  
+  // Ensure minimum of 1 syllable
+  return Math.max(1, syllableCount);
 }
 
 function extractSemanticKeywords(text: string): string[] {
@@ -58,6 +107,34 @@ function extractSemanticKeywords(text: string): string[] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 15)
     .map(([phrase]) => phrase);
+}
+
+function splitIntoSentences(text: string): string[] {
+  if (!text || text.trim().length === 0) return [];
+  
+  // Language-agnostic sentence splitting
+  // More sophisticated than simple .!? splitting
+  
+  // First, protect common abbreviations and patterns
+  let processedText = text
+    .replace(/([A-Z][a-z]{1,3})\./g, '$1DOTPLACEHOLDER') // Dr. Mrs. etc.
+    .replace(/(\d+)\./g, '$1DOTPLACEHOLDER') // Numbers like 3.14
+    .replace(/([a-zA-Z])\.([a-zA-Z])/g, '$1DOTPLACEHOLDER$2') // a.b patterns
+    .replace(/(www\.|http[s]?:\/\/[^\s]+)/g, (match) => match.replace(/\./g, 'DOTPLACEHOLDER')) // URLs
+    .replace(/([A-Z]{2,})\./g, '$1DOTPLACEHOLDER') // USA. UK. etc.
+    .replace(/\b(vs|etc|e\.g|i\.e|cf|ca|approx)\./gi, '$1DOTPLACEHOLDER'); // Common abbreviations
+  
+  // Split on sentence endings followed by whitespace and capital letter, or end of string
+  const sentences = processedText
+    .split(/[.!?]+(?=\s+[A-Z]|\s*$)/)
+    .map(sentence => sentence.replace(/DOTPLACEHOLDER/g, '.').trim())
+    .filter(sentence => {
+      // Filter out very short fragments that aren't real sentences
+      const words = sentence.split(/\s+/).filter(w => w.length > 0);
+      return words.length >= 3 && sentence.length > 10;
+    });
+  
+  return sentences;
 }
 
 // Extend the Image interface to include suggestedAlt
@@ -288,7 +365,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
     const wordCount = textContent.split(/\s+/).filter(word => word.length > 0).length;
 
     // Sentence analysis for readability  
-    const sentences = textContent.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+    const sentences = splitIntoSentences(textContent);
     const readabilityScore = calculateReadabilityScore(sentences);
 
     // Enhanced content metrics
