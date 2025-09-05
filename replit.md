@@ -129,6 +129,16 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 
 ## Recent Changes
 
+### September 5, 2025 - Optimized Trial User Pricing Model
+- **Website Scan Credits**: Trial users now pay 3 credits per scan (down from 5), providing better value
+- **Competitor Analysis**: Trial users now pay 2 credits for competitor analysis (previously free)
+- **Chat Message Packs**: Implemented pack-based pricing for AI chat - 1 credit per 5 chat messages instead of 1 credit per message
+- **Database Schema**: Added `chatMessagesInPack` field to track message pack usage
+- **Smart Credit Tracking**: Chat messages are tracked in packs of 5, only deducting 1 credit when pack is complete
+- **UI Enhancements**: Added chat pack progress indicators on Account and Dashboard pages for trial users
+- **Credit Efficiency**: Trial users get more value with reduced website scan costs and bulk chat pricing
+- **Comprehensive Testing**: Verified all credit deduction flows work correctly for trial user scenarios
+
 ### September 5, 2025 - Streamlined Content Analysis Pipeline 
 - **Unified Content Quality Analysis**: Merged overlapping "Content Duplication" and "Keyword Analysis" functionality into a single, efficient system
 - **Cost Reduction**: Achieved 50% cost reduction by eliminating redundant content processing (from 3 separate credits to 1 unified analysis)

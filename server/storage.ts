@@ -8,12 +8,13 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string } | undefined>;
+  getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string; chatMessagesInPack: number } | undefined>;
   incrementUserUsage(userId: string, pageCount: number): Promise<User | undefined>;
   deductCredits(userId: string, credits: number): Promise<User | undefined>;
   atomicDeductCredits(userId: string, credits: number): Promise<{ success: boolean; remainingCredits: number; user?: User }>;
   refundCredits(userId: string, credits: number, reason: string): Promise<User | undefined>;
   setAccountStatus(userId: string, status: string): Promise<User | undefined>;
+  incrementChatMessageInPack(userId: string): Promise<{ shouldDeductCredit: boolean; user?: User }>;
 
   // Analysis operations
   getAnalysisById(id: number): Promise<Analysis | undefined>;
@@ -102,12 +103,13 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string } | undefined> {
+  async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string; chatMessagesInPack: number } | undefined> {
     const [user] = await db.select({
       pagesAnalyzed: users.pagesAnalyzed,
       pageLimit: users.pageLimit,
       credits: users.credits,
-      accountStatus: users.accountStatus
+      accountStatus: users.accountStatus,
+      chatMessagesInPack: users.chatMessagesInPack
     }).from(users).where(eq(users.id, userId));
     return user;
   }
@@ -256,6 +258,55 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error setting account status for user ${userId}:`, error);
       return undefined;
+    }
+  }
+
+  async incrementChatMessageInPack(userId: string): Promise<{ shouldDeductCredit: boolean; user?: User }> {
+    try {
+      // Get current user state
+      const currentUser = await this.getUser(userId);
+      if (!currentUser) {
+        return { shouldDeductCredit: false };
+      }
+
+      const currentCount = currentUser.chatMessagesInPack;
+      const newCount = currentCount + 1;
+      let shouldDeductCredit = false;
+
+      // If we've reached 5 messages, reset counter and deduct credit
+      if (newCount >= 5) {
+        shouldDeductCredit = true;
+        
+        // Reset counter to 0 and deduct 1 credit atomically
+        const [user] = await db
+          .update(users)
+          .set({
+            chatMessagesInPack: 0,
+            credits: sql`${users.credits} - 1`,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, userId))
+          .returning();
+        
+        console.log(`Chat message pack completed for user ${userId}, deducted 1 credit`);
+        return { shouldDeductCredit: true, user };
+      } else {
+        // Just increment the counter
+        const [user] = await db
+          .update(users)
+          .set({
+            chatMessagesInPack: newCount,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, userId))
+          .returning();
+        
+        console.log(`Chat message ${newCount}/5 for user ${userId}`);
+        return { shouldDeductCredit: false, user };
+      }
+    } catch (error) {
+      console.error(`Error incrementing chat message pack for user ${userId}:`, error);
+      return { shouldDeductCredit: false };
     }
   }
 

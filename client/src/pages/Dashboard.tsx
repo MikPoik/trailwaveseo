@@ -16,6 +16,7 @@ interface UserUsage {
   pageLimit: number;
   credits: number;
   accountStatus: string;
+  chatMessagesInPack: number;
 }
 
 const Dashboard = () => {
@@ -65,9 +66,14 @@ const Dashboard = () => {
                         {usage.accountStatus === "trial" ? "Trial Account" : "Paid Account"}
                       </span>
                       {usage.accountStatus === "trial" && (
-                        <span className="text-sm text-gray-600">
-                          Lite scans (3 pages max, 5 suggestions per page)
-                        </span>
+                        <>
+                          <span className="text-sm text-gray-600">
+                            Lite scans (3 pages max, 5 suggestions per page)
+                          </span>
+                          <span className="text-sm text-gray-600 border-l pl-2 border-gray-300">
+                            Chat: {usage.chatMessagesInPack || 0}/5 messages
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>

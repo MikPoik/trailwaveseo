@@ -29,12 +29,16 @@ export function registerAnalysisRoutes(app: Express) {
         });
       }
 
-      // Atomically check and deduct 5 credits for starting the scan
-      const creditResult = await storage.atomicDeductCredits(userId, 5);
+      // Determine credit cost based on user type
+      const isTrialUser = usage.accountStatus === "trial";
+      const scanCost = isTrialUser ? 3 : 5; // Trial users pay 3 credits, paid users pay 5
+      
+      // Atomically check and deduct credits for starting the scan
+      const creditResult = await storage.atomicDeductCredits(userId, scanCost);
       if (!creditResult.success) {
         return res.status(403).json({ 
           error: "Insufficient credits", 
-          message: `You need at least 5 credits to start a website scan. You currently have ${creditResult.remainingCredits} credits.`,
+          message: `You need at least ${scanCost} credits to start a website scan. You currently have ${creditResult.remainingCredits} credits.`,
           usage: { ...usage, credits: creditResult.remainingCredits },
           needsCredits: true
         });
@@ -62,8 +66,8 @@ export function registerAnalysisRoutes(app: Express) {
         } catch (error) {
           console.error(`Analysis error for ${domain}:`, error);
           
-          // Refund the 5 credits since analysis failed
-          await storage.refundCredits(userId, 5, `Analysis failed for ${domain}: ${error.message}`);
+          // Refund the credits since analysis failed
+          await storage.refundCredits(userId, scanCost, `Analysis failed for ${domain}: ${error.message}`);
           
           analysisEvents.emit(domain, {
             status: 'error',

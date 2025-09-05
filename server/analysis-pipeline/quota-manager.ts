@@ -154,6 +154,51 @@ export async function deductAICredits(
 }
 
 /**
+ * Handle credit deduction for chat messages (1 credit per 5 messages)
+ */
+export async function deductChatCredits(
+  userId: string | undefined,
+  isTrialUser: boolean
+): Promise<CreditResult> {
+  
+  if (!userId) {
+    return { success: false, remainingCredits: 0, creditsCost: 0 };
+  }
+
+  // Check if user has sufficient credits first
+  const userUsage = await storage.getUserUsage(userId);
+  if (!userUsage || userUsage.credits <= 0) {
+    return { success: false, remainingCredits: 0, creditsCost: 1 };
+  }
+
+  // Increment the chat message counter
+  const result = await storage.incrementChatMessageInPack(userId);
+  
+  if (result.shouldDeductCredit) {
+    // A credit was deducted (5th message)
+    const remainingCredits = result.user?.credits || 0;
+    console.log(`Chat message pack completed for user ${userId}, 1 credit deducted, ${remainingCredits} remaining`);
+    
+    return {
+      success: true,
+      remainingCredits,
+      creditsCost: 1
+    };
+  } else {
+    // No credit deducted yet, still counting messages
+    const remainingCredits = result.user?.credits || userUsage.credits;
+    const messagesInPack = result.user?.chatMessagesInPack || 0;
+    console.log(`Chat message ${messagesInPack}/5 for user ${userId}, ${remainingCredits} credits remaining`);
+    
+    return {
+      success: true,
+      remainingCredits,
+      creditsCost: 0
+    };
+  }
+}
+
+/**
  * Increment user page usage after successful analysis
  */
 export async function incrementUserUsage(

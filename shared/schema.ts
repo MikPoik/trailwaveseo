@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   pagesAnalyzed: integer("pages_analyzed").notNull().default(0),
   pageLimit: integer("page_limit").notNull().default(-1), // -1 means unlimited
   credits: integer("credits").notNull().default(15), // New users get 15 starter credits
+  chatMessagesInPack: integer("chat_messages_in_pack").notNull().default(0), // Track messages in current pack of 5
   accountStatus: varchar("account_status").notNull().default("trial"), // "trial" or "paid"
   stripeCustomerId: varchar("stripe_customer_id"),
   createdAt: timestamp("created_at").defaultNow(),

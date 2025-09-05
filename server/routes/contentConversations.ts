@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { storage } from '../storage.js';
 import { isAuthenticated } from '../replitAuth.js';
+import { deductChatCredits } from '../analysis-pipeline/quota-manager.js';
 
 export function registerContentConversationRoutes(app: Express) {
   // Get conversation history for a specific page
@@ -73,6 +74,21 @@ export function registerContentConversationRoutes(app: Express) {
 
       const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
       const updatedMessages = [...messages, userMessage];
+
+      // Check user account status and handle credits
+      const userUsage = await storage.getUserUsage(userId);
+      const isTrialUser = userUsage?.accountStatus === "trial";
+      
+      // For trial users, check credit deduction (1 credit per 5 messages)
+      if (isTrialUser) {
+        const creditResult = await deductChatCredits(userId, isTrialUser);
+        if (!creditResult.success) {
+          return res.status(402).json({ 
+            error: 'Insufficient credits for chat messages. Purchase more credits to continue chatting.',
+            remainingCredits: creditResult.remainingCredits 
+          });
+        }
+      }
 
       // Generate AI response with fresh content if provided
       const aiResponse = await generateAIResponse(analysis, pageUrl, message, messages, freshContent);

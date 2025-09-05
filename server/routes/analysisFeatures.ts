@@ -391,9 +391,18 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
             const isTrialUser = userUsage?.accountStatus === "trial";
             
             if (isTrialUser) {
-              // Trial users get enhanced rule-based insights from modular system
-              enhancedInsights = competitiveResult.insights;
-              console.log(`Trial user ${userId}: using enhanced modular recommendations (${enhancedInsights.length} insights)`);
+              // Trial users now pay 2 credits for competitor analysis
+              const creditResult = await storage.atomicDeductCredits(userId, aiInsightsCost);
+              if (creditResult.success) {
+                enhancedInsights = competitiveResult.insights;
+                console.log(`Trial user ${userId}: used enhanced modular recommendations (${enhancedInsights.length} insights, ${aiInsightsCost} credits used)`);
+              } else {
+                return res.status(402).json({ 
+                  error: 'Insufficient credits for competitor analysis. Purchase more credits to continue.',
+                  remainingCredits: creditResult.remainingCredits,
+                  requiredCredits: aiInsightsCost
+                });
+              }
             } else {
               // Paid users get AI-powered insights if they have credits
               const creditResult = await storage.atomicDeductCredits(userId, aiInsightsCost);
