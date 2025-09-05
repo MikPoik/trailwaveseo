@@ -105,9 +105,9 @@ const ContentEditor = () => {
         description="AI-powered content editing and optimization" 
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 pb-0">
         {/* Header with back button and page info */}
-        <div className="mb-6">
+        <div className="mb-1 pb-0">
           <div className="flex items-center justify-between mb-4">
             <Button onClick={handleBack} variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />

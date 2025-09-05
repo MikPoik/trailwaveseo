@@ -112,16 +112,13 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
   }
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <Card className="flex flex-col w-full h-[800px]">
+    <div className="flex flex-col h-full w-full py-0 pb-0">
+      <Card className="flex flex-col w-full h-[800px] py-1">
         <CardHeader className="flex-shrink-0 border-b py-3 px-6">
           <CardTitle className="flex items-center text-lg">
             <MessageCircle className="h-5 w-5 mr-2 text-blue-600" />
-            Content Editor Chat
+            Chat
           </CardTitle>
-          <p className="text-sm text-gray-500 mt-1">
-            Get AI help with your content based on analysis insights
-          </p>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-0 w-full max-w-full overflow-hidden min-h-0">

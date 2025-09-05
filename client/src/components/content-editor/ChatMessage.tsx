@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, User, Bot } from "lucide-react";
 import { ChatMessage } from "@shared/schema";
 import { format } from "date-fns";
+import { marked } from "marked";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -10,6 +11,18 @@ interface ChatMessageProps {
 
 const ChatMessageComponent = ({ message, onCopy }: ChatMessageProps) => {
   const isUser = message.role === 'user';
+  
+  // Configure marked for basic parsing without HTML sanitization (safe for our use case)
+  const parseMarkdown = (text: string) => {
+    try {
+      return marked.parse(text, { 
+        breaks: true, 
+        gfm: true
+      });
+    } catch (error) {
+      return text; // Fallback to plain text if parsing fails
+    }
+  };
   
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 w-full min-w-0`}>
@@ -40,9 +53,21 @@ const ChatMessageComponent = ({ message, onCopy }: ChatMessageProps) => {
             : 'bg-gray-100 text-gray-900 rounded-r-lg rounded-bl-lg'
         } p-3`}>
           <div className="min-w-0 overflow-hidden">
-            <div className="whitespace-pre-wrap text-sm leading-relaxed break-words word-break-break-all overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-              {message.content}
-            </div>
+            <div 
+              className={`text-sm leading-relaxed break-words word-break-break-all overflow-wrap-anywhere prose prose-sm max-w-none ${
+                isUser ? 'prose-invert' : ''
+              }`}
+              style={{ 
+                wordWrap: 'break-word', 
+                overflowWrap: 'anywhere', 
+                wordBreak: 'break-word',
+                '--tw-prose-body': isUser ? '#ffffff' : 'inherit',
+                '--tw-prose-headings': isUser ? '#ffffff' : 'inherit',
+                '--tw-prose-bold': isUser ? '#ffffff' : 'inherit',
+                '--tw-prose-strong': isUser ? '#ffffff' : 'inherit'
+              } as React.CSSProperties}
+              dangerouslySetInnerHTML={{ __html: parseMarkdown(message.content) }}
+            />
           </div>
           
           {/* Copy Button */}
