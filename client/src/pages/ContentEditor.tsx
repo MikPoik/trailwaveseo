@@ -18,6 +18,7 @@ const ContentEditor = () => {
   const queryClient = useQueryClient();
   const [pageUrl, setPageUrl] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<number | null>(null);
+  const [freshPageData, setFreshPageData] = useState<any>(null);
 
   // Decode URL parameters
   useEffect(() => {
@@ -36,6 +37,11 @@ const ContentEditor = () => {
   // Back navigation
   const handleBack = () => {
     setLocation('/dashboard');
+  };
+
+  // Handle fresh content loaded from chat
+  const handleFreshContentLoaded = (freshContent: any) => {
+    setFreshPageData(freshContent);
   };
 
   if (!params?.analysisId || !params?.pageUrl) {
@@ -97,6 +103,9 @@ const ContentEditor = () => {
 
   // Find the specific page data
   const pageData = analysis.pages.find(page => page.url === pageUrl);
+  
+  // Use fresh page data if available, otherwise fall back to analysis data
+  const displayPageData = freshPageData || pageData;
 
   return (
     <>
@@ -115,7 +124,7 @@ const ContentEditor = () => {
             </Button>
             <div className="text-right">
               <h2 className="text-lg font-medium text-gray-900">
-                {pageData?.title || 'Page Content Editor'}
+                {displayPageData?.title || pageData?.title || 'Page Content Editor'}
               </h2>
               <p className="text-sm text-gray-500">{pageUrl}</p>
             </div>
@@ -129,8 +138,9 @@ const ContentEditor = () => {
             <ChatInterface 
               analysisId={analysisId!}
               pageUrl={pageUrl}
-              pageData={pageData}
+              pageData={displayPageData}
               analysis={analysis}
+              onFreshContentLoaded={handleFreshContentLoaded}
             />
           </div>
 
@@ -138,7 +148,7 @@ const ContentEditor = () => {
           <div className="lg:col-span-1">
             <ContextSidebar 
               analysis={analysis}
-              pageData={pageData}
+              pageData={displayPageData}
               pageUrl={pageUrl}
             />
           </div>

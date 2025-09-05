@@ -16,9 +16,10 @@ interface ChatInterfaceProps {
   pageUrl: string;
   pageData?: PageAnalysis;
   analysis: WebsiteAnalysis;
+  onFreshContentLoaded?: (freshContent: any) => void;
 }
 
-const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfaceProps) => {
+const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContentLoaded }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,6 +31,25 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
     queryKey: [`/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}`],
     enabled: !!analysisId && !!pageUrl,
   });
+
+  // Fetch fresh content on load
+  const { data: freshContent, isLoading: isLoadingContent } = useQuery({
+    queryKey: [`/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/fetch-content`],
+    queryFn: async () => {
+      const response = await apiRequest('POST', `/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/fetch-content`, {});
+      return await response.json();
+    },
+    enabled: !!analysisId && !!pageUrl,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: false, // Only fetch once unless manually triggered
+  });
+
+  // Notify parent when fresh content is loaded
+  useEffect(() => {
+    if (freshContent?.content && onFreshContentLoaded) {
+      onFreshContentLoaded(freshContent.content);
+    }
+  }, [freshContent, onFreshContentLoaded]);
 
   const messages: ChatMessage[] = conversation?.messages || [];
 
