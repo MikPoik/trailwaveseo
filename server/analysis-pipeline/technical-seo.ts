@@ -5,6 +5,7 @@
  */
 
 import type { PageAnalysisResult } from './page-analyzer.js';
+import axios from 'axios';
 
 export interface TechnicalSeoAnalysis {
   overallScore: number;
@@ -43,6 +44,7 @@ interface TechnicalElementsAnalysis {
   canonicalUrl: string | null;
   robotsMeta: string | null;
   xmlSitemap: boolean;
+  hasJsonLd: boolean;
   robotsTxt: boolean;
   hreflangImplementation: any[];
   openGraphData: any;
@@ -79,7 +81,7 @@ export async function analyzeTechnicalSeo(
   const securityAnalysis = analyzeSecurityAspects(pages, domain);
   
   // Analyze technical elements
-  const technicalElements = analyzeTechnicalElements(pages);
+  const technicalElements = await analyzeTechnicalElements(pages, domain);
   
   // Calculate overall technical SEO score
   const overallScore = calculateTechnicalScore(
@@ -207,9 +209,22 @@ function analyzeSecurityAspects(pages: PageAnalysisResult[], domain: string): Se
 }
 
 /**
+ * Check if sitemap.xml exists for the domain
+ */
+async function checkSitemapExists(domain: string): Promise<boolean> {
+  try {
+    const sitemapUrl = `https://${domain}/sitemap.xml`;
+    const response = await axios.head(sitemapUrl, { timeout: 5000 });
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Analyze technical elements
  */
-function analyzeTechnicalElements(pages: PageAnalysisResult[]): TechnicalElementsAnalysis {
+async function analyzeTechnicalElements(pages: PageAnalysisResult[], domain: string): Promise<TechnicalElementsAnalysis> {
   let structuredDataScore = 0;
   let canonicalImplementation = 0;
   let robotsImplementation = 0;
@@ -220,11 +235,12 @@ function analyzeTechnicalElements(pages: PageAnalysisResult[]): TechnicalElement
   let openGraphData: any = {};
   let twitterCardData: any = {};
 
+  // Check if any page has JSON-LD structured data
+  const hasJsonLd = pages.some(page => (page as any).hasJsonLd);
+  
   pages.forEach(page => {
-    // Schema markup analysis (placeholder - would need schema extraction)
-    // For now, estimate based on content structure
-    const hasRichContent = page.headings.length >= 3 && page.wordCount >= 500;
-    if (hasRichContent) structuredDataScore += 1;
+    // JSON-LD structured data detection
+    if ((page as any).hasJsonLd) structuredDataScore += 1;
 
     // Canonical URL implementation
     if (page.canonical) canonicalImplementation += 1;
@@ -247,6 +263,9 @@ function analyzeTechnicalElements(pages: PageAnalysisResult[]): TechnicalElement
       };
     }
   });
+  
+  // Check if sitemap.xml exists
+  const xmlSitemap = await checkSitemapExists(domain);
 
   const technicalScore = Math.round(
     (structuredDataScore / pages.length) * 25 +
@@ -260,7 +279,8 @@ function analyzeTechnicalElements(pages: PageAnalysisResult[]): TechnicalElement
     structuredData: Math.round((structuredDataScore / pages.length) * 100),
     canonicalUrl: canonicalImplementation > 0 ? pages.find(p => p.canonical)?.canonical || null : null,
     robotsMeta: robotsImplementation > 0 ? pages.find(p => p.robotsMeta)?.robotsMeta || null : null,
-    xmlSitemap: true, // Placeholder - would check sitemap availability
+    xmlSitemap,
+    hasJsonLd,
     robotsTxt: true, // Placeholder - would check robots.txt
     hreflangImplementation,
     openGraphData,

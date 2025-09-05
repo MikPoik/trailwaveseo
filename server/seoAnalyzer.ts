@@ -207,6 +207,9 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
     const metaKeywordsArray = metaKeywords ? metaKeywords.split(',').map(k => k.trim()) : null;
     const canonical = $('link[rel="canonical"]').attr('href') || null;
     const robotsMeta = $('meta[name="robots"]').attr('content') || null;
+    
+    // Check for JSON-LD structured data
+    const hasJsonLd = $('script[type="application/ld+json"]').length > 0;
 
     // Extract headings
     const headings: Heading[] = [];
@@ -519,6 +522,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
       ctaElements,
       wordCount,
       isCanonical,
+      hasJsonLd,
       issues,
       contentMetrics,
       hasNofollow,
