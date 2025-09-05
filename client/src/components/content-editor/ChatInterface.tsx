@@ -113,7 +113,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
 
   return (
     <div className="flex flex-col h-full w-full max-w-full">
-      <Card className="flex flex-col w-full max-w-full h-[600px]">
+      <Card className="flex flex-col w-full max-w-full h-[800px]">
         <CardHeader className="flex-shrink-0 border-b">
           <CardTitle className="flex items-center text-lg">
             <MessageCircle className="h-5 w-5 mr-2 text-blue-600" />
@@ -126,7 +126,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
 
         <CardContent className="flex-1 flex flex-col p-0 w-full max-w-full overflow-hidden min-h-0">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4 overflow-y-auto overflow-x-hidden w-full min-h-0 max-h-[400px]">
+        <ScrollArea className="flex-1 p-4 overflow-y-auto overflow-x-hidden w-full min-h-0 max-h-[600px]">
           {messages.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
