@@ -170,8 +170,9 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
   });
 
   // Export analysis as CSV
-  app.get("/api/analysis/:id/export/csv", async (req, res) => {
+  app.get("/api/analysis/:id/export/csv", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
@@ -181,6 +182,11 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
 
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      // Check if the analysis belongs to the authenticated user
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to access this analysis" });
       }
 
       // Generate CSV content
@@ -210,8 +216,9 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
   });
 
   // Export analysis as JSON
-  app.get("/api/analysis/:id/export/json", async (req, res) => {
+  app.get("/api/analysis/:id/export/json", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
@@ -221,6 +228,11 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
 
       if (!analysis) {
         return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      // Check if the analysis belongs to the authenticated user
+      if (analysis.userId && analysis.userId !== userId) {
+        return res.status(403).json({ error: "You don't have permission to access this analysis" });
       }
 
       res.setHeader('Content-Type', 'application/json');
