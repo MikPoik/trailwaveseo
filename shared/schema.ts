@@ -46,6 +46,7 @@ export const analyses = pgTable("analyses", {
   pages: jsonb("pages").notNull(),
   contentRepetitionAnalysis: jsonb("content_repetition_analysis"),
   keywordRepetitionAnalysis: jsonb("keyword_repetition_analysis"),
+  contentQualityAnalysis: jsonb("content_quality_analysis"),
   competitorAnalysis: jsonb("competitor_analysis"),
   siteOverview: jsonb("site_overview"),
   enhancedInsights: jsonb("enhanced_insights"),
@@ -61,6 +62,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   pages: true,
   contentRepetitionAnalysis: true,
   keywordRepetitionAnalysis: true,
+  contentQualityAnalysis: true,
   competitorAnalysis: true,
   siteOverview: true,
   enhancedInsights: true,
@@ -233,6 +235,123 @@ export interface KeywordRepetitionAnalysis {
     benefit: string;
     implementation: string;
   }[];
+}
+
+// Unified Content Quality Analysis types
+export interface ContentQualityAnalysis {
+  // Content uniqueness analysis
+  contentUniqueness: {
+    duplicateContent: {
+      titles: ContentDuplicateGroup[];
+      descriptions: ContentDuplicateGroup[];
+      headings: ContentDuplicateGroup[];
+      paragraphs: ContentDuplicateGroup[];
+    };
+    uniquenessScore: number; // 0-100
+    totalDuplicates: number;
+    pagesAnalyzed: number;
+  };
+  
+  // Keyword quality analysis  
+  keywordQuality: {
+    overOptimization: KeywordIssue[];
+    underOptimization: KeywordOpportunity[];
+    healthScore: number; // 0-100
+    readabilityImpact: 'Critical' | 'High' | 'Medium' | 'Low';
+    affectedPages: number;
+  };
+  
+  // Content quality scores
+  qualityScores: {
+    averageScores: {
+      uniqueness: number;
+      userValue: number;
+      seoEffectiveness: number;
+      readability: number;
+      overall: number;
+    };
+    topPerformers: Array<{
+      url: string;
+      content: string;
+      scores: {
+        uniqueness: number;
+        userValue: number;
+        seoEffectiveness: number;
+        readability: number;
+        overall: number;
+      };
+      insights: {
+        strengths: string[];
+        weaknesses: string[];
+        recommendations: string[];
+      };
+      contentType: 'exceptional' | 'good' | 'average' | 'poor' | 'critical';
+      priority: number;
+    }>;
+    needsImprovement: Array<{
+      url: string;
+      content: string;
+      scores: {
+        uniqueness: number;
+        userValue: number;
+        seoEffectiveness: number;
+        readability: number;
+        overall: number;
+      };
+      insights: {
+        strengths: string[];
+        weaknesses: string[];
+        recommendations: string[];
+      };
+      contentType: 'exceptional' | 'good' | 'average' | 'poor' | 'critical';
+      priority: number;
+    }>;
+  };
+  
+  // Strategic recommendations
+  strategicRecommendations: {
+    priority: 'Critical' | 'High' | 'Medium' | 'Low';
+    category: 'content' | 'keywords' | 'structure' | 'quality';
+    title: string;
+    description: string;
+    implementation: string;
+    expectedImpact: string;
+  }[];
+  
+  // Overall health metrics
+  overallHealth: {
+    contentScore: number; // 0-100
+    keywordScore: number; // 0-100
+    qualityScore: number; // 0-100
+    combinedScore: number; // 0-100
+  };
+}
+
+export interface ContentDuplicateGroup {
+  content: string;
+  urls: string[];
+  similarityScore: number;
+  impactLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+  improvementStrategy: string;
+  duplicationType: 'exact' | 'template' | 'boilerplate' | 'pattern';
+}
+
+export interface KeywordIssue {
+  keyword: string;
+  density: number;
+  occurrences: number;
+  impactLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+  affectedPages: string[];
+  improvementStrategy: string;
+  alternatives: string[];
+}
+
+export interface KeywordOpportunity {
+  suggestion: string;
+  currentUsage: string;
+  opportunity: string;
+  expectedBenefit: string;
+  implementation: string;
 }
 
 // Chat message interface

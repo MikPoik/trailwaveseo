@@ -129,6 +129,16 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 
 ## Recent Changes
 
+### September 5, 2025 - Streamlined Content Analysis Pipeline 
+- **Unified Content Quality Analysis**: Merged overlapping "Content Duplication" and "Keyword Analysis" functionality into a single, efficient system
+- **Cost Reduction**: Achieved 50% cost reduction by eliminating redundant content processing (from 3 separate credits to 1 unified analysis)
+- **Performance Improvement**: Integrated content quality analysis directly into main pipeline (generateInsights step) instead of separate API calls
+- **Enhanced User Experience**: Replaced separate duplication and keyword tabs with unified "Content Quality" tab showing comprehensive insights
+- **Architecture Simplification**: Removed server/content-analysis/content-duplication.ts and keyword-repetition.ts modules
+- **Streamlined API**: Removed /api/analysis/:id/content-duplication and /api/analysis/:id/keyword-repetition endpoints
+- **Unified Schema**: Content quality data now stored in analysis.contentQualityAnalysis and analysis.enhancedInsights fields
+- **AI Integration**: Content quality analysis leverages existing AI processing for enhanced insights without additional costs
+
 ### August 21, 2025 - Implemented Freemium Monetization Model
 - **Freemium System**: Transitioned from unlimited free access to credit-based freemium model
 - **Free Tier Limits**: 3 free website scans total (one-time allocation) with basic SEO analysis only

@@ -22,7 +22,7 @@ export interface IStorage {
   getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null>;
   saveAnalysis(analysis: any, userId?: string): Promise<Analysis>;
   updateCompetitorAnalysis(id: number, competitorData: any): Promise<Analysis | undefined>;
-  updateContentRepetitionAnalysis(id: number, contentRepetitionAnalysis: any): Promise<Analysis | undefined>;
+  // Legacy method removed - unified into contentQualityAnalysis
   updatePageInAnalysis(id: number, pageUrl: string, updatedPageData: any): Promise<Analysis | undefined>;
   deleteAnalysis(id: number): Promise<boolean>;
 
@@ -435,6 +435,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Legacy method - content repetition analysis is now unified into contentQualityAnalysis
+  // Keeping for backward compatibility but no longer used
+  /*
   async updateContentRepetitionAnalysis(id: number, contentRepetitionAnalysis: any): Promise<Analysis | undefined> {
       // First check if the analysis exists
       const analysis = await this.getAnalysisById(id);
@@ -465,7 +468,11 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
   }
+  */
 
+  // Legacy method - keyword repetition analysis is now unified into contentQualityAnalysis
+  // Keeping for backward compatibility but no longer used
+  /*
   async updateKeywordRepetitionAnalysis(id: number, keywordRepetitionAnalysis: any): Promise<Analysis | undefined> {
       // First check if the analysis exists
       const analysis = await this.getAnalysisById(id);
@@ -497,6 +504,7 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
   }
+  */
 
   async updatePageInAnalysis(id: number, pageUrl: string, updatedPageData: any): Promise<Analysis | undefined> {
     // First get the current analysis
@@ -733,7 +741,7 @@ export class DatabaseStorage implements IStorage {
         RETURNING *
       `;
 
-      const values = [
+      const values: any[] = [
         newSettings.maxPages ?? currentSettings.maxPages,
         newSettings.crawlDelay ?? currentSettings.crawlDelay,
         Boolean(newSettings.followExternalLinks ?? currentSettings.followExternalLinks),

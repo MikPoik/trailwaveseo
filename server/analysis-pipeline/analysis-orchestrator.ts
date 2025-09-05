@@ -253,17 +253,17 @@ async function generateInsights(
     insights.aiInsights = await generateComprehensiveInsights(context, analyzedPages, options);
   }
 
-  // Generate enhanced analysis insights
-  const [technicalAnalysis, contentQualityAnalysis, linkArchitectureAnalysis, performanceAnalysis] = await Promise.all([
+  // Generate enhanced analysis insights including unified content quality analysis
+  const [technicalAnalysis, contentQualityAnalysisResult, linkArchitectureAnalysis, performanceAnalysis] = await Promise.all([
     import('./technical-seo.js').then(m => m.analyzeTechnicalSeo(analyzedPages, context.domain)),
-    import('./content-quality.js').then(m => m.analyzeContentQuality(analyzedPages)),
+    import('./content-quality-analyzer.js').then(m => m.analyzeUnifiedContentQuality(analyzedPages, context.settings.useAI)),
     import('./link-architecture.js').then(m => m.analyzeLinkArchitecture(analyzedPages)),
     import('./performance-analyzer.js').then(m => m.analyzePerformance(analyzedPages))
   ]);
 
   console.log(`Generated comprehensive insights:`);
   console.log(`- Technical SEO Score: ${technicalAnalysis.overallScore}/100`);
-  console.log(`- Content Quality Score: ${contentQualityAnalysis.overallScore}/100`);
+  console.log(`- Content Quality Score: ${contentQualityAnalysisResult.overallHealth.combinedScore}/100`);
   console.log(`- Link Architecture Score: ${linkArchitectureAnalysis.overallScore}/100`);
   console.log(`- Performance Score: ${performanceAnalysis.overallScore}/100`);
 
@@ -276,7 +276,7 @@ async function generateInsights(
       const explanations = await generateInsightsExplanations(
         context.domain,
         technicalAnalysis,
-        contentQualityAnalysis, 
+        contentQualityAnalysisResult, 
         linkArchitectureAnalysis,
         performanceAnalysis,
         analyzedPages
@@ -284,7 +284,7 @@ async function generateInsights(
       
       // Add explanations to each analysis area
       technicalAnalysis.explanation = explanations.technicalExplanation;
-      contentQualityAnalysis.explanation = explanations.contentQualityExplanation;
+      contentQualityAnalysisResult.explanation = explanations.contentQualityExplanation;
       linkArchitectureAnalysis.explanation = explanations.linkArchitectureExplanation;
       performanceAnalysis.explanation = explanations.performanceExplanation;
       
@@ -296,7 +296,7 @@ async function generateInsights(
   }
 
   insights.technicalAnalysis = technicalAnalysis;
-  insights.contentQualityAnalysis = contentQualityAnalysis;
+  insights.contentQualityAnalysis = contentQualityAnalysisResult;
   insights.linkArchitectureAnalysis = linkArchitectureAnalysis;
   insights.performanceAnalysis = performanceAnalysis;
 

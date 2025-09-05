@@ -37,8 +37,9 @@ export async function aggregateAnalysisResults(
       pagesCount: analyzedPages.length,
       metrics,
       pages: analyzedPages,
-      contentRepetitionAnalysis: null, // Will be added in future enhancement
-      keywordRepetitionAnalysis: null, // Will be added in future enhancement  
+      contentRepetitionAnalysis: null, // Legacy field - keeping for compatibility
+      keywordRepetitionAnalysis: null, // Legacy field - keeping for compatibility
+      contentQualityAnalysis: insights?.contentQualityAnalysis || null, // New unified analysis
       competitorAnalysis: null, // Will be added in future enhancement
       siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview || null,
       isCompetitorAnalysis: options.isCompetitorAnalysis || false,
