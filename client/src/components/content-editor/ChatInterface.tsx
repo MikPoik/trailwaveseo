@@ -136,7 +136,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
               </p>
             </div>
           ) : (
-            <div className="space-y-4 w-full overflow-hidden">
+            <div className="space-y-4 w-full min-w-0 overflow-hidden">
               {messages.map((msg, index) => (
                 <ChatMessageComponent 
                   key={index} 

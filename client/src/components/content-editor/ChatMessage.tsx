@@ -12,8 +12,8 @@ const ChatMessageComponent = ({ message, onCopy }: ChatMessageProps) => {
   const isUser = message.role === 'user';
   
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 w-full`}>
-      <div className={`w-full max-w-[85%] ${isUser ? 'ml-auto' : 'mr-auto'}`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 w-full min-w-0`}>
+      <div className={`max-w-[85%] min-w-0 ${isUser ? 'ml-auto' : 'mr-auto'}`}>
         {/* Message Header */}
         <div className={`flex items-center gap-2 mb-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
           <div className={`flex items-center gap-1 text-xs text-gray-500`}>
@@ -34,13 +34,13 @@ const ChatMessageComponent = ({ message, onCopy }: ChatMessageProps) => {
         </div>
 
         {/* Message Content */}
-        <div className={`relative group w-full ${
+        <div className={`relative group min-w-0 ${
           isUser 
             ? 'bg-blue-600 text-white rounded-l-lg rounded-br-lg' 
             : 'bg-gray-100 text-gray-900 rounded-r-lg rounded-bl-lg'
         } p-3`}>
-          <div className="w-full overflow-hidden">
-            <div className="whitespace-pre-wrap text-sm leading-relaxed break-words hyphens-auto" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+          <div className="min-w-0 overflow-hidden">
+            <div className="whitespace-pre-wrap text-sm leading-relaxed break-words word-break-break-all overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               {message.content}
             </div>
           </div>
