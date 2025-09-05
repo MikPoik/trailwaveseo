@@ -71,10 +71,11 @@ export function registerContentConversationRoutes(app: Express) {
         timestamp: new Date().toISOString()
       };
 
-      const updatedMessages = [...conversation.messages, userMessage];
+      const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
+      const updatedMessages = [...messages, userMessage];
 
       // Generate AI response with fresh content if provided
-      const aiResponse = await generateAIResponse(analysis, pageUrl, message, conversation.messages, freshContent);
+      const aiResponse = await generateAIResponse(analysis, pageUrl, message, messages, freshContent);
       
       const aiMessage = {
         role: 'assistant' as const,
@@ -199,6 +200,17 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
     context += `- Meta Description: ${pageData.metaDescription || 'None'}\n`;
     context += `- Word Count: ${pageData.contentMetrics?.wordCount || 0}\n`;
     context += `- SEO Issues: ${pageData.issues?.length || 0}\n`;
+
+    // Add semantic keywords if available
+    if (pageData.contentMetrics?.semanticKeywords?.length > 0) {
+      context += `- Semantic Keywords: ${pageData.contentMetrics.semanticKeywords.join(', ')}\n`;
+    }
+
+    // Add content quality metrics if available
+    if (pageData.contentMetrics) {
+      context += `- Content Depth Score: ${pageData.contentMetrics.contentDepthScore || 'N/A'}\n`;
+      context += `- Readability Score: ${pageData.contentMetrics.readabilityScore || 'N/A'}\n`;
+    }
     
     if (pageData.issues?.length > 0) {
       context += `\nSEO ISSUES:\n`;
@@ -212,6 +224,20 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
       pageData.suggestions.forEach((suggestion: any, index: number) => {
         context += `${index + 1}. ${suggestion}\n`;
       });
+    }
+
+    // Add internal links analysis
+    if (pageData.internalLinks?.length > 0) {
+      context += `\nINTERNAL LINKS ON THIS PAGE (${pageData.internalLinks.length}):\n`;
+      pageData.internalLinks.slice(0, 10).forEach((link: any, index: number) => {
+        const linkText = link.text?.length > 50 ? link.text.substring(0, 50) + '...' : link.text;
+        context += `${index + 1}. "${linkText}" → ${link.href}\n`;
+      });
+      if (pageData.internalLinks.length > 10) {
+        context += `... and ${pageData.internalLinks.length - 10} more internal links\n`;
+      }
+    } else {
+      context += `\nINTERNAL LINKS: None found on this page\n`;
     }
   }
 
@@ -227,13 +253,59 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
     }
   }
 
-  // Add additional analysis data if available
-  if (analysis.contentRepetitionAnalysis) {
-    context += `\nCONTENT PATTERNS: Available\n`;
+  // Add content quality analysis if available
+  if (analysis.contentQualityAnalysis) {
+    context += `\nCONTENT QUALITY ANALYSIS:\n`;
+    if (analysis.contentQualityAnalysis.overallScore !== undefined) {
+      context += `- Overall Content Score: ${analysis.contentQualityAnalysis.overallScore}/100\n`;
+    }
+    if (analysis.contentQualityAnalysis.keywordDensity) {
+      context += `- Keyword Density Issues: ${analysis.contentQualityAnalysis.keywordDensity.length || 0}\n`;
+    }
+    if (analysis.contentQualityAnalysis.contentGaps?.length > 0) {
+      context += `- Content Gaps: ${analysis.contentQualityAnalysis.contentGaps.slice(0, 3).join(', ')}\n`;
+    }
   }
-  
+
+  // Add detailed competitor analysis if available
   if (analysis.competitorAnalysis) {
-    context += `COMPETITOR DATA: Available\n`;
+    context += `\nCOMPETITOR ANALYSIS INSIGHTS:\n`;
+    const ca = analysis.competitorAnalysis;
+    
+    if (ca.mainDomain && ca.competitorDomain) {
+      context += `- Comparing ${ca.mainDomain} vs ${ca.competitorDomain}\n`;
+    }
+
+    if (ca.metrics) {
+      context += `- Title Optimization: ${ca.metrics.titleOptimization?.advantage || 'N/A'} advantage\n`;
+      context += `- Content Quality: ${ca.metrics.contentQuality?.advantage || 'N/A'} advantage\n`;
+      context += `- Technical SEO: ${ca.metrics.technicalSEO?.advantage || 'N/A'} advantage\n`;
+    }
+
+    if (ca.gaps?.opportunityKeywords?.length > 0) {
+      context += `- Opportunity Keywords: ${ca.gaps.opportunityKeywords.slice(0, 5).join(', ')}\n`;
+    }
+
+    if (ca.gaps?.missingTopics?.length > 0) {
+      context += `- Missing Topics: ${ca.gaps.missingTopics.slice(0, 3).join(', ')}\n`;
+    }
+
+    if (ca.summary?.quickWins?.length > 0) {
+      context += `- Quick Wins: ${ca.summary.quickWins.slice(0, 3).join(', ')}\n`;
+    }
+
+    if (ca.summary?.strengthAreas?.length > 0) {
+      context += `- Your Strengths: ${ca.summary.strengthAreas.slice(0, 3).join(', ')}\n`;
+    }
+
+    if (ca.summary?.weaknessAreas?.length > 0) {
+      context += `- Areas to Improve: ${ca.summary.weaknessAreas.slice(0, 3).join(', ')}\n`;
+    }
+  }
+
+  // Add content patterns if available
+  if (analysis.contentRepetitionAnalysis) {
+    context += `\nCONTENT PATTERNS: Available for duplication analysis\n`;
   }
 
   return context;
@@ -281,6 +353,10 @@ async function fetchPageContent(url: string): Promise<any> {
     // Use existing analysis function to get fresh content with abort signal
     const abortController = new AbortController();
     const freshAnalysis = await analyzePage(url, settings, abortController.signal, false, [], undefined, undefined);
+
+    if (!freshAnalysis) {
+      throw new Error('Failed to analyze page');
+    }
 
     return {
       title: freshAnalysis.title,
