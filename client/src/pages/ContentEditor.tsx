@@ -104,8 +104,13 @@ const ContentEditor = () => {
   // Find the specific page data
   const pageData = analysis.pages.find(page => page.url === pageUrl);
   
-  // Use fresh page data if available, otherwise fall back to analysis data
-  const displayPageData = freshPageData || pageData;
+  // Merge fresh content with original analysis data to preserve suggestions
+  const displayPageData = freshPageData ? {
+    ...pageData, // Keep original analysis data (including suggestions)
+    ...freshPageData, // Override with fresh content (title, meta, word count, etc.)
+    suggestions: pageData?.suggestions || [], // Ensure suggestions are preserved
+    issues: pageData?.issues || [] // Ensure SEO issues are preserved
+  } : pageData;
 
   return (
     <>

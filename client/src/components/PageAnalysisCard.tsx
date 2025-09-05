@@ -114,7 +114,7 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
                 className="h-7 px-2 text-xs"
               >
                 <Edit className="h-3 w-3 mr-1" />
-                Edit Content
+                Chat with AI
               </Button>
             )}
             {analysisId && onReanalyze && (
