@@ -264,12 +264,24 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
 
   // Enhanced status function that uses the modular system's advantage data
   const getMetricStatus = (metric: MetricComparison) => {
+    // Handle legacy data that might not have the advantage property
+    if (!metric.advantage) {
+      // Fallback to calculating advantage based on difference
+      const difference = metric.difference || (metric.main - metric.competitor);
+      if (difference > 2) return 'better';
+      if (difference < -2) return 'worse';
+      return 'similar';
+    }
+    
     return metric.advantage === 'main' ? 'better' : 
            metric.advantage === 'competitor' ? 'worse' : 'similar';
   };
 
   // Get significance badge styling
   const getSignificanceBadge = (significance: string) => {
+    // Handle case where significance might be undefined
+    if (!significance) return 'bg-gray-100 text-gray-800';
+    
     return significance === 'critical' ? 'bg-red-100 text-red-800' :
            significance === 'important' ? 'bg-yellow-100 text-yellow-800' :
            'bg-gray-100 text-gray-800';
@@ -289,7 +301,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             <span className={`px-2 py-1 text-xs rounded-full ${
               getSignificanceBadge(metric.significance)
             }`}>
-              {metric.significance}
+              {metric.significance || 'minor'}
             </span>
           </div>
           <div className="flex items-center space-x-2">
@@ -307,7 +319,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                status === 'worse' ? 'Needs work' : 
                'Similar'}
             </span>
-            <span className="text-xs text-muted-foreground">({metric.percentageDiff > 0 ? '+' : ''}{metric.percentageDiff}%)</span>
+            <span className="text-xs text-muted-foreground">({(metric.percentageDiff || 0) > 0 ? '+' : ''}{metric.percentageDiff || 0}%)</span>
           </div>
         </div>
         
