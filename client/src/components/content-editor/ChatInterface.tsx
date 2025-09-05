@@ -125,7 +125,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
 
       <CardContent className="flex-1 flex flex-col p-0">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4 overflow-hidden w-full">
           {messages.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -135,7 +135,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 w-full overflow-hidden">
               {messages.map((msg, index) => (
                 <ChatMessageComponent 
                   key={index} 
