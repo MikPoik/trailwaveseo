@@ -41,7 +41,7 @@ export function registerContentConversationRoutes(app: Express) {
       const userId = req.user.claims.sub;
       const analysisId = parseInt(req.params.analysisId);
       const pageUrl = decodeURIComponent(req.params.pageUrl);
-      const { message } = req.body;
+      const { message, freshContent } = req.body;
 
       if (!message?.trim()) {
         return res.status(400).json({ error: 'Message is required' });
@@ -73,8 +73,8 @@ export function registerContentConversationRoutes(app: Express) {
 
       const updatedMessages = [...conversation.messages, userMessage];
 
-      // Generate AI response
-      const aiResponse = await generateAIResponse(analysis, pageUrl, message, conversation.messages);
+      // Generate AI response with fresh content if provided
+      const aiResponse = await generateAIResponse(analysis, pageUrl, message, conversation.messages, freshContent);
       
       const aiMessage = {
         role: 'assistant' as const,
@@ -121,7 +121,7 @@ export function registerContentConversationRoutes(app: Express) {
 }
 
 // AI response generation function
-async function generateAIResponse(analysis: any, pageUrl: string, userMessage: string, conversationHistory: any[]): Promise<string> {
+async function generateAIResponse(analysis: any, pageUrl: string, userMessage: string, conversationHistory: any[], providedFreshContent?: any): Promise<string> {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return "AI responses are currently unavailable. Please check the OpenAI API key configuration.";
@@ -138,11 +138,11 @@ async function generateAIResponse(analysis: any, pageUrl: string, userMessage: s
     // Build context from analysis data
     const context = buildAnalysisContext(analysis, pageData, pageUrl);
 
-    // Check if user message indicates need for fresh content
+    // Use provided fresh content or fetch if user message indicates need
+    let freshContent = providedFreshContent;
     const needsFreshContent = shouldFetchFreshContent(userMessage);
-    let freshContent = null;
     
-    if (needsFreshContent) {
+    if (needsFreshContent && !freshContent) {
       try {
         freshContent = await fetchPageContent(pageUrl);
       } catch (error) {

@@ -56,7 +56,10 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      const response = await apiRequest('POST', `/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/message`, { message: userMessage });
+      const response = await apiRequest('POST', `/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/message`, { 
+        message: userMessage,
+        freshContent: freshContent?.content // Pass fresh content if available
+      });
       return await response.json();
     },
     onMutate: async (userMessage) => {
