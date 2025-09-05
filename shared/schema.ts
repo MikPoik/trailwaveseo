@@ -48,6 +48,7 @@ export const analyses = pgTable("analyses", {
   keywordRepetitionAnalysis: jsonb("keyword_repetition_analysis"),
   competitorAnalysis: jsonb("competitor_analysis"),
   siteOverview: jsonb("site_overview"),
+  enhancedInsights: jsonb("enhanced_insights"),
   isCompetitorAnalysis: boolean("is_competitor_analysis").notNull().default(false),
 });
 
@@ -62,6 +63,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   keywordRepetitionAnalysis: true,
   competitorAnalysis: true,
   siteOverview: true,
+  enhancedInsights: true,
   isCompetitorAnalysis: true,
 });
 
