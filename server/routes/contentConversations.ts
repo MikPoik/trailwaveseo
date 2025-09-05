@@ -259,17 +259,26 @@ function shouldFetchFreshContent(message: string): boolean {
 async function fetchPageContent(url: string): Promise<any> {
   try {
     // Import the analyzer to reuse content extraction logic
-    const { performEnhancedPageAnalysis } = await import('../seoAnalyzer.js');
+    const { analyzePage } = await import('../seoAnalyzer.js');
     
-    // Use existing analysis function to get fresh content
-    const freshAnalysis = await performEnhancedPageAnalysis(url, {
+    // Create simple settings for content fetching
+    const settings = {
       useAI: false,
       skipAltTextGeneration: true,
       maxPages: 1,
       crawlDelay: 0,
       followExternalLinks: false,
-      useSitemap: false
-    });
+      useSitemap: false,
+      analyzeImages: true,
+      analyzeLinkStructure: false,
+      analyzePageSpeed: false,
+      analyzeStructuredData: false,
+      analyzeMobileCompatibility: false
+    };
+
+    // Use existing analysis function to get fresh content with abort signal
+    const abortController = new AbortController();
+    const freshAnalysis = await analyzePage(url, settings, abortController.signal, false, [], undefined, undefined);
 
     return {
       title: freshAnalysis.title,
