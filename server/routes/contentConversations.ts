@@ -79,15 +79,13 @@ export function registerContentConversationRoutes(app: Express) {
       const userUsage = await storage.getUserUsage(userId);
       const isTrialUser = userUsage?.accountStatus === "trial";
       
-      // For trial users, check credit deduction (1 credit per 5 messages)
-      if (isTrialUser) {
-        const creditResult = await deductChatCredits(userId, isTrialUser);
-        if (!creditResult.success) {
-          return res.status(402).json({ 
-            error: 'Insufficient credits for chat messages. Purchase more credits to continue chatting.',
-            remainingCredits: creditResult.remainingCredits 
-          });
-        }
+      // Deduct credits for both trial and paid users (1 credit per 5 messages)
+      const creditResult = await deductChatCredits(userId, isTrialUser);
+      if (!creditResult.success) {
+        return res.status(402).json({ 
+          error: 'Insufficient credits for chat messages. Purchase more credits to continue chatting.',
+          remainingCredits: creditResult.remainingCredits 
+        });
       }
 
       // Generate AI response with fresh content if provided
@@ -185,7 +183,7 @@ GUIDELINES:
 
 Previous conversation context: ${conversationHistory.length > 0 ? JSON.stringify(conversationHistory.slice(-4)) : 'None'}`;
 
-    console.log(systemPrompt);
+    //console.log(systemPrompt);
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
