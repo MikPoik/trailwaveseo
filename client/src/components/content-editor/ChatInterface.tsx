@@ -161,20 +161,20 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t p-4 bg-gray-50">
+        <div className="border-t p-4 bg-gray-50 flex-shrink-0">
           <div className="flex space-x-2">
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask for help with your content... (Press Enter to send, Shift+Enter for new line)"
-              className="flex-1 min-h-[180px] resize-none"
+              className="flex-1 min-h-[100px] max-h-[120px] resize-none"
               disabled={sendMessageMutation.isPending}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!message.trim() || sendMessageMutation.isPending}
-              className="px-3"
+              className="px-3 self-start"
             >
               <Send className="h-4 w-4" />
             </Button>
