@@ -360,8 +360,8 @@ export class DatabaseStorage implements IStorage {
 
 
     const result = await pool.query(
-      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, keyword_repetition_analysis, competitor_analysis, site_overview, is_competitor_analysis)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, keyword_repetition_analysis, competitor_analysis, site_overview, enhanced_insights, is_competitor_analysis)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         analysis.userId,
         analysis.domain,
@@ -373,6 +373,7 @@ export class DatabaseStorage implements IStorage {
         analysis.keywordRepetitionAnalysis ? JSON.stringify(analysis.keywordRepetitionAnalysis) : null,
         analysis.competitorAnalysis ? JSON.stringify(analysis.competitorAnalysis) : null,
         analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null,
+        analysis.enhancedInsights ? JSON.stringify(analysis.enhancedInsights) : null,
         analysis.isCompetitorAnalysis || false
       ]
     );
