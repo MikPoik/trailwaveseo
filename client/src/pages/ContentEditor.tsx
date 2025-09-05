@@ -108,6 +108,10 @@ const ContentEditor = () => {
   const displayPageData = freshPageData ? {
     ...pageData, // Keep original analysis data (including suggestions)
     ...freshPageData, // Override with fresh content (title, meta, word count, etc.)
+    contentMetrics: {
+      ...pageData?.contentMetrics,
+      wordCount: freshPageData.wordCount || pageData?.contentMetrics?.wordCount || 0
+    },
     suggestions: pageData?.suggestions || [], // Ensure suggestions are preserved
     issues: pageData?.issues || [] // Ensure SEO issues are preserved
   } : pageData;
