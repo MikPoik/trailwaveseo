@@ -123,9 +123,9 @@ const ContentEditor = () => {
         </div>
 
         {/* Main content area with chat and sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
           {/* Chat Interface - Takes 2/3 of the width */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col min-h-[600px]">
             <ChatInterface 
               analysisId={analysisId!}
               pageUrl={pageUrl}

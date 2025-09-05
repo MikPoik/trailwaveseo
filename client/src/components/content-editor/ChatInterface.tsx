@@ -112,20 +112,21 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
   }
 
   return (
-    <Card className="h-[600px] flex flex-col w-full max-w-full">
-      <CardHeader className="flex-shrink-0 border-b">
-        <CardTitle className="flex items-center text-lg">
-          <MessageCircle className="h-5 w-5 mr-2 text-blue-600" />
-          Content Editor Chat
-        </CardTitle>
-        <p className="text-sm text-gray-500 mt-1">
-          Get AI help with your content based on analysis insights
-        </p>
-      </CardHeader>
+    <div className="flex flex-col h-full w-full max-w-full">
+      <Card className="flex-1 flex flex-col w-full max-w-full min-h-0">
+        <CardHeader className="flex-shrink-0 border-b">
+          <CardTitle className="flex items-center text-lg">
+            <MessageCircle className="h-5 w-5 mr-2 text-blue-600" />
+            Content Editor Chat
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">
+            Get AI help with your content based on analysis insights
+          </p>
+        </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 w-full max-w-full overflow-hidden">
+        <CardContent className="flex-1 flex flex-col p-0 w-full max-w-full overflow-hidden min-h-0">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4 overflow-hidden w-full">
+        <ScrollArea className="flex-1 p-4 overflow-hidden w-full min-h-0">
           {messages.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -162,19 +163,19 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
 
         {/* Input Area */}
         <div className="border-t p-4 bg-gray-50 flex-shrink-0">
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-end">
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask for help with your content... (Press Enter to send, Shift+Enter for new line)"
-              className="flex-1 min-h-[200px] max-h-[300px] resize-y"
+              className="flex-1 min-h-[120px] max-h-[200px] resize-y"
               disabled={sendMessageMutation.isPending}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!message.trim() || sendMessageMutation.isPending}
-              className="px-3 self-start"
+              className="px-4 py-2 h-12"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -184,18 +185,19 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
           </p>
         </div>
       </CardContent>
+    </Card>
 
       {/* AI Suggestions Section - Now below the chat */}
       {pageData?.suggestions && pageData.suggestions.length > 0 && (
-        <div className="border-t bg-blue-50">
-          <div className="p-4">
+        <Card className="mt-4 flex-shrink-0">
+          <CardContent className="p-4">
             <div className="flex items-center mb-3">
               <Lightbulb className="h-4 w-4 mr-2 text-blue-600" />
               <h3 className="text-sm font-medium text-blue-800">
                 AI Suggestions ({pageData.suggestions.length})
               </h3>
             </div>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
+            <div className="space-y-3 max-h-48 overflow-y-auto">
               {pageData.suggestions.map((suggestion, index) => (
                 <div key={index} className="p-3 bg-white rounded-md border border-blue-200">
                   <div className="flex items-start justify-between">
@@ -225,10 +227,10 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
-    </Card>
+    </div>
   );
 };
 
