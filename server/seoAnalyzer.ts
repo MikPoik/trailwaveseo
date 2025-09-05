@@ -6,52 +6,75 @@ import { generateBatchImageAltText } from './analysis-pipeline/image-alt-text';
 import { storage } from './storage';
 import { EventEmitter } from 'events';
 import { Heading, Image, SeoIssue, SeoCategory, ContentRepetitionAnalysis } from '../client/src/lib/types';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Content quality analysis helper functions
-function calculateReadabilityScore(sentences: string[]): number {
-  if (sentences.length === 0) return 0;
+async function calculateReadabilityScore(text: string, language?: string): Promise<number> {
+  if (!text || text.trim().length === 0) return 0;
 
-  const totalWords = sentences.reduce((count, sentence) => {
-    return count + sentence.split(/\s+/).filter(word => word.length > 0).length;
-  }, 0);
+  // For very short text, return a reasonable score
+  if (text.length < 50) return 75;
 
-  if (totalWords === 0) return 0;
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a readability expert analyzing text for general audience comprehension. Evaluate the text considering:
 
-  const totalSyllables = sentences.reduce((count, sentence) => {
-    const words = sentence.split(/\s+/).filter(word => word.length > 0);
-    return count + words.reduce((syllableCount, word) => {
-      return syllableCount + countSyllables(word);
-    }, 0);
-  }, 0);
+1. Sentence length and complexity
+2. Word choice and vocabulary difficulty
+3. Structure and flow
+4. Technical jargon or specialized terms
+5. Language-specific reading patterns
 
-  // Language-agnostic readability calculation
-  const avgWordsPerSentence = totalWords / sentences.length;
-  const avgSyllablesPerWord = totalSyllables / totalWords;
+Provide a readability score from 0-100 where:
+- 90-100: Very easy (5th grade level)
+- 80-89: Easy (6th-8th grade level)
+- 70-79: Fairly easy (9th-10th grade level)
+- 60-69: Standard (11th-12th grade level)
+- 50-59: Fairly difficult (College level)
+- 30-49: Difficult (Graduate level)
+- 0-29: Very difficult (Professional/Academic level)
 
-  // Modified formula that's more language-agnostic
-  // Base it more on sentence length than syllable complexity
-  let score = 100;
-  
-  // Penalty for long sentences (universal readability factor)
-  if (avgWordsPerSentence > 20) {
-    score -= Math.min(40, (avgWordsPerSentence - 20) * 2);
-  } else if (avgWordsPerSentence > 15) {
-    score -= (avgWordsPerSentence - 15) * 1;
+Respond only with valid JSON containing the score and a brief explanation.`
+        },
+        {
+          role: "user",
+          content: `Analyze the readability of this text${language ? ` (language: ${language})` : ''}:\n\n"${text.substring(0, 2000)}"\n\nProvide your analysis in this JSON format:\n{\n  "readabilityScore": <number 0-100>,\n  "explanation": "<brief explanation of why this score was given>"\n}`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_completion_tokens: 200
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) return 50; // Default score if no response
+
+    const analysis = JSON.parse(content);
+    const score = Math.max(0, Math.min(100, Math.round(analysis.readabilityScore || 50)));
+    
+    console.log(`AI Readability analysis: Score ${score}/100 - ${analysis.explanation}`);
+    return score;
+
+  } catch (error) {
+    console.error('Error calculating AI readability score:', error);
+    // Fallback to simple heuristic
+    const words = text.split(/\s+/).length;
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+    const avgWordsPerSentence = sentences > 0 ? words / sentences : 0;
+    
+    // Simple fallback calculation
+    if (avgWordsPerSentence <= 15) return 75;
+    if (avgWordsPerSentence <= 20) return 65;
+    if (avgWordsPerSentence <= 25) return 55;
+    return 45;
   }
-  
-  // Penalty for complex words (syllable-based, but less aggressive)
-  if (avgSyllablesPerWord > 2.0) {
-    score -= Math.min(30, (avgSyllablesPerWord - 2.0) * 15);
-  }
-  
-  // Bonus for moderate sentence length (12-18 words is generally good)
-  if (avgWordsPerSentence >= 12 && avgWordsPerSentence <= 18) {
-    score += 5;
-  }
-  
-  console.log(`Readability calculation: ${sentences.length} sentences, ${totalWords} words, avg ${avgWordsPerSentence.toFixed(1)} words/sentence, ${avgSyllablesPerWord.toFixed(2)} syllables/word, score: ${Math.round(score)}`);
-  
-  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function countSyllables(word: string): number {
@@ -364,9 +387,13 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
     const textContent = paragraphs.join(' ');
     const wordCount = textContent.split(/\s+/).filter(word => word.length > 0).length;
 
-    // Sentence analysis for readability  
+    // Detect page language from HTML lang attribute or other indicators
+    const htmlLang = $('html').attr('lang') || $('html').attr('xml:lang');
+    const detectedLanguage = htmlLang ? htmlLang.split('-')[0] : undefined; // Get language code only (e.g., 'fi' from 'fi-FI')
+
+    // AI-powered readability analysis
     const sentences = splitIntoSentences(textContent);
-    const readabilityScore = calculateReadabilityScore(sentences);
+    const readabilityScore = await calculateReadabilityScore(textContent, detectedLanguage);
 
     // Enhanced content metrics
     const contentMetrics = {
