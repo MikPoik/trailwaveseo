@@ -127,10 +127,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Create a unique query key for this analysis
   const cacheKey = [`competitor-analysis-${mainAnalysis.id || mainAnalysis.domain}`];
-  
+
   // Fetch cached comparison data if it exists
   const { data: comparison, isLoading: isQueryLoading } = useQuery<ComparisonResult>({
     queryKey: cacheKey,
@@ -145,7 +145,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       competitorDomain: ''
     }
   });
-  
+
   // Use mutation for the competitor analysis request
   const competitorMutation = useMutation({
     mutationFn: (formData: CompetitorFormValues) => {
@@ -156,7 +156,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     },
     onSuccess: (comparisonData, variables) => {
       console.log('Competitor analysis response:', comparisonData);
-      
+
       // Extract details from main analysis
       const mainDetails = {
         titles: mainAnalysis.pages.slice(0, 10).map(page => page.title || '').filter(title => title),
@@ -166,7 +166,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
         images: mainAnalysis.pages.reduce((total, page) => total + page.images.length, 0),
         pages: mainAnalysis.pages.length
       };
-      
+
       // Extract details from competitor analysis response
       const competitorPages = comparisonData.analysis?.pages || [];
       const competitorDetails = {
@@ -177,7 +177,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
         images: competitorPages.reduce((total: number, page: any) => total + (page.images?.length || 0), 0),
         pages: competitorPages.length
       };
-      
+
       // Add details to the comparison data
       const enhancedComparisonData = {
         ...comparisonData,
@@ -186,10 +186,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
           competitor: competitorDetails
         }
       };
-      
+
       // Update the cache with enhanced comparison data
       queryClient.setQueryData(cacheKey, enhancedComparisonData);
-      
+
       // Save the competitor analysis data to the database if we have an analysis ID
       if (mainAnalysis.id) {
         // Save the competitor analysis data to the database
@@ -199,7 +199,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             console.log('Competitor analysis saved to database:', result);
             // Invalidate the analysis cache to force a refresh
             queryClient.invalidateQueries({queryKey: [`/api/analysis/${mainAnalysis.id}`]});
-            
+
             // Show success toast
             toast({
               title: 'Analysis Saved',
@@ -208,7 +208,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
           })
           .catch(error => {
             console.error('Error saving competitor analysis:', error);
-            
+
             // Show error toast
             toast({
               title: 'Save Failed',
@@ -219,7 +219,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
       } else {
         console.warn('Cannot save competitor analysis: Analysis ID is missing');
       }
-      
+
       toast({
         title: 'Analysis Complete',
         description: `Successfully compared ${mainAnalysis.domain} with ${variables.competitorDomain}`,
@@ -228,7 +228,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     onError: (error: any) => {
       console.error('Competitor analysis error:', error);
       const errorMessage = error.message || 'Failed to compare with competitor. Please try again.';
-      
+
       setError(errorMessage);
       toast({
         title: 'Analysis Failed',
@@ -240,13 +240,13 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
 
   const onSubmit = (data: CompetitorFormValues) => {
     setError(null);
-    
+
     // Log the request details
     console.log('Starting competitor analysis for:', {
       mainDomain: mainAnalysis.domain,
       competitorDomain: data.competitorDomain
     });
-    
+
     // Extract details from the main analysis for detailed comparison
     const extractDetailsFromMainAnalysis = () => {
       return {
@@ -258,7 +258,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
         pages: mainAnalysis.pages.length
       };
     };
-    
+
     competitorMutation.mutate(data);
   };
 
@@ -280,7 +280,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     metric: MetricComparison
   ) => {
     const status = getMetricStatus(metric);
-    
+
     return (
       <div className="space-y-2 mb-4">
         <div className="flex justify-between items-center">
@@ -310,7 +310,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             <span className="text-xs text-muted-foreground">({metric.percentageDiff > 0 ? '+' : ''}{metric.percentageDiff}%)</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
             <div className="text-sm font-medium">Your Site:</div>
@@ -361,7 +361,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </FormItem>
                 )}
               />
-              
+
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -369,7 +369,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
+
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Analyzing...' : 'Compare with Competitor'}
               </Button>
@@ -385,14 +385,14 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               <TabsTrigger value="detailed">Details</TabsTrigger>
               <TabsTrigger value="summary">Summary</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="metrics" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
                 <div className="font-bold">{(comparison as ComparisonResult).mainDomain}</div>
                 <div className="text-sm text-muted-foreground">vs</div>
                 <div className="font-bold">{(comparison as ComparisonResult).competitorDomain}</div>
               </div>
-              
+
               {renderMetricComparison('Title Optimization', (comparison as ComparisonResult).metrics.titleOptimization)}
               {renderMetricComparison('Meta Description', (comparison as ComparisonResult).metrics.descriptionOptimization)}
               {renderMetricComparison('Heading Structure', (comparison as ComparisonResult).metrics.headingsOptimization)}
@@ -400,7 +400,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               {renderMetricComparison('Critical Issues', (comparison as ComparisonResult).metrics.criticalIssues)}
               {renderMetricComparison('Technical SEO', (comparison as ComparisonResult).metrics.technicalSEO)}
               {renderMetricComparison('Content Quality', (comparison as ComparisonResult).metrics.contentQuality)}
-              
+
               {(comparison as ComparisonResult).stats && (
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <div className="flex justify-between items-center text-sm">
@@ -410,19 +410,19 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   <Progress value={(comparison as ComparisonResult).stats?.confidence || 0} className="h-2 mt-2" />
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
-            
+
             <TabsContent value="detailed" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
                 <div className="font-bold">{(comparison as ComparisonResult).mainDomain}</div>
                 <div className="text-sm text-muted-foreground">vs</div>
                 <div className="font-bold">{(comparison as ComparisonResult).competitorDomain}</div>
               </div>
-              
+
               {(comparison as ComparisonResult).details ? (
                 <div className="space-y-6">
                   {/* Page Count Comparison */}
@@ -439,7 +439,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Titles Comparison */}
                   <div className="border rounded-lg p-4 bg-card">
                     <h3 className="text-lg font-semibold mb-2">Page Titles (Sample)</h3>
@@ -468,7 +468,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Meta Descriptions Comparison */}
                   <div className="border rounded-lg p-4 bg-card">
                     <h3 className="text-lg font-semibold mb-2">Meta Descriptions (Sample)</h3>
@@ -497,7 +497,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Headings Comparison */}
                   <div className="border rounded-lg p-4 bg-card">
                     <h3 className="text-lg font-semibold mb-2">Heading Structure (Sample)</h3>
@@ -526,7 +526,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Images Count Comparison */}
                   <div className="border rounded-lg p-4 bg-card">
                     <h3 className="text-lg font-semibold mb-2">Image Count</h3>
@@ -551,12 +551,12 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </p>
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
-            
+
             <TabsContent value="recommendations" className="space-y-4">
               <Alert>
                 <InfoIcon className="h-4 w-4" />
@@ -565,7 +565,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   Based on our comparison with {(comparison as ComparisonResult).competitorDomain}, here are some actionable recommendations:
                 </AlertDescription>
               </Alert>
-              
+
               {(comparison as ComparisonResult).recommendations.length > 0 ? (
                 <ul className="space-y-2 mt-4">
                   {(comparison as ComparisonResult).recommendations.map((recommendation: string, index: number) => (
@@ -584,12 +584,12 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </p>
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
-            
+
             {/* AI Insights Tab */}
             <TabsContent value="insights" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
@@ -600,7 +600,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </div>
                 )}
               </div>
-              
+
               {(comparison as ComparisonResult).detailedInsights && (comparison as ComparisonResult).detailedInsights?.length > 0 ? (
                 <div className="space-y-4">
                   {(comparison as ComparisonResult).detailedInsights.map((insight: CompetitorInsight, index: number) => (
@@ -623,7 +623,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3">{insight.recommendation}</p>
-                        
+
                         {insight.evidence && insight.evidence.length > 0 && (
                           <div className="mb-3">
                             <h5 className="text-xs font-medium text-muted-foreground mb-1">Evidence:</h5>
@@ -637,7 +637,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                             </ul>
                           </div>
                         )}
-                        
+
                         {insight.actionItems && insight.actionItems.length > 0 && (
                           <div>
                             <h5 className="text-xs font-medium text-muted-foreground mb-1">Action Items:</h5>
@@ -664,16 +664,16 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </p>
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
-            
+
             {/* Content Gaps Tab */}
             <TabsContent value="gaps" className="space-y-4">
               <h3 className="text-xl font-semibold mb-6">Content Gap Analysis</h3>
-              
+
               {(comparison as ComparisonResult).gaps ? (
                 <div className="space-y-6">
                   {/* Missing Topics */}
@@ -695,7 +695,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </CardContent>
                     </Card>
                   )}
-                  
+
                   {/* Under-optimized Areas */}
                   {(comparison as ComparisonResult).gaps?.underOptimizedAreas && (comparison as ComparisonResult).gaps?.underOptimizedAreas.length > 0 && (
                     <Card>
@@ -715,7 +715,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </CardContent>
                     </Card>
                   )}
-                  
+
                   {/* Opportunity Keywords */}
                   {(comparison as ComparisonResult).gaps?.opportunityKeywords && (comparison as ComparisonResult).gaps?.opportunityKeywords.length > 0 && (
                     <Card>
@@ -744,16 +744,16 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </p>
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
             </TabsContent>
-            
+
             {/* Strategies Tab */}
             <TabsContent value="strategies" className="space-y-4">
               <h3 className="text-xl font-semibold mb-6">Strategy Comparison</h3>
-              
+
               {(comparison as ComparisonResult).strategies ? (
                 <div className="space-y-6">
                   {Object.entries((comparison as ComparisonResult).strategies || {}).map(([strategyKey, strategy]) => {
@@ -783,7 +783,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                             <p className="text-sm text-muted-foreground bg-orange-50 p-3 rounded">{typedStrategy.competitorApproach}</p>
                           </div>
                         </div>
-                        
+
                         {typedStrategy.recommendations && typedStrategy.recommendations.length > 0 && (
                           <div>
                             <h5 className="font-medium text-sm mb-2">Recommendations:</h5>
@@ -811,7 +811,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </p>
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
@@ -820,7 +820,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             {/* Summary Tab */}
             <TabsContent value="summary" className="space-y-4">
               <h3 className="text-xl font-semibold mb-6">Competitive Summary</h3>
-              
+
               {(comparison as ComparisonResult).competitiveSummary ? (
                 <div className="space-y-6">
                   {/* Overall Advantage */}
@@ -841,7 +841,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   {/* Strengths and Weaknesses */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -863,7 +863,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         )}
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg text-red-700">Areas for Improvement</CardTitle>
@@ -884,7 +884,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       </CardContent>
                     </Card>
                   </div>
-                  
+
                   {/* Quick Wins and Long-term Opportunities */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -907,7 +907,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         )}
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg text-purple-700">Long-term Opportunities</CardTitle>
@@ -939,7 +939,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   </p>
                 </div>
               )}
-              
+
               <Button variant="outline" onClick={() => resetComparison()} className="mt-4">
                 Compare with Another Competitor
               </Button>
