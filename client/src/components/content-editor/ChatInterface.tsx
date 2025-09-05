@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, Loader2, MessageCircle } from "lucide-react";
+import { Send, Copy, Loader2, MessageCircle, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { WebsiteAnalysis, PageAnalysis } from "@/lib/types";
 import { ChatMessage } from "@shared/schema";
@@ -168,7 +168,7 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask for help with your content... (Press Enter to send, Shift+Enter for new line)"
-              className="flex-1 min-h-[80px] resize-none"
+              className="flex-1 min-h-[120px] resize-none"
               disabled={sendMessageMutation.isPending}
             />
             <Button
@@ -184,6 +184,50 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis }: ChatInterfac
           </p>
         </div>
       </CardContent>
+
+      {/* AI Suggestions Section - Now below the chat */}
+      {pageData?.suggestions && pageData.suggestions.length > 0 && (
+        <div className="border-t bg-blue-50">
+          <div className="p-4">
+            <div className="flex items-center mb-3">
+              <Lightbulb className="h-4 w-4 mr-2 text-blue-600" />
+              <h3 className="text-sm font-medium text-blue-800">
+                AI Suggestions ({pageData.suggestions.length})
+              </h3>
+            </div>
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {pageData.suggestions.map((suggestion, index) => (
+                <div key={index} className="p-3 bg-white rounded-md border border-blue-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-blue-800 mb-1">
+                        Suggestion #{index + 1}
+                      </p>
+                      <p className="text-sm text-blue-700 leading-relaxed">
+                        {suggestion}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2 p-1 h-auto"
+                      onClick={() => {
+                        navigator.clipboard.writeText(suggestion);
+                        toast({
+                          title: "Copied!",
+                          description: "Suggestion copied to clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

@@ -139,33 +139,7 @@ const ContextSidebar = ({ analysis, pageData, pageUrl }: ContextSidebarProps) =>
         </CardContent>
       </Card>
 
-      {/* AI Suggestions */}
-      {suggestions.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center">
-              <Lightbulb className="h-4 w-4 mr-2 text-blue-600" />
-              AI Suggestions ({suggestions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-48">
-              <div className="space-y-3">
-                {suggestions.map((suggestion, index) => (
-                  <div key={index} className="p-3 bg-blue-50 rounded-md">
-                    <p className="text-xs font-medium text-blue-800 mb-1">
-                      Suggestion #{index + 1}
-                    </p>
-                    <p className="text-xs text-blue-700 leading-relaxed">
-                      {suggestion}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+      
 
       {/* Additional Analysis Data */}
       {(analysis.contentRepetitionAnalysis || analysis.competitorAnalysis) && (
