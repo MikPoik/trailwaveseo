@@ -168,6 +168,8 @@ GUIDELINES:
 
 Previous conversation context: ${conversationHistory.length > 0 ? JSON.stringify(conversationHistory.slice(-4)) : 'None'}`;
 
+    console.log(systemPrompt);
+
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       messages: [
