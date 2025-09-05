@@ -73,7 +73,9 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {analysisCategories.map((category) => {
-            const score = category.data?.overallScore || 0;
+            const score = category.title === "Content Quality" 
+              ? category.data?.overallHealth?.combinedScore || 0 
+              : category.data?.overallScore || 0;
             return (
               <div key={category.title} className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -119,7 +121,9 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
             <Card key={category.title} className="border-gray-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center space-x-2">
-                  <div className={getScoreColor(category.data?.overallScore || 0)}>
+                  <div className={getScoreColor(category.title === "Content Quality" 
+                    ? category.data?.overallHealth?.combinedScore || 0 
+                    : category.data?.overallScore || 0)}>
                     {category.icon}
                   </div>
                   <span>{category.title} Details</span>

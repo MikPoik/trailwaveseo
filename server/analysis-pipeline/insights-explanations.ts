@@ -42,14 +42,20 @@ export async function generateInsightsExplanations(
     };
 
     const contentDetails = {
-      score: contentQualityAnalysis.overallScore,
-      averageWordCount: contentQualityAnalysis.contentDepthAnalysis?.averageWordCount || 0,
-      readabilityScore: contentQualityAnalysis.readabilityAnalysis?.readabilityScore || 0,
-      optimizationScore: contentQualityAnalysis.keywordOptimization?.optimizationScore || 0,
-      engagementScore: contentQualityAnalysis.engagementFactors?.engagementScore || 0,
-      gradeLevel: contentQualityAnalysis.readabilityAnalysis?.gradeLevel,
-      keywordCount: contentQualityAnalysis.keywordOptimization?.keywordDensity?.length || 0,
-      recommendations: contentQualityAnalysis.recommendations?.length || 0
+      score: contentQualityAnalysis.overallHealth?.combinedScore || 0,
+      contentScore: contentQualityAnalysis.overallHealth?.contentScore || 0,
+      keywordScore: contentQualityAnalysis.overallHealth?.keywordScore || 0,
+      qualityScore: contentQualityAnalysis.overallHealth?.qualityScore || 0,
+      uniquenessScore: contentQualityAnalysis.contentUniqueness?.uniquenessScore || 0,
+      totalDuplicates: contentQualityAnalysis.contentUniqueness?.totalDuplicates || 0,
+      pagesAnalyzed: contentQualityAnalysis.contentUniqueness?.pagesAnalyzed || 0,
+      keywordHealthScore: contentQualityAnalysis.keywordQuality?.healthScore || 0,
+      readabilityImpact: contentQualityAnalysis.keywordQuality?.readabilityImpact || 'Unknown',
+      affectedPages: contentQualityAnalysis.keywordQuality?.affectedPages || 0,
+      readabilityScore: contentQualityAnalysis.qualityScores?.averageScores?.readability || 0,
+      userValueScore: contentQualityAnalysis.qualityScores?.averageScores?.userValue || 0,
+      seoEffectivenessScore: contentQualityAnalysis.qualityScores?.averageScores?.seoEffectiveness || 0,
+      recommendations: contentQualityAnalysis.strategicRecommendations?.length || 0
     };
 
     const linkDetails = {
@@ -85,10 +91,11 @@ TECHNICAL SEO DATA (Score: ${technicalDetails.score}/100):
 - Issues found: ${technicalDetails.recommendations} recommendations
 
 CONTENT QUALITY DATA (Score: ${contentDetails.score}/100):
-- Average word count: ${contentDetails.averageWordCount} words per page
-- Readability: ${contentDetails.readabilityScore}/100 (Grade level: ${contentDetails.gradeLevel || 'Unknown'})
-- Keyword optimization: ${contentDetails.optimizationScore}/100 (${contentDetails.keywordCount} keywords identified)
-- Engagement factors: ${contentDetails.engagementScore}/100
+- Content uniqueness: ${contentDetails.uniquenessScore}/100 (${contentDetails.totalDuplicates} duplicates across ${contentDetails.pagesAnalyzed} pages)
+- Keyword quality: ${contentDetails.keywordHealthScore}/100 (readability impact: ${contentDetails.readabilityImpact})
+- Content readability: ${contentDetails.readabilityScore}/100
+- User value score: ${contentDetails.userValueScore}/100
+- SEO effectiveness: ${contentDetails.seoEffectivenessScore}/100
 - Issues found: ${contentDetails.recommendations} recommendations
 
 LINK ARCHITECTURE DATA (Score: ${linkDetails.score}/100):
@@ -138,7 +145,7 @@ Please respond with a JSON object in the following format:
 
     return {
       technicalExplanation: result.technicalExplanation || `Technical SEO scored ${technicalAnalysis.overallScore}/100. Focus on improving technical elements for better search engine visibility.`,
-      contentQualityExplanation: result.contentQualityExplanation || `Content Quality scored ${contentQualityAnalysis.overallScore}/100. Enhance content depth and optimization for better engagement.`,
+      contentQualityExplanation: result.contentQualityExplanation || `Content Quality scored ${contentQualityAnalysis.overallHealth?.combinedScore || 0}/100. Enhance content depth and optimization for better engagement.`,
       linkArchitectureExplanation: result.linkArchitectureExplanation || `Link Architecture scored ${linkArchitectureAnalysis.overallScore}/100. Improve internal linking structure for better navigation.`,
       performanceExplanation: result.performanceExplanation || `Performance scored ${performanceAnalysis.overallScore}/100. Optimize loading speed and user experience metrics.`
     };
@@ -147,7 +154,7 @@ Please respond with a JSON object in the following format:
     console.error('Error generating insights explanations:', error);
     return {
       technicalExplanation: `Technical SEO scored ${technicalAnalysis.overallScore}/100. Focus on improving technical elements for better search engine visibility.`,
-      contentQualityExplanation: `Content Quality scored ${contentQualityAnalysis.overallScore}/100. Enhance content depth and optimization for better engagement.`,
+      contentQualityExplanation: `Content Quality scored ${contentQualityAnalysis.overallHealth?.combinedScore || 0}/100. Enhance content depth and optimization for better engagement.`,
       linkArchitectureExplanation: `Link Architecture scored ${linkArchitectureAnalysis.overallScore}/100. Improve internal linking structure for better navigation.`,
       performanceExplanation: `Performance scored ${performanceAnalysis.overallScore}/100. Optimize loading speed and user experience metrics.`
     };
