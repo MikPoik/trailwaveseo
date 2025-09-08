@@ -83,7 +83,7 @@ function isUrlAllowed(url: string, disallowedPaths: Set<string>): boolean {
   const urlObj = new URL(url);
   const path = urlObj.pathname;
 
-  for (const disallowedPath of disallowedPaths) {
+  for (const disallowedPath of Array.from(disallowedPaths)) {
     // Simple wildcard matching logic
     if (disallowedPath.endsWith("*")) {
       const prefix = disallowedPath.slice(0, -1);
@@ -387,7 +387,7 @@ function normalizeUrl(url: string): string {
     const searchParams = urlObj.searchParams;
     const paramsToRemove = [];
 
-    for (const [key] of searchParams.entries()) {
+    for (const [key] of Array.from(searchParams.entries())) {
       if (commonTrackingParams.includes(key)) {
         paramsToRemove.push(key);
       }
