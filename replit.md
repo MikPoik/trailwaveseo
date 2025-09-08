@@ -129,8 +129,15 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 
 ## Recent Changes
 
+### September 8, 2025 - Fair Pricing Model Implementation
+- **Website Scan Pricing**: Updated to fair pricing model - trial users pay 5 credits per scan, paid users pay 3 credits per scan (discount for loyal customers)
+- **Incentivized Upgrades**: Trial users now pay premium pricing, while paid users get rewarded with discounted scan costs
+- **UI Updates**: Account page now displays different pricing for trial vs paid users
+- **Credit Package Calculations**: Fixed to show accurate scan estimates based on user account status
+- **Business Logic**: Aligns with standard freemium pricing where paying customers receive better value
+
 ### September 5, 2025 - Optimized Trial User Pricing Model
-- **Website Scan Credits**: Trial users now pay 3 credits per scan (down from 5), providing better value
+- **Website Scan Credits**: ~~Trial users now pay 3 credits per scan (down from 5), providing better value~~ *Updated September 8: Trial users pay 5 credits, paid users pay 3 credits*
 - **Competitor Analysis**: Trial users now pay 2 credits for competitor analysis (previously free)
 - **Chat Message Packs**: Implemented pack-based pricing for AI chat - 1 credit per 5 chat messages instead of 1 credit per message
 - **Database Schema**: Added `chatMessagesInPack` field to track message pack usage
@@ -152,7 +159,7 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 ### August 21, 2025 - Implemented Freemium Monetization Model
 - **Freemium System**: Transitioned from unlimited free access to credit-based freemium model
 - **Free Tier Limits**: 3 free website scans total (one-time allocation) with basic SEO analysis only
-- **Credit System**: Premium features require credits (5 credits per additional scan, 1 credit per page for AI suggestions)
+- **Credit System**: Premium features require credits (trial users: 5 credits per scan, paid users: 3 credits per scan, 1 credit per page for AI suggestions)
 - **AI Limitations**: Free users get 3 AI suggestions per analysis; paid users get unlimited suggestions based on credits
 - **No Monthly Reset**: Free scans are a one-time allocation, users must purchase credits after using all 3
 - **Export Remains Free**: All export functionality (CSV, JSON) remains free for all users
@@ -160,7 +167,7 @@ For Express route handlers specifically: grep -r -n "^ *app.(get|post|put|delete
 ### August 21, 2025 - Fixed Credit Consumption System
 - **Pricing Model Update**: Changed AI suggestion pricing from 1 credit per individual suggestion to 1 credit per page
 - **User Experience Fix**: Resolved issue where users ran out of credits mid-analysis, leaving some pages without AI suggestions
-- **Predictable Costs**: Users can now calculate exact costs upfront (5 credits + 1 credit per page for AI)
+- **Predictable Costs**: Users can now calculate exact costs upfront (trial: 5 credits, paid: 3 credits + 1 credit per page for AI)
 - **Better Value**: Users get all suggestions for a page (typically 10-12) for just 1 credit instead of 10-12 credits
 
 ### Freemium Implementation Details:
