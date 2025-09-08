@@ -276,7 +276,7 @@ export class DatabaseStorage implements IStorage {
       // If we've reached 5 messages, reset counter and deduct credit
       if (newCount >= 5) {
         shouldDeductCredit = true;
-        
+
         // Reset counter to 0 and deduct 1 credit atomically
         const [user] = await db
           .update(users)
@@ -287,7 +287,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(users.id, userId))
           .returning();
-        
+
         console.log(`Chat message pack completed for user ${userId}, deducted 1 credit`);
         return { shouldDeductCredit: true, user };
       } else {
@@ -300,7 +300,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(users.id, userId))
           .returning();
-        
+
         console.log(`Chat message ${newCount}/5 for user ${userId}`);
         return { shouldDeductCredit: false, user };
       }
@@ -389,7 +389,7 @@ export class DatabaseStorage implements IStorage {
   async getLatestAnalysisByDomain(domain: string, userId?: string): Promise<Analysis | null> {
     try {
       let whereConditions = [eq(analyses.domain, domain)];
-      
+
       if (userId) {
         whereConditions.push(eq(analyses.userId, userId));
       }
@@ -398,7 +398,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(...whereConditions))
         .orderBy(desc(analyses.date))
         .limit(1);
-        
+
       return analysisResults.length > 0 ? analysisResults[0] : null;
     } catch (error) {
       console.error('Error in getLatestAnalysisByDomain:', error);
@@ -711,10 +711,21 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAnalysis(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(analyses).where(eq(analyses.id, id));
-      return (result.rowCount || 0) > 0;
+      // First delete associated content conversations
+      await this.db
+        .delete(contentConversations)
+        .where(eq(contentConversations.analysisId, id));
+
+      // Then delete the analysis
+      const [deletedAnalysis] = await this.db
+        .delete(analyses)
+        .where(eq(analyses.id, id))
+        .returning();
+
+      console.log(`Deleted analysis with ID: ${id} and associated conversations`);
+      return !!deletedAnalysis;
     } catch (error) {
-      console.error('Error deleting analysis:', error);
+      console.error(`Error deleting analysis with ID ${id}:`, error);
       return false;
     }
   }
@@ -723,7 +734,7 @@ export class DatabaseStorage implements IStorage {
   async getSettings(userId?: string): Promise<Settings> {
     try {
       let settingsResults;
-      
+
       if (userId) {
         settingsResults = await db.select().from(settings)
           .where(eq(settings.userId, userId))

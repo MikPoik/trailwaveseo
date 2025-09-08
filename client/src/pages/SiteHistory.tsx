@@ -53,6 +53,10 @@ const SiteHistory = () => {
         return;
       }
       
+      // Revert the optimistic update by invalidating queries
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
+      
       toast({
         title: "Error",
         description: error.message || "Failed to delete analysis",
