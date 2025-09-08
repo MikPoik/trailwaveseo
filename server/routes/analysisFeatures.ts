@@ -568,7 +568,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
       // Preserve or regenerate AI suggestions
       const originalPage = (analysis.pages as any[]).find(p => p.url === pageUrl);
       
-      if (settings.enableAISuggestions && originalPage) {
+      if (settings.useAI && originalPage) {
         try {
           // Import the AI suggestions generator
           const { generateSeoSuggestions } = await import('../analysis-pipeline/ai-suggestions');
@@ -600,7 +600,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
             updatedPageAnalysis.url, 
             pageData, 
             undefined, // site structure
-            analysis.siteOverview, 
+            analysis.siteOverview as any, 
             undefined // additional info
           );
 
@@ -611,45 +611,45 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
             if (isTrialUser) {
               // Trial users get limited suggestions
               const limitedSuggestions = suggestions.slice(0, 5);
-              updatedPageAnalysis.suggestions = limitedSuggestions;
+              (updatedPageAnalysis as any).suggestions = limitedSuggestions;
               
               if (suggestions.length > 5) {
                 const remainingSuggestions = suggestions.length - 5;
-                updatedPageAnalysis.suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
+                (updatedPageAnalysis as any).suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
               }
               console.log(`Regenerated ${limitedSuggestions.length} suggestions for trial user (${suggestions.length - limitedSuggestions.length} more available)`);
             } else {
               // Paid users get all suggestions
-              updatedPageAnalysis.suggestions = suggestions;
+              (updatedPageAnalysis as any).suggestions = suggestions;
               console.log(`Regenerated ${suggestions.length} suggestions for paid user`);
             }
           } else {
             console.warn(`No suggestions generated for ${pageUrl}, preserving existing`);
             // Preserve existing suggestions if no new ones generated
             if (originalPage.suggestions) {
-              updatedPageAnalysis.suggestions = originalPage.suggestions;
+              (updatedPageAnalysis as any).suggestions = originalPage.suggestions;
             }
             if (originalPage.suggestionsTeaser) {
-              updatedPageAnalysis.suggestionsTeaser = originalPage.suggestionsTeaser;
+              (updatedPageAnalysis as any).suggestionsTeaser = originalPage.suggestionsTeaser;
             }
           }
         } catch (error) {
           console.warn(`Failed to regenerate suggestions for ${pageUrl}, preserving existing:`, error);
           // Preserve existing suggestions if regeneration fails
           if (originalPage.suggestions) {
-            updatedPageAnalysis.suggestions = originalPage.suggestions;
+            (updatedPageAnalysis as any).suggestions = originalPage.suggestions;
           }
           if (originalPage.suggestionsTeaser) {
-            updatedPageAnalysis.suggestionsTeaser = originalPage.suggestionsTeaser;
+            (updatedPageAnalysis as any).suggestionsTeaser = originalPage.suggestionsTeaser;
           }
         }
       } else if (originalPage) {
         // If AI suggestions are disabled, preserve existing suggestions
         if (originalPage.suggestions) {
-          updatedPageAnalysis.suggestions = originalPage.suggestions;
+          (updatedPageAnalysis as any).suggestions = originalPage.suggestions;
         }
         if (originalPage.suggestionsTeaser) {
-          updatedPageAnalysis.suggestionsTeaser = originalPage.suggestionsTeaser;
+          (updatedPageAnalysis as any).suggestionsTeaser = originalPage.suggestionsTeaser;
         }
       }
 
