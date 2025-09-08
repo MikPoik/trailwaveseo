@@ -239,6 +239,17 @@ function analyzeNavigationStructure(
   linkGraph: Map<string, { incoming: string[]; outgoing: string[] }>
 ): NavigationStructureAnalysis {
   
+  // Handle empty pages array - return default values when no pages analyzed
+  if (pages.length === 0) {
+    return {
+      maxDepthFromHome: 0,
+      averageDepthFromHome: 0,
+      breadcrumbImplementation: false,
+      menuStructure: 0,
+      navigationScore: 0
+    };
+  }
+  
   // Find homepage (first page or one with most incoming links)
   const homepage = pages[0]; // Assuming first page is homepage
   
