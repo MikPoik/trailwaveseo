@@ -9,12 +9,26 @@ import {
   Download, 
   Sparkles
 } from "lucide-react";
+import { useEffect } from "react";
 
 const HowItWorks = () => {
+  const handleStartAnalysis = () => {
+    window.location.href = "/api/login";
+  };
+
+  useEffect(() => {
+    // Update meta tags for SEO
+    document.title = "How TrailWave SEO Works - Complete Website Analysis Process";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Learn how TrailWave SEO analyzes your website with AI-powered insights, automated crawling, competitor analysis, and comprehensive SEO auditing to boost your search rankings.');
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <Navbar />
-      
+
       {/* Header Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

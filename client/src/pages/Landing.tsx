@@ -36,12 +36,12 @@ const Landing = () => {
               AI-Powered SEO Analysis
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-              Transform Your SEO with
-              <span className="text-primary block">AI-Powered Insights</span>
+              Transform Your Website SEO with
+              <span className="text-primary block">AI-Powered Analysis & Insights</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Professional SEO analysis that identifies issues, provides actionable recommendations, 
-              and helps you outrank competitors with intelligent automation.
+              Professional website SEO analysis tool that identifies technical issues, provides actionable optimization recommendations, 
+              and helps you outrank competitors with intelligent automation and comprehensive site auditing.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Button size="lg" onClick={handleStartAnalysis} className="text-lg px-8">
@@ -69,14 +69,14 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/30" aria-labelledby="features-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Everything you need for SEO success
+            <h2 id="features-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Complete SEO Analysis Suite for Website Optimization
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive analysis tools powered by AI to give you actionable insights and competitive advantages
+              Comprehensive website analysis tools powered by AI to give you actionable SEO insights, technical audits, and competitive advantages for better search engine rankings
             </p>
           </div>
           
@@ -86,10 +86,10 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
                   <Search className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Comprehensive Site Auditing</h3>
+                <h3 className="text-xl font-semibold mb-4">Comprehensive Website SEO Auditing</h3>
                 <p className="text-muted-foreground mb-6">
-                  Automated crawling and sitemap analysis with real-time issue detection. 
-                  Get detailed technical SEO insights with severity levels.
+                  Automated website crawling and sitemap analysis with real-time SEO issue detection. 
+                  Get detailed technical SEO insights, on-page optimization recommendations, and site health scores with severity levels.
                 </p>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center">
@@ -113,10 +113,10 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
                   <Bot className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">AI-Powered Recommendations</h3>
+                <h3 className="text-xl font-semibold mb-4">AI-Powered SEO Recommendations</h3>
                 <p className="text-muted-foreground mb-6">
-                  GPT-4 generated improvement suggestions with smart alt text generation 
-                  and personalized content optimization advice.
+                  Advanced AI-generated SEO improvement suggestions powered by GPT-4, including smart alt text generation, 
+                  content optimization strategies, and personalized keyword recommendations for better search rankings.
                 </p>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center">
@@ -140,10 +140,10 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
                   <BarChart3 className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Competitor Analysis</h3>
+                <h3 className="text-xl font-semibold mb-4">SEO Competitor Analysis</h3>
                 <p className="text-muted-foreground mb-6">
-                  Side-by-side performance comparison with gap analysis and actionable 
-                  competitive insights to help you rank higher.
+                  Comprehensive competitor SEO analysis with side-by-side performance comparison, keyword gap analysis, 
+                  and actionable competitive insights to help you outrank competitors and dominate search results.
                 </p>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center">
@@ -269,7 +269,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/30 py-12">
+      <footer className="border-t bg-muted/30 py-12" role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
@@ -280,7 +280,7 @@ const Landing = () => {
                 <span className="text-lg font-bold">TrailWave SEO</span>
               </div>
               <p className="text-muted-foreground">
-                AI-powered SEO analysis platform for modern websites
+                Professional AI-powered SEO analysis platform for comprehensive website optimization and search engine ranking improvement
               </p>
             </div>
             <div>
