@@ -221,15 +221,17 @@ const Account = () => {
               <div className="text-2xl font-bold text-indigo-600">
                 {usage?.chatMessagesInPack || 0}/5
               </div>
-              <p className="text-xs text-muted-foreground">
-                Messages in current pack (1 credit per 5 messages)
-              </p>
+
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
                   style={{ width: `${((usage?.chatMessagesInPack || 0) / 5) * 100}%` }}
                 ></div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                The number of messages in your rolling pack (1 credit per 5 messages). 
+                The counter resets after every 5 messages used.
+              </p>
             </div>
           </CardContent>
         </Card>
