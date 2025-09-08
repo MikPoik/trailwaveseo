@@ -712,12 +712,12 @@ export class DatabaseStorage implements IStorage {
   async deleteAnalysis(id: number): Promise<boolean> {
     try {
       // First delete associated content conversations
-      await this.db
+      await db
         .delete(contentConversations)
         .where(eq(contentConversations.analysisId, id));
 
       // Then delete the analysis
-      const [deletedAnalysis] = await this.db
+      const [deletedAnalysis] = await db
         .delete(analyses)
         .where(eq(analyses.id, id))
         .returning();
