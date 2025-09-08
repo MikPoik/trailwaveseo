@@ -565,6 +565,94 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         return res.status(500).json({ error: "Failed to reanalyze page" });
       }
 
+      // Preserve or regenerate AI suggestions
+      const originalPage = (analysis.pages as any[]).find(p => p.url === pageUrl);
+      
+      if (settings.enableAISuggestions && originalPage) {
+        try {
+          // Import the AI suggestions generator
+          const { generateSeoSuggestions } = await import('../analysis-pipeline/ai-suggestions');
+          
+          // Prepare page data for AI analysis (same format as insights generator)
+          const pageData = {
+            url: updatedPageAnalysis.url,
+            title: updatedPageAnalysis.title,
+            metaDescription: updatedPageAnalysis.metaDescription,
+            metaKeywords: updatedPageAnalysis.metaKeywords,
+            headings: updatedPageAnalysis.headings,
+            images: updatedPageAnalysis.images.map(img => ({
+              src: img.src,
+              alt: img.alt
+            })),
+            issues: updatedPageAnalysis.issues.map(issue => ({
+              category: issue.category,
+              severity: issue.severity,
+              title: issue.title,
+              description: issue.description
+            })),
+            paragraphs: updatedPageAnalysis.paragraphs ? updatedPageAnalysis.paragraphs.slice(0, 15) : [],
+            internalLinks: updatedPageAnalysis.internalLinks,
+            ctaElements: updatedPageAnalysis.ctaElements
+          };
+
+          // Generate fresh suggestions for the reanalyzed page
+          const suggestions = await generateSeoSuggestions(
+            updatedPageAnalysis.url, 
+            pageData, 
+            undefined, // site structure
+            analysis.siteOverview, 
+            undefined // additional info
+          );
+
+          if (Array.isArray(suggestions) && suggestions.length > 0) {
+            // Determine if user is trial user based on credits
+            const isTrialUser = usage && usage.credits === 0;
+            
+            if (isTrialUser) {
+              // Trial users get limited suggestions
+              const limitedSuggestions = suggestions.slice(0, 5);
+              updatedPageAnalysis.suggestions = limitedSuggestions;
+              
+              if (suggestions.length > 5) {
+                const remainingSuggestions = suggestions.length - 5;
+                updatedPageAnalysis.suggestionsTeaser = `${remainingSuggestions} additional insights available with paid credits`;
+              }
+              console.log(`Regenerated ${limitedSuggestions.length} suggestions for trial user (${suggestions.length - limitedSuggestions.length} more available)`);
+            } else {
+              // Paid users get all suggestions
+              updatedPageAnalysis.suggestions = suggestions;
+              console.log(`Regenerated ${suggestions.length} suggestions for paid user`);
+            }
+          } else {
+            console.warn(`No suggestions generated for ${pageUrl}, preserving existing`);
+            // Preserve existing suggestions if no new ones generated
+            if (originalPage.suggestions) {
+              updatedPageAnalysis.suggestions = originalPage.suggestions;
+            }
+            if (originalPage.suggestionsTeaser) {
+              updatedPageAnalysis.suggestionsTeaser = originalPage.suggestionsTeaser;
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to regenerate suggestions for ${pageUrl}, preserving existing:`, error);
+          // Preserve existing suggestions if regeneration fails
+          if (originalPage.suggestions) {
+            updatedPageAnalysis.suggestions = originalPage.suggestions;
+          }
+          if (originalPage.suggestionsTeaser) {
+            updatedPageAnalysis.suggestionsTeaser = originalPage.suggestionsTeaser;
+          }
+        }
+      } else if (originalPage) {
+        // If AI suggestions are disabled, preserve existing suggestions
+        if (originalPage.suggestions) {
+          updatedPageAnalysis.suggestions = originalPage.suggestions;
+        }
+        if (originalPage.suggestionsTeaser) {
+          updatedPageAnalysis.suggestionsTeaser = originalPage.suggestionsTeaser;
+        }
+      }
+
       // Update the analysis with the new page data
       const updatedAnalysis = await storage.updatePageInAnalysis(analysisId, pageUrl, updatedPageAnalysis);
 
