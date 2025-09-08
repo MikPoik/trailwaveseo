@@ -31,7 +31,7 @@ export function registerAnalysisRoutes(app: Express) {
 
       // Determine credit cost based on user type
       const isTrialUser = usage.accountStatus === "trial";
-      const scanCost = isTrialUser ? 3 : 5; // Trial users pay 3 credits, paid users pay 5
+      const scanCost = isTrialUser ? 5 : 3; // Trial users pay 5 credits, paid users pay 3 (discount)
       
       // Atomically check and deduct credits for starting the scan
       const creditResult = await storage.atomicDeductCredits(userId, scanCost);
