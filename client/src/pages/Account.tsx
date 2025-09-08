@@ -333,7 +333,11 @@ const Account = () => {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">{Math.floor(pkg.credits / 5)} additional website scans</span>
+                      <span className="text-sm">
+                        {usage?.accountStatus === "trial" 
+                          ? `${Math.floor(pkg.credits / 5)} website scans` 
+                          : `${Math.floor(pkg.credits / 3)} website scans`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
@@ -391,7 +395,7 @@ const Account = () => {
             <div>
               <h4 className="font-semibold mb-2">Website Scans</h4>
               <p className="text-sm text-muted-foreground">
-                Each additional website scan costs 5 credits. Free users get 3 scans total.
+                Trial users: 5 credits per scan. Paid users: 3 credits per scan (discount for paid customers).
               </p>
             </div>
             <div>
