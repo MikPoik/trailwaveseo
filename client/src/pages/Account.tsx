@@ -211,30 +211,28 @@ const Account = () => {
         </Card>
 
         {/* Chat Pack Status Card */}
-        {usage?.accountStatus === "trial" && (
-          <Card>
-            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Chat Pack Status</CardTitle>
-              <Zap className="h-4 w-4 ml-auto text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-indigo-600">
-                  {usage?.chatMessagesInPack || 0}/5
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Messages in current pack (1 credit per 5 messages)
-                </p>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
-                    style={{ width: `${((usage?.chatMessagesInPack || 0) / 5) * 100}%` }}
-                  ></div>
-                </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Chat Pack Status</CardTitle>
+            <Zap className="h-4 w-4 ml-auto text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-indigo-600">
+                {usage?.chatMessagesInPack || 0}/5
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <p className="text-xs text-muted-foreground">
+                Messages in current pack (1 credit per 5 messages)
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${((usage?.chatMessagesInPack || 0) / 5) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Usage Overview Card */}
         <Card>
