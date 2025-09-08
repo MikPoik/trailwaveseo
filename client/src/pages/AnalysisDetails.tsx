@@ -11,8 +11,8 @@ const AnalysisDetails = () => {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
-  const { data: analysis, isLoading, error } = useQuery({
+
+  const { data: analysis, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/analysis', id],
     queryFn: () => fetch(`/api/analysis/${id}`).then(res => {
       if (!res.ok) throw new Error('Analysis not found');
@@ -30,13 +30,55 @@ const AnalysisDetails = () => {
     }
   }, [error, toast]);
 
+  const handleReanalyzePage = async (pageUrl: string) => {
+    try {
+      const response = await fetch(`/api/analysis/${id}/reanalyze-page`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pageUrl }),
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          toast({
+            title: "Insufficient Credits",
+            description: result.message || "You need 1 credit to reanalyze a page.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(result.error || 'Failed to reanalyze page');
+      }
+
+      // Refetch the analysis to get updated data
+      refetch();
+
+      toast({
+        title: "Page reanalyzed",
+        description: "The page has been successfully reanalyzed with fresh data.",
+      });
+    } catch (error) {
+      console.error('Failed to reanalyze page:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reanalyze the page. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Header 
         title={analysis ? `Analysis: ${analysis.domain}` : "Analysis Details"} 
         description={analysis ? `Analyzed on ${new Date(analysis.date).toLocaleDateString()}` : "Loading analysis details..."} 
       />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-6">
           <Button variant="outline" onClick={() => setLocation("/history")}>
@@ -44,7 +86,7 @@ const AnalysisDetails = () => {
             Back to History
           </Button>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center py-10">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -63,6 +105,7 @@ const AnalysisDetails = () => {
           <AnalysisSummary 
             analysis={analysis}
             onNewAnalysis={() => setLocation("/")}
+            onReanalyzePage={handleReanalyzePage} // Pass the reanalyze handler
           />
         )}
       </div>

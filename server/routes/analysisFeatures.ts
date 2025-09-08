@@ -12,12 +12,12 @@ import { analysisEvents, apiLimiter } from "./index";
 // Helper function for basic competitor recommendations (fallback when AI isn't available)
 function generateBasicCompetitorRecommendations(metrics: any): string[] {
   const recommendations: string[] = [];
-  
+
   // Validate metrics to prevent errors
   if (!metrics || typeof metrics !== 'object') {
     return ["Unable to generate competitor recommendations due to missing data."];
   }
-  
+
   // For all optimization metrics: negative difference means competitor is better
   if (metrics.titleOptimization?.difference < 0) {
     const gap = Math.abs(metrics.titleOptimization.difference).toFixed(1);
@@ -52,7 +52,7 @@ function generateBasicCompetitorRecommendations(metrics: any): string[] {
   if (metrics.headingsOptimization?.difference > 0) positiveAreas.push('heading structure');
   if (metrics.imagesOptimization?.difference > 0) positiveAreas.push('image optimization');
   if (metrics.criticalIssues?.difference < 0) positiveAreas.push('critical issues management');
-  
+
   if (positiveAreas.length > 0) {
     recommendations.push(`You're outperforming your competitor in: ${positiveAreas.join(', ')}. Continue these strong practices.`);
   }
@@ -270,7 +270,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
               usage: usage
             });
           }
-          
+
           // Also check if user has any pages remaining (only if not unlimited)
           const remainingPages = usage && usage.pageLimit !== -1 ? usage.pageLimit - usage.pagesAnalyzed : Infinity;
           if (usage && usage.pageLimit !== -1 && remainingPages <= 0) {
@@ -321,7 +321,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           skipAltTextGeneration: true, // Skip alt text for competitors
           useAI: false // Skip AI for basic competitor analysis
         };
-        
+
         const competitorResult = await orchestrateAnalysis(
           competitorDomain,
           competitorSettings,
@@ -330,7 +330,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           true, // isCompetitorAnalysis
           analysisEvents
         );
-        
+
         const competitorAnalysisId = competitorResult.analysisId;
 
         // Get the competitor analysis results
@@ -341,13 +341,13 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
 
         // Use the new modular competitive analysis system
         console.log('Running comprehensive competitive analysis...');
-        
+
         // Prepare OpenAI client for AI insights (if available)
         let openaiClient: OpenAI | undefined;
         if (process.env.OPENAI_API_KEY) {
           openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         }
-        
+
         // Run comprehensive competitive analysis using proper function signature
         const { analyzeCompetitor } = await import("../competitive-analysis/competitive-analyzer");
         const competitiveResult = await analyzeCompetitor(
@@ -356,7 +356,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           openaiClient,
           { includeAI: false, maxTokens: 8000, analysisDepth: 'standard', focusAreas: ['SEO', 'Content'] }
         );
-        
+
         // Create enhanced comparison result
         const comparison = {
           mainDomain,
@@ -385,11 +385,11 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         try {
           const aiInsightsCost = 2;
           let enhancedInsights: any[] = [];
-          
+
           if (userId) {
             const userUsage = await storage.getUserUsage(userId);
             const isTrialUser = userUsage?.accountStatus === "trial";
-            
+
             if (isTrialUser) {
               // Trial users now pay 2 credits for competitor analysis
               const creditResult = await storage.atomicDeductCredits(userId, aiInsightsCost);
@@ -426,7 +426,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
             // Unauthenticated users get modular system insights (better than basic)
             enhancedInsights = competitiveResult.insights;
           }
-          
+
           // Convert insights to the expected format and add summary information
           (comparison as any).recommendations = enhancedInsights.map((insight: any) => insight.recommendation);
           (comparison as any).detailedInsights = enhancedInsights;
@@ -524,14 +524,29 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
         return res.status(403).json({ error: "You don't have permission to modify this analysis" });
       }
 
-      // Check user's usage limits before reanalysis
+      // Check user has credits for reanalysis and deduct them
       const usage = await storage.getUserUsage(userId);
-      if (usage && usage.pagesAnalyzed >= usage.pageLimit) {
+      if (usage && usage.credits < 1) {
         return res.status(403).json({ 
-          error: "Page analysis limit reached", 
-          message: `You have reached your limit of ${usage.pageLimit} pages. You have analyzed ${usage.pagesAnalyzed} pages.`,
-          usage: usage
+          error: "Insufficient credits", 
+          message: `Page reanalysis requires 1 credit. You have ${usage.credits} credits remaining.`,
+          creditsNeeded: 1,
+          creditsAvailable: usage.credits
         });
+      }
+
+      // Deduct 1 credit for page reanalysis
+      if (usage) {
+        const creditResult = await storage.atomicDeductCredits(userId, 1);
+        if (!creditResult.success) {
+          return res.status(403).json({
+            error: "Insufficient credits",
+            message: `Page reanalysis requires 1 credit. You have ${creditResult.remainingCredits} credits remaining.`,
+            creditsNeeded: 1,
+            creditsAvailable: creditResult.remainingCredits
+          });
+        }
+        console.log(`Deducted 1 credit for page reanalysis. User ${userId} has ${creditResult.remainingCredits} credits remaining.`);
       }
 
       // Get user settings
@@ -539,7 +554,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
 
       // Import the analyzePage function from seoAnalyzer
       const { analyzePage } = await import('../seoAnalyzer');
-      
+
       // Create abort controller for this specific reanalysis
       const controller = new AbortController();
 
@@ -558,7 +573,8 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
       }
 
       // Increment user's page usage count for reanalysis
-      await storage.incrementUserUsage(userId, 1);
+      // This line is no longer needed as credits are deducted directly
+      // await storage.incrementUserUsage(userId, 1);
 
       res.json({
         message: "Page reanalyzed successfully",
