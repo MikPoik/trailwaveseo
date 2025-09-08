@@ -397,19 +397,19 @@ const Account = () => {
             <div>
               <h4 className="font-semibold mb-2">AI Suggestions</h4>
               <p className="text-sm text-muted-foreground">
-                AI-powered suggestions cost 1 credit per page. Content duplication analysis costs 1 credit per scan.
+                AI-powered SEO suggestions cost 1 credit per page analyzed (typically 10-12 suggestions per page). Content duplication analysis costs 1 credit per scan.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Chat Messages</h4>
+              <p className="text-sm text-muted-foreground">
+                Chat with AI about your content costs 1 credit per 5 messages. The counter resets after every 5 messages.
               </p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">No Expiration</h4>
               <p className="text-sm text-muted-foreground">
                 Credits never expire and can be used whenever you need them.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Secure Payment</h4>
-              <p className="text-sm text-muted-foreground">
-                All payments are processed securely through Stripe with bank-level encryption.
               </p>
             </div>
           </div>
