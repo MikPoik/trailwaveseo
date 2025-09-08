@@ -32,7 +32,23 @@ const SiteHistory = () => {
         throw error;
       }
     },
+    onMutate: async (deletedId) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["/api/analysis/history"] });
+
+      // Snapshot the previous value
+      const previousAnalyses = queryClient.getQueryData(["/api/analysis/history"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["/api/analysis/history"], (old: any[]) => {
+        return old?.filter((analysis) => analysis.id !== deletedId) || [];
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousAnalyses };
+    },
     onSuccess: () => {
+      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
       toast({
@@ -40,10 +56,14 @@ const SiteHistory = () => {
         description: "The analysis has been removed from your history",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, deletedId, context) => {
       console.error("Delete analysis error:", error);
       
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(["/api/analysis/history"], context?.previousAnalyses);
+      
       if (error.message?.includes("not found")) {
+        // If not found, still remove it from the UI since it's already gone
         queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
         toast({
@@ -53,15 +73,15 @@ const SiteHistory = () => {
         return;
       }
       
-      // Revert the optimistic update by invalidating queries
-      queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
-      
       toast({
         title: "Error",
         description: error.message || "Failed to delete analysis",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the latest data
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
     },
   });
 
