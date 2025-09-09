@@ -267,7 +267,7 @@ const Account = () => {
             Purchase Credits
           </CardTitle>
           <CardDescription>
-            Unlock advanced AI-powered SEO suggestions and unlimited website scans
+            Purchase credits for website scans, AI suggestions, competitor analysis, and chat features
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -334,26 +334,26 @@ const Account = () => {
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
                       <span className="text-sm">
-                        {usage?.accountStatus === "trial" 
-                          ? `${Math.floor(pkg.credits / 5)} website scans` 
-                          : `${Math.floor(pkg.credits / 3)} website scans`}
+                        {pkg.credits} credits for scans & AI features
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">{pkg.credits} AI-powered suggestions</span>
+                      <span className="text-sm">
+                        Scans: {usage?.accountStatus === "trial" ? "5" : "3"} credits each
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Unlimited pages per scan</span>
+                      <span className="text-sm">AI suggestions: 1 credit per page</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Advanced competitor analysis</span>
+                      <span className="text-sm">Competitor analysis: 2 credits</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Priority support</span>
+                      <span className="text-sm">Chat: 1 credit per 10 messages</span>
                     </div>
                   </div>
                   
