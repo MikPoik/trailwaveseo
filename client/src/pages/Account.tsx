@@ -399,9 +399,15 @@ const Account = () => {
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">AI Suggestions</h4>
+              <h4 className="font-semibold mb-0">AI Suggestions</h4>
               <p className="text-sm text-muted-foreground">
                 AI-powered SEO suggestions cost 1 credit per page analyzed (typically 10-12 suggestions per page). Content duplication analysis costs 1 credit per scan.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Competitor Analysis</h4>
+              <p className="text-sm text-muted-foreground">
+                Competitor analysis costs 2 credits per scan.
               </p>
             </div>
             <div>
