@@ -61,10 +61,18 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
       return '';
     }
 
+    const businessContext = pageContext.businessType && pageContext.industry 
+      ? `Business: ${pageContext.businessType} in ${pageContext.industry} industry`
+      : pageContext.businessType 
+        ? `Business: ${pageContext.businessType}`
+        : pageContext.industry
+          ? `Industry: ${pageContext.industry}`
+          : 'Business context: Unknown';
+
     const contextInfo = `
 Page: ${pageContext.url}
 Title: ${pageContext.title || 'Unknown'}
-Business: ${pageContext.businessType || 'Unknown'} in ${pageContext.industry || 'Unknown'} industry
+${businessContext}
 Main headings: ${pageContext.headings?.slice(0, 3).map(h => h.text).join(', ') || 'None'}
 `;
 
@@ -76,15 +84,16 @@ Main headings: ${pageContext.headings?.slice(0, 3).map(h => h.text).join(', ') |
           content: [
             {
               type: "text",
-              text: `Generate a concise, descriptive alt text for this image. Consider the page context:
+              text: `Generate a concise, descriptive alt text for this image. Consider the business and page context:
 ${contextInfo}
 
 Requirements:
 - 125 characters or less
-- Describe what you see, not what you think it means
-- Include relevant details for accessibility
-- Consider the business context
+- Describe what you see, relating it to the business context when relevant
+- Include relevant details for accessibility and SEO
+- Use industry-appropriate terminology when describing the image
 - Be specific and helpful for screen readers
+- If the image appears to be related to the business services, incorporate that understanding
 
 Return only the alt text, no extra formatting.`
             },

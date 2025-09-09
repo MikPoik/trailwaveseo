@@ -251,8 +251,8 @@ async function performEnhancedPageAnalysis(
             url,
             title: basicElements.title || undefined,
             headings: contentElements.headings || [],
-            businessType: undefined, // Could be enhanced with business context
-            industry: undefined       // Could be enhanced with industry context
+            businessType: analysisContext.siteOverview?.businessType,
+            industry: analysisContext.siteOverview?.industry
           }
         }));
 
