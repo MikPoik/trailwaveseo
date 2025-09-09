@@ -273,8 +273,8 @@ export class DatabaseStorage implements IStorage {
       const newCount = currentCount + 1;
       let shouldDeductCredit = false;
 
-      // If we've reached 5 messages, reset counter and deduct credit
-      if (newCount >= 5) {
+      // If we've reached 10 messages, reset counter and deduct credit
+      if (newCount >= 10) {
         shouldDeductCredit = true;
 
         // Reset counter to 0 and deduct 1 credit atomically
@@ -301,7 +301,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.id, userId))
           .returning();
 
-        console.log(`Chat message ${newCount}/5 for user ${userId}`);
+        console.log(`Chat message ${newCount}/10 for user ${userId}`);
         return { shouldDeductCredit: false, user };
       }
     } catch (error) {

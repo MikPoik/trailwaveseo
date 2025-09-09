@@ -219,18 +219,18 @@ const Account = () => {
           <CardContent>
             <div className="space-y-2">
               <div className="text-2xl font-bold text-indigo-600">
-                {usage?.chatMessagesInPack || 0}/5
+                {usage?.chatMessagesInPack || 0}/10
               </div>
 
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${((usage?.chatMessagesInPack || 0) / 5) * 100}%` }}
+                  style={{ width: `${((usage?.chatMessagesInPack || 0) / 10) * 100}%` }}
                 ></div>
               </div>
               <p className="text-xs text-muted-foreground">
-                The number of messages in your rolling pack (1 credit per 5 messages). 
-                The counter resets after every 5 messages used.
+                The number of messages in your rolling pack (1 credit per 10 messages). 
+                The counter resets after every 10 messages used.
               </p>
             </div>
           </CardContent>
@@ -413,7 +413,7 @@ const Account = () => {
             <div>
               <h4 className="font-semibold mb-2">Chat Messages</h4>
               <p className="text-sm text-muted-foreground">
-                Chat with AI about your content costs 1 credit per 5 messages. The counter resets after every 5 messages.
+                Chat with AI about your content costs 1 credit per 10 messages. The counter resets after every 10 messages.
               </p>
             </div>
             <div>

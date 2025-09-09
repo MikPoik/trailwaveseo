@@ -154,7 +154,7 @@ export async function deductAICredits(
 }
 
 /**
- * Handle credit deduction for chat messages (1 credit per 5 messages)
+ * Handle credit deduction for chat messages (1 credit per 10 messages)
  */
 export async function deductChatCredits(
   userId: string | undefined,
@@ -188,7 +188,7 @@ export async function deductChatCredits(
     // No credit deducted yet, still counting messages
     const remainingCredits = result.user?.credits || userUsage.credits;
     const messagesInPack = result.user?.chatMessagesInPack || 0;
-    console.log(`Chat message ${messagesInPack}/5 for user ${userId}, ${remainingCredits} credits remaining`);
+    console.log(`Chat message ${messagesInPack}/10 for user ${userId}, ${remainingCredits} credits remaining`);
     
     return {
       success: true,
