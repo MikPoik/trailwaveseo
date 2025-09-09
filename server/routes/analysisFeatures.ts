@@ -9,6 +9,7 @@ import OpenAI from "openai";
 import { isAuthenticated } from "../replitAuth";
 import { analysisEvents, apiLimiter } from "./index";
 import { exportAnalysisPDF } from "../export/pdfExporter.js";
+import { exportAnalysisCSV } from "../export/csvExporter.js";
 
 // Helper function for basic competitor recommendations (fallback when AI isn't available)
 function generateBasicCompetitorRecommendations(metrics: any): string[] {
@@ -71,50 +72,7 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
   app.get("/api/analysis/:id/export/pdf", isAuthenticated, exportAnalysisPDF);
 
   // Export analysis as CSV
-  app.get("/api/analysis/:id/export/csv", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid analysis ID" });
-      }
-
-      const analysis = await storage.getAnalysisById(id) as any;
-
-      if (!analysis) {
-        return res.status(404).json({ error: "Analysis not found" });
-      }
-
-      // Check if the analysis belongs to the authenticated user
-      if (analysis.userId && analysis.userId !== userId) {
-        return res.status(403).json({ error: "You don't have permission to access this analysis" });
-      }
-
-      // Generate CSV content
-      let csv = "URL,Title,Title Length,Meta Description,Description Length,Headings,Issues,Suggestions\n";
-
-      (analysis.pages as any[])?.forEach((page: any) => {
-        const row = [
-          `"${page.url}"`,
-          `"${page.title || ''}"`,
-          page.title?.length || 0,
-          `"${page.metaDescription || ''}"`,
-          page.metaDescription?.length || 0,
-          `"${(page.headings as any[])?.map((h: any) => `${h.level}: ${h.text}`).join('; ') || ''}"`,
-          page.issues.length,
-          `"${page.suggestions.join('; ')}"`
-        ];
-
-        csv += row.join(',') + '\n';
-      });
-
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename=analysis-${id}.csv`);
-      res.send(csv);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to export analysis as CSV" });
-    }
-  });
+  app.get("/api/analysis/:id/export/csv", isAuthenticated, exportAnalysisCSV);
 
   // Export analysis as JSON
   app.get("/api/analysis/:id/export/json", isAuthenticated, async (req: any, res) => {
