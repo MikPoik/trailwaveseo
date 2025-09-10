@@ -70,9 +70,6 @@ const Dashboard = () => {
                           <span className="text-sm text-gray-600">
                             Lite scans (3 pages max, 5 suggestions per page)
                           </span>
-                          <span className="text-sm text-gray-600 border-l pl-2 border-gray-300">
-                            Chat: {usage.chatMessagesInPack || 0}/5 messages
-                          </span>
                         </>
                       )}
                     </div>
