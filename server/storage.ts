@@ -90,9 +90,9 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .onConflictDoUpdate({
-        target: users.id,
+        target: users.email,
         set: {
-          email: userData.email,
+          id: userData.id,  // Update to new Auth0 ID
           firstName: userData.first_name,
           lastName: userData.last_name,
           profileImageUrl: userData.profile_image_url,
