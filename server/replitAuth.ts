@@ -127,7 +127,7 @@ export async function setupAuth(app: Express) {
     passport.authenticate("auth0", {
       successReturnToOrRedirect: "/dashboard",
       failureRedirect: "/api/login",
-    }, (err, user, info) => {
+    }, (err: any, user: any, info: any) => {
       if (err) {
         console.error("Auth0 callback error:", err);
         console.error("Error details:", JSON.stringify(err, null, 2));

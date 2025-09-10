@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application for analyzing website SEO performance using AI-powered suggestions. The application allows users to crawl websites, analyze their SEO metrics, and receive actionable recommendations for improvement. It features user authentication via Replit Auth, competitor analysis capabilities, and comprehensive SEO reporting.
+This is a full-stack web application for analyzing website SEO performance using AI-powered suggestions. The application allows users to crawl websites, analyze their SEO metrics, and receive actionable recommendations for improvement. It features user authentication via Auth0, competitor analysis capabilities, and comprehensive SEO reporting.
 
 ## System Architecture
 
@@ -18,7 +18,7 @@ This is a full-stack web application for analyzing website SEO performance using
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js server
 - **Language**: TypeScript with ES modules
-- **Authentication**: Replit Auth with OpenID Connect (OIDC)
+- **Authentication**: Auth0 with OpenID Connect (OIDC)
 - **Session Management**: Express sessions with PostgreSQL storage
 - **API Design**: RESTful endpoints with rate limiting
 - **Route Organization**: Modular route structure with separation of concerns
@@ -34,10 +34,11 @@ This is a full-stack web application for analyzing website SEO performance using
 ## Key Components
 
 ### Authentication System
-- **Provider**: Replit Auth using OpenID Connect
+- **Provider**: Auth0 using OpenID Connect (OIDC)
 - **Session Storage**: PostgreSQL-backed sessions with connect-pg-simple
 - **User Management**: User profiles with email, name, and avatar support
 - **Route Protection**: Authentication middleware for protected endpoints
+- **Social Login**: Supports Google and other social providers through Auth0
 
 ### SEO Analysis Engine
 - **Web Crawler**: Custom crawler with configurable settings (max pages, crawl delay, external links)
@@ -59,7 +60,7 @@ This is a full-stack web application for analyzing website SEO performance using
 
 ## Data Flow
 
-1. **User Authentication**: Users authenticate via Replit Auth, creating/updating user records
+1. **User Authentication**: Users authenticate via Auth0, creating/updating user records
 2. **Analysis Request**: User submits domain for analysis with optional crawl settings
 3. **Page Discovery**: System attempts sitemap parsing, falls back to crawling if needed
 4. **Content Extraction**: Each page is analyzed for SEO elements and issues
@@ -117,6 +118,14 @@ If you need to use OpenAI models, model "gpt-4.1" is the newest model released o
 - Create reusable and modular components instead of inline components or monolithic code files
 
 ## Recent Changes
+
+### September 10, 2025 - Auth0 Migration Implementation
+- **Authentication Provider**: Successfully migrated from Replit Auth to Auth0 for enhanced flexibility and features
+- **OpenID Connect (OIDC)**: Maintained existing OIDC architecture with Passport.js to minimize refactoring effort
+- **Social Login Support**: Added support for Google and other social providers through Auth0
+- **Enhanced Security**: Improved authentication flow with proper client secret handling and token validation
+- **Dynamic Domain Support**: Fixed callback and logout URLs to work with Replit's dynamic domain system
+- **Seamless Migration**: 2-4 hour migration path preserved all existing user sessions and functionality
 
 ### September 8, 2025 - Fair Pricing Model Implementation
 - **Website Scan Pricing**: Updated to fair pricing model - trial users pay 5 credits per scan, paid users pay 3 credits per scan (discount for loyal customers)
