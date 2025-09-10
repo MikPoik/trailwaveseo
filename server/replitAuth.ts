@@ -101,7 +101,7 @@ export async function setupAuth(app: Express) {
       name: "auth0",
       config,
       scope: "openid email profile offline_access",
-      callbackURL: `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/api/callback`,
+      callbackURL: process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}/api/callback` : `http://localhost:5000/api/callback`,
     },
     verify,
   );
