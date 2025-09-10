@@ -102,12 +102,16 @@ export async function setupAuth(app: Express) {
     }
   };
 
+  const callbackURL = process.env.APP_URL ? `${process.env.APP_URL}/api/callback` : `http://localhost:5000/api/callback`;
+  console.log(`[AUTH] Using callback URL: ${callbackURL}`);
+  console.log(`[AUTH] APP_URL environment variable: ${process.env.APP_URL || 'not set'}`);
+  
   const strategy = new Strategy(
     {
       name: "auth0",
       config,
       scope: "openid email profile offline_access",
-      callbackURL: process.env.APP_URL ? `${process.env.APP_URL}/api/callback` : `http://localhost:5000/api/callback`,
+      callbackURL,
     },
     verify,
   );
