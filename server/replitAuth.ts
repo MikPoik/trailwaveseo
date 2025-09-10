@@ -8,8 +8,16 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+if (!process.env.AUTH0_DOMAIN) {
+  throw new Error("Environment variable AUTH0_DOMAIN not provided");
+}
+
+if (!process.env.AUTH0_CLIENT_ID) {
+  throw new Error("Environment variable AUTH0_CLIENT_ID not provided");
+}
+
+if (!process.env.AUTH0_CLIENT_SECRET) {
+  throw new Error("Environment variable AUTH0_CLIENT_SECRET not provided");
 }
 
 if (!process.env.SESSION_SECRET) {
@@ -19,8 +27,8 @@ if (!process.env.SESSION_SECRET) {
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      new URL(`https://${process.env.AUTH0_DOMAIN}`),
+      process.env.AUTH0_CLIENT_ID!
     );
   },
   { maxAge: 3600 * 1000 }
@@ -88,32 +96,29 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
-  }
+  const strategy = new Strategy(
+    {
+      name: "auth0",
+      config,
+      scope: "openid email profile offline_access",
+      callbackURL: `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/api/callback`,
+    },
+    verify,
+  );
+  passport.use(strategy);
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate("auth0", {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate("auth0", {
       successReturnToOrRedirect: "/dashboard",
       failureRedirect: "/api/login",
     })(req, res, next);
@@ -123,7 +128,7 @@ export async function setupAuth(app: Express) {
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
+          client_id: process.env.AUTH0_CLIENT_ID!,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
         }).href
       );
