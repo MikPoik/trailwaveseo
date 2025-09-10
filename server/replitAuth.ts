@@ -152,7 +152,7 @@ export async function setupAuth(app: Express) {
       res.redirect(
         client.buildEndSessionUrl(config, {
           client_id: process.env.AUTH0_CLIENT_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+          post_logout_redirect_uri: `${req.protocol}://${req.get('host')}`,
         }).href
       );
     });
