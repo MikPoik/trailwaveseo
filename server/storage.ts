@@ -79,37 +79,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    // Check if user already exists by email
-    const existingUser = await db.select().from(users).where(eq(users.email, userData.email!)).limit(1);
-    
-    if (existingUser.length > 0) {
-      // User exists, update their profile but keep existing ID and data
-      const [user] = await db
-        .update(users)
-        .set({
-          firstName: userData.first_name,
-          lastName: userData.last_name,
-          profileImageUrl: userData.profile_image_url,
-          updatedAt: new Date()
-        })
-        .where(eq(users.email, userData.email!))
-        .returning();
-      return user;
-    } else {
-      // New user, create with Auth0 ID
-      const [user] = await db
-        .insert(users)
-        .values({
-          id: userData.id,
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        profileImageUrl: userData.profile_image_url,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
           email: userData.email,
           firstName: userData.first_name,
           lastName: userData.last_name,
           profileImageUrl: userData.profile_image_url,
           updatedAt: new Date()
-        })
-        .returning();
-      return user;
-    }
+        }
+      })
+      .returning();
+    return user;
   }
 
   async getUserUsage(userId: string): Promise<{ pagesAnalyzed: number; pageLimit: number; credits: number; accountStatus: string; chatMessagesInPack: number } | undefined> {
