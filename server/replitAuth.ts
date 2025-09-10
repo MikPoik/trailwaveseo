@@ -126,6 +126,23 @@ export async function setupAuth(app: Express) {
     passport.authenticate("auth0", {
       successReturnToOrRedirect: "/dashboard",
       failureRedirect: "/api/login",
+    }, (err, user, info) => {
+      if (err) {
+        console.error("Auth0 callback error:", err);
+        console.error("Error details:", JSON.stringify(err, null, 2));
+        return res.status(500).json({ error: "Authentication failed", details: err.message });
+      }
+      if (!user) {
+        console.error("Auth0 callback failed - no user:", info);
+        return res.redirect("/api/login");
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          console.error("Login session error:", err);
+          return res.status(500).json({ error: "Session creation failed" });
+        }
+        res.redirect("/dashboard");
+      });
     })(req, res, next);
   });
 
