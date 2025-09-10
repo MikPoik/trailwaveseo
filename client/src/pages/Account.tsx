@@ -161,7 +161,7 @@ const Account = () => {
               <div className="text-center">
                 <p className="text-lg font-semibold">
                   {typedUser?.firstName && typedUser?.lastName
-                    ? `${typedUser.firstName} ${typedUser.lastName}`
+                    ? `€{typedUser.firstName} €{typedUser.lastName}`
                     : typedUser?.email || 'User'}
                 </p>
                 {typedUser?.email && (
@@ -198,7 +198,7 @@ const Account = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className={`text-2xl font-bold ${usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
+              <div className={`text-2xl font-bold €{usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
                 {getAccountStatusDisplay()}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -225,7 +225,7 @@ const Account = () => {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${((usage?.chatMessagesInPack || 0) / 10) * 100}%` }}
+                  style={{ width: `€{((usage?.chatMessagesInPack || 0) / 10) * 100}%` }}
                 ></div>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -288,7 +288,7 @@ const Account = () => {
                   <p className="text-sm text-muted-foreground">Available Credits</p>
                 </div>
                 <div className="text-center">
-                  <div className={`text-3xl font-bold ${usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
+                  <div className={`text-3xl font-bold €{usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
                     {getAccountStatusDisplay()}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -324,7 +324,7 @@ const Account = () => {
                       {pkg.credits} Credits
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      ~${(Number(pkg.priceDisplay.replace('$', '')) / pkg.credits).toFixed(3)} per credit
+                      ~€{(Number(pkg.priceDisplay.replace('€', '')) / pkg.credits).toFixed(3)} per credit
                     </div>
                   </div>
                 </CardHeader>

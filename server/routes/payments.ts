@@ -18,19 +18,19 @@ const CREDIT_PACKAGES = {
     credits: 50, 
     name: "Starter Pack",
     priceId: process.env.STRIPE_STARTER_PRICE_ID || 'price_starter_default',
-    priceDisplay: "$4.99"
+    priceDisplay: "€4.99"
   },
   pro: { 
     credits: 120, 
     name: "Pro Pack",
     priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_pro_default',
-    priceDisplay: "$9.99"
+    priceDisplay: "€9.99"
   },
   business: { 
     credits: 280, 
     name: "Business Pack",
     priceId: process.env.STRIPE_BUSINESS_PRICE_ID || 'price_business_default',
-    priceDisplay: "$19.99"
+    priceDisplay: "€19.99"
   }
 };
 
