@@ -26,11 +26,45 @@ if (!process.env.SESSION_SECRET) {
 
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(`https://${process.env.AUTH0_DOMAIN}`),
-      process.env.AUTH0_CLIENT_ID!,
-      process.env.AUTH0_CLIENT_SECRET!
-    );
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[AUTH] Attempting OIDC discovery (attempt ${attempt}/${maxRetries})`);
+        
+        // Use Promise.race to implement timeout
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('OIDC discovery timeout (15s)')), 15000);
+        });
+        
+        const discoveryPromise = client.discovery(
+          new URL(`https://${process.env.AUTH0_DOMAIN}`),
+          process.env.AUTH0_CLIENT_ID!,
+          process.env.AUTH0_CLIENT_SECRET!
+        );
+        
+        const config = await Promise.race([discoveryPromise, timeoutPromise]) as any;
+        console.log(`[AUTH] OIDC discovery successful on attempt ${attempt}`);
+        return config;
+        
+      } catch (error: any) {
+        console.error(`[AUTH] OIDC discovery failed on attempt ${attempt}:`, error.message);
+        
+        if (attempt === maxRetries) {
+          console.error(`[AUTH] All OIDC discovery attempts failed. Error details:`, {
+            name: error.name,
+            message: error.message,
+            cause: error.cause?.message || 'Unknown cause'
+          });
+          throw new Error(`OIDC discovery failed after ${maxRetries} attempts: ${error.message}`);
+        }
+        
+        // Wait before retrying
+        console.log(`[AUTH] Retrying OIDC discovery in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
   },
   { maxAge: 3600 * 1000 }
 );
@@ -85,7 +119,40 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  let config;
+  try {
+    config = await getOidcConfig();
+  } catch (error: any) {
+    console.error('[AUTH] Failed to initialize OIDC configuration:', error.message);
+    console.error('[AUTH] Authentication will not be available. Please check:');
+    console.error('[AUTH] 1. AUTH0_DOMAIN is correct and reachable');
+    console.error('[AUTH] 2. Network connectivity to Auth0 from deployment environment');
+    console.error('[AUTH] 3. Auth0 service status');
+    
+    // Setup minimal auth routes that return errors
+    app.get("/api/login", (req, res) => {
+      res.status(503).json({ 
+        error: "Authentication service temporarily unavailable", 
+        message: "Please try again later or contact support if the issue persists" 
+      });
+    });
+    
+    app.get("/api/callback", (req, res) => {
+      res.status(503).json({ 
+        error: "Authentication service temporarily unavailable", 
+        message: "Please try again later or contact support if the issue persists" 
+      });
+    });
+    
+    app.get("/api/logout", (req, res) => {
+      req.logout(() => {
+        res.redirect("/");
+      });
+    });
+    
+    console.error('[AUTH] Authentication routes configured with error responses');
+    return; // Exit early, don't setup normal auth
+  }
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -109,7 +176,7 @@ export async function setupAuth(app: Express) {
   const strategy = new Strategy(
     {
       name: "auth0",
-      config,
+      config: config!,
       scope: "openid email profile offline_access",
       callbackURL,
     },
@@ -154,7 +221,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
       res.redirect(
-        client.buildEndSessionUrl(config, {
+        client.buildEndSessionUrl(config!, {
           client_id: process.env.AUTH0_CLIENT_ID!,
           post_logout_redirect_uri: `${req.protocol}://${req.get('host')}`,
         }).href
@@ -182,10 +249,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   try {
     const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    const tokenResponse = await client.refreshTokenGrant(config!, refreshToken);
     updateUserSession(user, tokenResponse);
     return next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[AUTH] Token refresh failed:', error.message);
     return res.redirect("/api/login");
   }
 };
