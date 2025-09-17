@@ -53,7 +53,7 @@ export async function aggregateAnalysisResults(
 
     // Save analysis to database
     console.log(`Saving analysis for ${context.domain}...`);
-    const savedAnalysis = await storage.saveAnalysis(analysisData);
+    const savedAnalysis = await storage.saveAnalysis(analysisData as any);
     
     console.log(`Analysis saved with ID: ${savedAnalysis.id}`);
 

@@ -267,6 +267,20 @@ async function generateInsights(
   console.log(`- Link Architecture Score: ${linkArchitectureAnalysis.overallScore}/100`);
   console.log(`- Performance Score: ${performanceAnalysis.overallScore}/100`);
 
+  // Calculate overall SEO effectiveness score (weighted average of all components)
+  const overallSeoEffectivenessScore = calculateOverallSeoEffectivenessScore(
+    technicalAnalysis.overallScore,
+    contentQualityAnalysisResult.overallHealth.combinedScore,
+    linkArchitectureAnalysis.overallScore,
+    performanceAnalysis.overallScore
+  );
+  
+  console.log(`- Overall SEO Effectiveness Score: ${overallSeoEffectivenessScore}/100`);
+  
+  // Add the overall effectiveness score to content quality analysis for frontend access
+  (contentQualityAnalysisResult.overallHealth as any).seoEffectivenessScore = overallSeoEffectivenessScore;
+  (contentQualityAnalysisResult as any).overallScore = overallSeoEffectivenessScore;
+
   // Generate AI explanations for each analysis area (only if AI is enabled)
   if (options.useAI && !options.isCompetitorAnalysis && context.settings.useAI) {
     try {
@@ -327,6 +341,32 @@ async function reportCompletion(
   
   const { reportAnalysisCompletion } = await import('./progress-tracker.js');
   await reportAnalysisCompletion(context, result);
+}
+
+/**
+ * Calculate overall SEO effectiveness score from component scores
+ */
+function calculateOverallSeoEffectivenessScore(
+  technicalScore: number,
+  contentQualityScore: number,
+  linkArchitectureScore: number,
+  performanceScore: number
+): number {
+  
+  // Weighted average of all component scores
+  // Technical SEO: 30% (most important for search engines)
+  // Content Quality: 30% (critical for user engagement and rankings)
+  // Performance: 25% (important for user experience and Core Web Vitals)
+  // Link Architecture: 15% (important but less critical for modern SEO)
+  
+  const weightedScore = (
+    technicalScore * 0.30 +
+    contentQualityScore * 0.30 +
+    performanceScore * 0.25 +
+    linkArchitectureScore * 0.15
+  );
+  
+  return Math.round(weightedScore);
 }
 
 /**
