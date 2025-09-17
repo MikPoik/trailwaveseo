@@ -284,7 +284,7 @@ async function generateInsights(
       
       // Add explanations to each analysis area
       technicalAnalysis.explanation = explanations.technicalExplanation;
-      contentQualityAnalysisResult.explanation = explanations.contentQualityExplanation;
+      (contentQualityAnalysisResult as any).explanation = explanations.contentQualityExplanation;
       linkArchitectureAnalysis.explanation = explanations.linkArchitectureExplanation;
       performanceAnalysis.explanation = explanations.performanceExplanation;
       

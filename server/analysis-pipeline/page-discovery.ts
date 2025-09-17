@@ -3,6 +3,7 @@
  * Handles sitemap parsing and website crawling to discover pages for analysis
  */
 
+import { EventEmitter } from 'events';
 import { parseSitemap } from '../sitemap.js';
 import { crawlWebsite } from '../crawler.js';
 import type { AnalysisContext, AnalysisOptions } from './analysis-orchestrator.js';
@@ -229,7 +230,7 @@ function preparePagesList(
   let pages = discoveredPages.map(url => normalizeUrlForAnalysis(url));
   
   // Remove duplicates after normalization
-  pages = [...new Set(pages)];
+  pages = Array.from(new Set(pages));
   
   // Limit the number of pages to analyze
   pages = pages.length > maxPages 

@@ -251,8 +251,8 @@ async function performEnhancedPageAnalysis(
             url,
             title: basicElements.title || undefined,
             headings: contentElements.headings || [],
-            businessType: analysisContext.siteOverview?.businessType,
-            industry: analysisContext.siteOverview?.industry
+            businessType: undefined, // Will be populated from site overview when available
+            industry: undefined // Will be populated from site overview when available
           }
         }));
 
@@ -555,7 +555,7 @@ function analyzeContentQuality(contentElements: any) {
   const { paragraphs, sentences, headings, allTextContent } = contentElements;
 
   // Calculate word count
-  const wordCount = allTextContent.split(/\s+/).filter(word => word.length > 0).length;
+  const wordCount = allTextContent.split(/\s+/).filter((word: string) => word.length > 0).length;
 
   // Calculate readability score
   const readabilityScore = calculateReadabilityScore(sentences);
@@ -596,27 +596,21 @@ async function detectSeoIssues(
       category: 'meta' as SeoCategory,
       severity: 'critical',
       title: 'Missing Title Tag',
-      description: 'This page is missing a title tag, which is crucial for SEO.',
-      element: 'title',
-      recommendation: 'Add a descriptive title tag (50-60 characters) that includes your target keyword.'
+      description: 'This page is missing a title tag, which is crucial for SEO.'
     });
   } else if (title.length < 30) {
     issues.push({
       category: 'meta' as SeoCategory,
       severity: 'warning',
       title: 'Short Title Tag',
-      description: `Title tag is only ${title.length} characters long.`,
-      element: 'title',
-      recommendation: 'Expand title to 30-60 characters for better SEO impact.'
+      description: `Title tag is only ${title.length} characters long.`
     });
   } else if (title.length > 60) {
     issues.push({
       category: 'meta' as SeoCategory,
       severity: 'warning',
       title: 'Long Title Tag',
-      description: `Title tag is ${title.length} characters long and may be truncated.`,
-      element: 'title',
-      recommendation: 'Shorten title to 50-60 characters to avoid truncation in search results.'
+      description: `Title tag is ${title.length} characters long and may be truncated.`
     });
   }
 
@@ -626,27 +620,21 @@ async function detectSeoIssues(
       category: 'meta' as SeoCategory,
       severity: 'warning',
       title: 'Missing Meta Description',
-      description: 'This page is missing a meta description.',
-      element: 'meta[name="description"]',
-      recommendation: 'Add a compelling meta description (150-160 characters) to improve click-through rates.'
+      description: 'This page is missing a meta description.'
     });
   } else if (metaDescription.length < 120) {
     issues.push({
       category: 'meta' as SeoCategory,
       severity: 'info',
       title: 'Short Meta Description',
-      description: `Meta description is only ${metaDescription.length} characters long.`,
-      element: 'meta[name="description"]',
-      recommendation: 'Expand to 150-160 characters to utilize more space in search results.'
+      description: `Meta description is only ${metaDescription.length} characters long.`
     });
   } else if (metaDescription.length > 160) {
     issues.push({
       category: 'meta' as SeoCategory,
       severity: 'warning',
       title: 'Long Meta Description',
-      description: `Meta description is ${metaDescription.length} characters long.`,
-      element: 'meta[name="description"]',
-      recommendation: 'Shorten to 150-160 characters to avoid truncation in search results.'
+      description: `Meta description is ${metaDescription.length} characters long.`
     });
   }
 
@@ -657,18 +645,14 @@ async function detectSeoIssues(
       category: 'headings' as SeoCategory,
       severity: 'critical',
       title: 'Missing H1 Tag',
-      description: 'This page is missing an H1 heading tag.',
-      element: 'h1',
-      recommendation: 'Add a descriptive H1 tag that summarizes the page content.'
+      description: 'This page is missing an H1 heading tag.'
     });
   } else if (h1Count > 1) {
     issues.push({
       category: 'headings' as SeoCategory,
       severity: 'warning',
       title: 'Multiple H1 Tags',
-      description: `Found ${h1Count} H1 tags on this page.`,
-      element: 'h1',
-      recommendation: 'Use only one H1 tag per page and use H2-H6 for subheadings.'
+      description: `Found ${h1Count} H1 tags on this page.`
     });
   }
 
@@ -679,9 +663,7 @@ async function detectSeoIssues(
       category: 'images' as SeoCategory,
       severity: 'warning',
       title: 'Images Without Alt Text',
-      description: `${imagesWithoutAlt.length} images are missing alt text.`,
-      element: 'img',
-      recommendation: 'Add descriptive alt text to all images for better accessibility and SEO.'
+      description: `${imagesWithoutAlt.length} images are missing alt text.`
     });
   }
 
@@ -691,9 +673,7 @@ async function detectSeoIssues(
       category: 'content' as SeoCategory,
       severity: 'warning',
       title: 'Low Content Volume',
-      description: `Page has only ${contentQuality.wordCount} words.`,
-      element: 'content',
-      recommendation: 'Add more valuable content (aim for 300+ words) to improve SEO performance.'
+      description: `Page has only ${contentQuality.wordCount} words.`
     });
   }
 
@@ -710,7 +690,7 @@ function calculateReadabilityScore(sentences: string[]): number {
 
   const totalSyllables = sentences.reduce((count, sentence) => {
     const words = sentence.split(/\s+/).filter(word => word.length > 0);
-    return count + words.reduce((syllableCount, word) => {
+    return count + words.reduce((syllableCount, word: string) => {
       return syllableCount + countSyllables(word);
     }, 0);
   }, 0);
