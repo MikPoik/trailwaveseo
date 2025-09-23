@@ -9,6 +9,22 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.set('trust proxy', 1); // Trust the first proxy in a chain to fix rate limiting when using X-Forwarded-For
 
+// Production domain redirect middleware
+// Redirect fly.dev development domains to the actual APP_URL domain
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && process.env.APP_URL) {
+    const host = req.get('host');
+    if (host && host.includes('.fly.dev')) {
+      const appUrl = new URL(process.env.APP_URL);
+      const redirectUrl = `${appUrl.protocol}//${appUrl.host}${req.originalUrl}`;
+      
+      log(`[REDIRECT] fly.dev domain detected: ${host} -> ${appUrl.host}`);
+      return res.redirect(301, redirectUrl);
+    }
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
