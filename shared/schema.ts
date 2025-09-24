@@ -51,6 +51,7 @@ export const analyses = pgTable("analyses", {
   competitorAnalysis: jsonb("competitor_analysis"),
   siteOverview: jsonb("site_overview"),
   enhancedInsights: jsonb("enhanced_insights"),
+  designAnalysis: jsonb("design_analysis"),
   isCompetitorAnalysis: boolean("is_competitor_analysis").notNull().default(false),
 });
 
@@ -67,6 +68,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   competitorAnalysis: true,
   siteOverview: true,
   enhancedInsights: true,
+  designAnalysis: true,
   isCompetitorAnalysis: true,
 });
 
@@ -130,6 +132,33 @@ export interface DuplicateItem {
   duplicationType?: 'exact' | 'template' | 'intent' | 'boilerplate';
   templatePattern?: string;
   businessImpact?: string;
+}
+
+// Screenshot and design analysis types
+export interface ScreenshotData {
+  url: string;
+  screenshotUrl: string;
+  captureTimestamp: string;
+  error?: string;
+}
+
+export interface DesignRecommendation {
+  category: 'layout' | 'navigation' | 'visual_hierarchy' | 'accessibility' | 'mobile_responsiveness' | 'branding';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  recommendation: string;
+  expectedImpact: string;
+  implementation: string;
+}
+
+export interface DesignAnalysis {
+  overallScore: number; // 0-100
+  screenshotData: ScreenshotData;
+  recommendations: DesignRecommendation[];
+  strengths: string[];
+  weaknesses: string[];
+  summary: string;
 }
 
 // Enhanced analysis types
