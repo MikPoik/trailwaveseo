@@ -212,6 +212,40 @@ export interface CompetitorAnalysisResult {
   };
 }
 
+export interface ScreenshotData {
+  url: string;
+  screenshotUrl: string;
+  captureTimestamp: string;
+  error?: string;
+}
+
+export interface DesignRecommendation {
+  category: 'layout' | 'navigation' | 'visual_hierarchy' | 'accessibility' | 'mobile_responsiveness' | 'branding';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  recommendation: string;
+  expectedImpact: string;
+  implementation: string;
+}
+
+export interface DesignAnalysis {
+  overallScore: number;
+  screenshotData: ScreenshotData;
+  recommendations: DesignRecommendation[];
+  strengths: string[];
+  weaknesses: string[];
+  summary: string;
+}
+
+export interface SiteDesignAnalysis {
+  overallScore: number;
+  pageAnalyses: DesignAnalysis[];
+  totalPagesAnalyzed: number;
+  summary: string;
+  error?: string;
+}
+
 export interface EnhancedInsights {
   technicalAnalysis?: {
     overallScore: number;
@@ -253,6 +287,7 @@ export interface EnhancedInsights {
       recommendations: string[];
     }>;
   };
+  designAnalysis?: SiteDesignAnalysis;
 }
 
 export interface WebsiteAnalysis {
@@ -266,6 +301,7 @@ export interface WebsiteAnalysis {
   keywordRepetitionAnalysis?: KeywordRepetitionAnalysis;
   competitorAnalysis?: CompetitorAnalysisResult;
   enhancedInsights?: EnhancedInsights;
+  designAnalysis?: SiteDesignAnalysis;
   siteOverview?: {
     businessType?: string;
     industry?: string;

@@ -11,13 +11,15 @@ import OverviewTab from "./analysis-tabs/OverviewTab";
 import PagesTab from "./analysis-tabs/PagesTab";
 import ContentQualityTab from "./analysis-tabs/ContentQualityTab";
 import CompetitorTab from "./analysis-tabs/CompetitorTab";
+import DesignAnalysisTab from "./analysis-tabs/DesignAnalysisTab";
 
 interface AnalysisSummaryProps {
   analysis: WebsiteAnalysis;
   onNewAnalysis: () => void;
+  onReanalyzePage?: (pageUrl: string) => Promise<void>;
 }
 
-const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
+const AnalysisSummary = ({ analysis, onNewAnalysis, onReanalyzePage }: AnalysisSummaryProps) => {
   const [updatedAnalysis, setUpdatedAnalysis] = useState(analysis);
   const [activeTab, setActiveTab] = useState("overview");
   const queryClient = useQueryClient();
@@ -159,6 +161,7 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Analysis Overview</TabsTrigger>
           <TabsTrigger value="content-quality">Content Quality</TabsTrigger>
+          <TabsTrigger value="design-analysis">Design Analysis</TabsTrigger>
           <TabsTrigger value="competitor">Competitor Analysis</TabsTrigger>
         </TabsList>
 
@@ -176,6 +179,10 @@ const AnalysisSummary = ({ analysis, onNewAnalysis }: AnalysisSummaryProps) => {
           <ContentQualityTab
             analysis={updatedAnalysis}
           />
+        </TabsContent>
+
+        <TabsContent value="design-analysis">
+          <DesignAnalysisTab analysis={updatedAnalysis} />
         </TabsContent>
 
         <TabsContent value="competitor">
