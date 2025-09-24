@@ -67,12 +67,13 @@ export function registerAnalysisRoutes(app: Express) {
           console.error(`Analysis error for ${domain}:`, error);
           
           // Refund the credits since analysis failed
-          await storage.refundCredits(userId, scanCost, `Analysis failed for ${domain}: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          await storage.refundCredits(userId, scanCost, `Analysis failed for ${domain}: ${errorMessage}`);
           
           analysisEvents.emit(domain, {
             status: 'error',
             domain,
-            error: error.message,
+            error: errorMessage,
             pagesFound: 0,
             pagesAnalyzed: 0,
             currentPageUrl: '',
