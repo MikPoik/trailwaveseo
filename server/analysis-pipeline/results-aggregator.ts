@@ -42,12 +42,14 @@ export async function aggregateAnalysisResults(
       contentQualityAnalysis: insights?.contentQualityAnalysis || null, // New unified analysis
       competitorAnalysis: null, // Will be added in future enhancement
       siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview || null,
+      designAnalysis: insights?.designAnalysis || null, // Design analysis from screenshots
       isCompetitorAnalysis: options.isCompetitorAnalysis || false,
       enhancedInsights: {
         technicalAnalysis: insights?.technicalAnalysis,
         contentQualityAnalysis: insights?.contentQualityAnalysis,
         linkArchitectureAnalysis: insights?.linkArchitectureAnalysis,
-        performanceAnalysis: insights?.performanceAnalysis
+        performanceAnalysis: insights?.performanceAnalysis,
+        designAnalysis: insights?.designAnalysis
       }
     };
 
@@ -74,7 +76,8 @@ export async function aggregateAnalysisResults(
         technicalAnalysis: insights?.technicalAnalysis,
         contentQualityAnalysis: insights?.contentQualityAnalysis,
         linkArchitectureAnalysis: insights?.linkArchitectureAnalysis,
-        performanceAnalysis: insights?.performanceAnalysis
+        performanceAnalysis: insights?.performanceAnalysis,
+        designAnalysis: insights?.designAnalysis
       },
       processingStats: {
         totalProcessingTime: 0, // Will be set by orchestrator

@@ -124,23 +124,30 @@ export async function orchestrateAnalysis(
       throw new Error('Analysis cancelled by user');
     }
     
-    // Step 4: Generate insights and suggestions  
-    console.log('Step 4: Generating insights...');
+    // Step 4: Capture screenshots and analyze design
+    console.log('Step 4: Capturing screenshots and analyzing design...');
+    const designAnalysis = await captureAndAnalyzeDesign(context, analyzedPages, options);
+    
+    // Step 5: Generate insights and suggestions  
+    console.log('Step 5: Generating insights...');
     const insights = await generateInsights(context, analyzedPages, options);
+    
+    // Add design analysis to insights
+    insights.designAnalysis = designAnalysis;
     
     // Check for cancellation
     if (controller.signal.aborted) {
       throw new Error('Analysis cancelled by user');
     }
     
-    // Step 5: Aggregate results and save
-    console.log('Step 5: Aggregating results...');
+    // Step 6: Aggregate results and save
+    console.log('Step 6: Aggregating results...');
     const result = await aggregateResults(context, analyzedPages, insights, options);
     
     // Set final processing stats
     result.processingStats.totalProcessingTime = Date.now() - startTime;
     
-    // Step 6: Final progress update
+    // Step 7: Final progress update
     await reportCompletion(context, result);
     
     const totalTime = Date.now() - startTime;
@@ -228,6 +235,120 @@ async function analyzePages(
   
   const { analyzePagesBatch } = await import('./page-analyzer.js');
   return analyzePagesBatch(context, pages, options);
+}
+
+/**
+ * Capture screenshots and analyze design for key pages
+ */
+async function captureAndAnalyzeDesign(
+  context: AnalysisContext,
+  analyzedPages: any[],
+  options: AnalysisOptions
+): Promise<any> {
+  
+  // Only capture screenshots if AI is enabled and not competitor analysis
+  if (!options.useAI || options.isCompetitorAnalysis || !context.settings.useAI) {
+    console.log('Skipping design analysis - AI disabled or competitor analysis');
+    return null;
+  }
+
+  try {
+    console.log('Starting screenshot capture and design analysis...');
+    
+    // Select up to 5 most important pages for design analysis
+    const pagesToAnalyze = selectPagesForDesignAnalysis(analyzedPages).slice(0, 5);
+    
+    if (pagesToAnalyze.length === 0) {
+      console.log('No pages selected for design analysis');
+      return null;
+    }
+    
+    // Capture screenshots
+    const { captureMultipleScreenshots } = await import('./screenshot-service.js');
+    const screenshots = await captureMultipleScreenshots(
+      pagesToAnalyze.map(p => p.url)
+    );
+    
+    // Analyze design from screenshots
+    const { analyzeMultiplePageDesigns } = await import('./design-analyzer.js');
+    const pageData = pagesToAnalyze.map(page => ({
+      title: page.title,
+      description: page.metaDescription
+    }));
+    
+    const designAnalyses = await analyzeMultiplePageDesigns(screenshots, pageData);
+    
+    console.log(`Design analysis completed for ${designAnalyses.length} pages`);
+    
+    // Calculate overall design score
+    const validAnalyses = designAnalyses.filter(a => a.overallScore > 0);
+    const overallDesignScore = validAnalyses.length > 0 
+      ? Math.round(validAnalyses.reduce((sum, a) => sum + a.overallScore, 0) / validAnalyses.length)
+      : 0;
+    
+    return {
+      overallScore: overallDesignScore,
+      pageAnalyses: designAnalyses,
+      totalPagesAnalyzed: designAnalyses.length,
+      summary: generateDesignSummary(designAnalyses)
+    };
+    
+  } catch (error) {
+    console.error('Error in design analysis:', error);
+    return {
+      overallScore: 0,
+      pageAnalyses: [],
+      totalPagesAnalyzed: 0,
+      error: error instanceof Error ? error.message : String(error),
+      summary: 'Design analysis could not be completed due to an error.'
+    };
+  }
+}
+
+/**
+ * Select the most important pages for design analysis
+ */
+function selectPagesForDesignAnalysis(analyzedPages: any[]): any[] {
+  // Prioritize home page, high word count pages, and pages with fewer issues
+  return analyzedPages
+    .filter(page => page && page.url)
+    .sort((a, b) => {
+      // Home page gets highest priority
+      const aIsHome = a.url.split('/').length <= 4; // Domain + maybe one path segment
+      const bIsHome = b.url.split('/').length <= 4;
+      
+      if (aIsHome && !bIsHome) return -1;
+      if (bIsHome && !aIsHome) return 1;
+      
+      // Then prioritize by content quality (more words, fewer issues)
+      const aScore = (a.wordCount || 0) - (a.issues?.length || 0) * 10;
+      const bScore = (b.wordCount || 0) - (b.issues?.length || 0) * 10;
+      
+      return bScore - aScore;
+    });
+}
+
+/**
+ * Generate a summary of design analysis results
+ */
+function generateDesignSummary(designAnalyses: any[]): string {
+  if (!designAnalyses || designAnalyses.length === 0) {
+    return 'No design analysis completed.';
+  }
+  
+  const validAnalyses = designAnalyses.filter(a => a.overallScore > 0);
+  if (validAnalyses.length === 0) {
+    return 'Design analysis completed but no scores could be calculated.';
+  }
+  
+  const avgScore = validAnalyses.reduce((sum, a) => sum + a.overallScore, 0) / validAnalyses.length;
+  const totalRecommendations = validAnalyses.reduce((sum, a) => sum + (a.recommendations?.length || 0), 0);
+  
+  const scoreCategory = avgScore >= 80 ? 'excellent' : 
+                       avgScore >= 60 ? 'good' : 
+                       avgScore >= 40 ? 'fair' : 'needs improvement';
+  
+  return `Design analysis completed for ${validAnalyses.length} pages with an average score of ${Math.round(avgScore)}/100 (${scoreCategory}). Found ${totalRecommendations} actionable design recommendations to improve user experience and conversion rates.`;
 }
 
 /**
