@@ -78,19 +78,19 @@ export function registerContentConversationRoutes(app: Express) {
       // Check user account status and handle credits
       const userUsage = await storage.getUserUsage(userId);
       const isTrialUser = userUsage?.accountStatus === "trial";
-      
+
       // Deduct credits for both trial and paid users (1 credit per 5 messages)
       const creditResult = await deductChatCredits(userId, isTrialUser);
       if (!creditResult.success) {
-        return res.status(402).json({ 
+        return res.status(402).json({
           error: 'Insufficient credits for chat messages. Purchase more credits to continue chatting.',
-          remainingCredits: creditResult.remainingCredits 
+          remainingCredits: creditResult.remainingCredits
         });
       }
 
       // Generate AI response with fresh content if provided
       const aiResponse = await generateAIResponse(analysis, pageUrl, message, messages, freshContent);
-      
+
       const aiMessage = {
         role: 'assistant' as const,
         content: aiResponse,
@@ -126,7 +126,7 @@ export function registerContentConversationRoutes(app: Express) {
 
       // Fetch fresh page content
       const freshContent = await fetchPageContent(pageUrl);
-      
+
       res.json({ content: freshContent });
     } catch (error) {
       console.error('Error fetching page content:', error);
@@ -149,14 +149,14 @@ async function generateAIResponse(analysis: any, pageUrl: string, userMessage: s
 
     // Find the specific page data
     const pageData = analysis.pages.find((page: any) => page.url === pageUrl);
-    
+
     // Build context from analysis data
     const context = buildAnalysisContext(analysis, pageData, pageUrl);
 
     // Use provided fresh content or fetch if user message indicates need
     let freshContent = providedFreshContent;
     const needsFreshContent = shouldFetchFreshContent(userMessage);
-    
+
     if (needsFreshContent && !freshContent) {
       try {
         freshContent = await fetchPageContent(pageUrl);
@@ -180,6 +180,8 @@ GUIDELINES:
 4. Reference specific SEO issues from the analysis when relevant
 5. Keep responses focused and practical
 6. If you need fresh page content and it's not available, mention that dynamic content fetching would help
+
+LANGUAGE REQUIREMENT: Always respond in the same language as the website content. Look at the page title, headings, and content to determine the language, then write your responses in that exact same language.
 
 Previous conversation context: ${conversationHistory.length > 0 ? JSON.stringify(conversationHistory.slice(-4)) : 'None'}`;
 
@@ -225,7 +227,7 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
       context += `- Content Depth Score: ${pageData.contentMetrics.contentDepthScore || 'N/A'}\n`;
       context += `- Readability Score: ${pageData.contentMetrics.readabilityScore || 'N/A'}\n`;
     }
-    
+
     if (pageData.issues?.length > 0) {
       context += `\nSEO ISSUES:\n`;
       pageData.issues.forEach((issue: any, index: number) => {
@@ -261,7 +263,7 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
     context += `- Industry: ${analysis.siteOverview.industry}\n`;
     context += `- Business Type: ${analysis.siteOverview.businessType}\n`;
     context += `- Target Audience: ${analysis.siteOverview.targetAudience}\n`;
-    
+
     if (analysis.siteOverview.mainServices?.length > 0) {
       context += `- Main Services: ${analysis.siteOverview.mainServices.join(', ')}\n`;
     }
@@ -285,7 +287,7 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
   if (analysis.competitorAnalysis) {
     context += `\nCOMPETITOR ANALYSIS INSIGHTS:\n`;
     const ca = analysis.competitorAnalysis;
-    
+
     if (ca.mainDomain && ca.competitorDomain) {
       context += `- Comparing ${ca.mainDomain} vs ${ca.competitorDomain}\n`;
     }
@@ -348,7 +350,7 @@ async function fetchPageContent(url: string): Promise<any> {
   try {
     // Import the analyzer to reuse content extraction logic
     const { analyzePage } = await import('../seoAnalyzer.js');
-    
+
     // Create simple settings for content fetching
     const settings = {
       useAI: false,

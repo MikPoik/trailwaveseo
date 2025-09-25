@@ -364,7 +364,7 @@ Include specific examples, character counts, exact recommendations, and CTA impr
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
 
     console.log(`Generating SEO suggestions for: ${url}`);
-    
+
     // Retry mechanism with exponential backoff
     const maxRetries = 3;
     let response: any = null;
@@ -379,7 +379,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           messages: [
             { 
               role: "system", 
-              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. Write in the same language as the website's content is."
+              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. IMPORTANT: Write all suggestions in the EXACT same language as the page content above. Look at the title, headings, and paragraph content to determine the language, then write your suggestions in that same language. Match the language of the page content exactly."
             },
             { role: "user", content: prompt }
           ],

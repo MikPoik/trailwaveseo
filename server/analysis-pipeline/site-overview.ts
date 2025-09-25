@@ -77,6 +77,8 @@ Please analyze and provide:
 6. Content strategy recommendations
 7. Overall SEO improvement priorities
 
+IMPORTANT: Write your analysis in the same language as the website content. Match the website's language exactly.
+
 Respond in JSON format:
 {
   "businessType": "string",

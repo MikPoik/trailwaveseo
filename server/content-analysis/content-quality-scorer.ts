@@ -78,7 +78,7 @@ export async function analyzeContentQuality(
   openai: OpenAI,
   options: QualityAnalysisOptions = DEFAULT_QUALITY_OPTIONS
 ): Promise<QualityAnalysisResult> {
-  
+
   if (content.length === 0) {
     return createEmptyQualityResult();
   }
@@ -92,10 +92,10 @@ export async function analyzeContentQuality(
     try {
       const batchScores = await analyzeBatchQuality(batch, contentType, openai, options);
       scores.push(...batchScores);
-      
+
       // Small delay between batches
       await new Promise(resolve => setTimeout(resolve, 150));
-      
+
     } catch (error) {
       console.error(`Error analyzing quality batch:`, error);
     }
@@ -122,15 +122,15 @@ async function analyzeBatchQuality(
   openai: OpenAI,
   options: QualityAnalysisOptions
 ): Promise<ContentQualityScore[]> {
-  
+
   const prompt = createQualityAnalysisPrompt(batch, contentType);
-  
+
   const response = await openai.chat.completions.create({
     model: options.model,
     messages: [
       {
         role: "system",
-        content: `You are an expert SEO content analyst. Evaluate ${contentType} for uniqueness (how original/distinctive), user value (how helpful to users), SEO effectiveness (optimization quality), and readability (clarity/structure). Score each 0-100 and provide actionable insights. Respond only with valid JSON.`
+        content: `You are an expert SEO content analyst. Evaluate ${contentType} for uniqueness (how original/distinctive), user value (how helpful to users), SEO effectiveness (optimization quality), and readability (clarity/structure). Score each 0-100 and provide actionable insights. Respond only with valid JSON. IMPORTANT: Write all analysis text (strengths, weaknesses, recommendations) in the same language as the content being analyzed. Match the language of the analyzed content exactly.`
       },
       {
         role: "user",
@@ -225,10 +225,10 @@ function enrichQualityScore(score: any): ContentQualityScore {
   const overall = Math.round(
     (score.uniqueness + score.userValue + score.seoEffectiveness + score.readability) / 4
   );
-  
+
   let contentType: ContentQualityScore['contentType'];
   let priority: number;
-  
+
   if (overall >= 85) {
     contentType = 'exceptional';
     priority = 5;
@@ -332,7 +332,7 @@ function generateRecommendationForIssue(issue: string): string {
     'Too short': 'Expand content to provide more comprehensive information',
     'Unclear purpose': 'Clearly define the page purpose and intended user action'
   };
-  
+
   return recommendationMap[issue] || 'Review and improve content quality based on best practices';
 }
 
