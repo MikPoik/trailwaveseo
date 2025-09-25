@@ -130,7 +130,7 @@ NOTE: due to automatic screenshot capture, page's navigation menu might be showi
       throw new Error("No analysis content received from OpenAI");
     }
 
-    console.log(`Raw response content: ${analysisText}`);
+    
 
     // Parse the JSON response
     let parsedAnalysis: any;

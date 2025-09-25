@@ -349,7 +349,7 @@ const Account = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Competitor analysis: 2 credits</span>
+                      <span className="text-sm">Competitor analysis: 1 credits</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
@@ -407,7 +407,7 @@ const Account = () => {
             <div>
               <h4 className="font-semibold mb-2">Competitor Analysis</h4>
               <p className="text-sm text-muted-foreground">
-                Competitor analysis costs 2 credits per scan.
+                Competitor analysis costs 1 credits per scan.
               </p>
             </div>
             <div>

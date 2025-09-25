@@ -203,7 +203,7 @@ const HowItWorks = () => {
               <div className="bg-muted/30 p-3 rounded border">
                 <div className="flex items-center gap-2 mb-2">
                   <Coins className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Credit Cost: 2 credits per analysis</span>
+                  <span className="text-sm font-medium">Credit Cost: 1 credits per analysis</span>
                 </div>
               </div>
             </CardContent>
@@ -429,7 +429,7 @@ const HowItWorks = () => {
                   </div>
                   <div className="flex justify-between items-center p-2 bg-muted/30 rounded">
                     <span className="text-sm">Competitor Analysis</span>
-                    <span className="font-medium">2 credits</span>
+                    <span className="font-medium">1 credits</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-muted/30 rounded">
                     <span className="text-sm">Chat Messages</span>
