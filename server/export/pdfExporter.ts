@@ -412,6 +412,85 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           </div>
         ` : ''}
 
+        ${analysis.designAnalysis || analysis.enhancedInsights?.designAnalysis ? `
+          <div class="print-break"></div>
+          <h2>🎨 Design Analysis</h2>
+          <div class="insights-section">
+            ${(() => {
+              const designAnalysis = analysis.designAnalysis || analysis.enhancedInsights?.designAnalysis;
+              
+              if (!designAnalysis) return '<p>No design analysis available.</p>';
+              
+              return `
+                <h3>Overall Design Score: ${formatScore(designAnalysis.overallScore)}</h3>
+                <p><strong>Pages Analyzed:</strong> ${designAnalysis.totalPagesAnalyzed || 0}</p>
+                ${designAnalysis.summary ? `<p><strong>Summary:</strong> ${designAnalysis.summary}</p>` : ''}
+                
+                ${designAnalysis.error ? `
+                  <div class="issue-container issue-critical">
+                    <div class="issue-title">Design Analysis Error</div>
+                    <div class="issue-description">${designAnalysis.error}</div>
+                  </div>
+                ` : ''}
+                
+                ${designAnalysis.pageAnalyses && designAnalysis.pageAnalyses.length > 0 ? `
+                  <h4>Page-by-Page Design Analysis</h4>
+                  ${designAnalysis.pageAnalyses.map((pageAnalysis, pageIndex) => `
+                    <div class="page-section">
+                      <div class="page-header">
+                        <h4>Page ${pageIndex + 1}: ${pageAnalysis.screenshotData?.url || 'Unknown URL'}</h4>
+                        <p><strong>Design Score:</strong> ${formatScore(pageAnalysis.overallScore)}</p>
+                      </div>
+                      
+                      ${pageAnalysis.screenshotData?.error ? `
+                        <div class="issue-container issue-warning">
+                          <div class="issue-title">Screenshot Error</div>
+                          <div class="issue-description">${pageAnalysis.screenshotData.error}</div>
+                        </div>
+                      ` : ''}
+                      
+                      ${pageAnalysis.strengths && pageAnalysis.strengths.length > 0 ? `
+                        <h5>✅ Design Strengths</h5>
+                        <ul>
+                          ${pageAnalysis.strengths.slice(0, 5).map(strength => `<li>${strength}</li>`).join('')}
+                        </ul>
+                      ` : ''}
+                      
+                      ${pageAnalysis.weaknesses && pageAnalysis.weaknesses.length > 0 ? `
+                        <h5>⚠️ Areas for Improvement</h5>
+                        <ul>
+                          ${pageAnalysis.weaknesses.slice(0, 5).map(weakness => `<li>${weakness}</li>`).join('')}
+                        </ul>
+                      ` : ''}
+                      
+                      ${pageAnalysis.recommendations && pageAnalysis.recommendations.length > 0 ? `
+                        <h5>🎯 Design Recommendations</h5>
+                        ${pageAnalysis.recommendations.map((rec, recIndex) => `
+                          <div class="issue-container ${rec.severity === 'critical' ? 'issue-critical' : rec.severity === 'high' ? 'issue-warning' : 'issue-info'}">
+                            <div class="issue-title">${rec.title} (${rec.severity} severity)</div>
+                            <div class="issue-description"><strong>Category:</strong> ${rec.category.replace('_', ' ').toUpperCase()}</div>
+                            <div class="issue-description">${rec.description}</div>
+                            <div class="issue-recommendation"><strong>Recommendation:</strong> ${rec.recommendation}</div>
+                            <div class="issue-recommendation"><strong>Expected Impact:</strong> ${rec.expectedImpact}</div>
+                            <div class="issue-recommendation"><strong>Implementation:</strong> ${rec.implementation}</div>
+                          </div>
+                        `).join('')}
+                      ` : ''}
+                      
+                      ${pageAnalysis.summary ? `
+                        <h5>📝 Page Summary</h5>
+                        <div class="technical-details">
+                          <p>${pageAnalysis.summary}</p>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                ` : '<p>No individual page design analyses available.</p>'}
+              `;
+            })()}
+          </div>
+        ` : ''}
+
         ${analysis.competitorAnalysis ? `
           <div class="print-break"></div>
           <h2>🥊 Competitor Analysis</h2>
