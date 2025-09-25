@@ -711,18 +711,65 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAnalysis(id: number): Promise<boolean> {
     try {
-      // First delete associated content conversations
+      // First get the analysis to extract screenshot URLs for GCS cleanup
+      const analysis = await this.getAnalysisById(id);
+      
+      if (analysis) {
+        // Extract screenshot URLs from the analysis for GCS cleanup
+        const screenshotUrls: string[] = [];
+        
+        // Extract from design analysis if present
+        if (analysis.designAnalysis && typeof analysis.designAnalysis === 'object') {
+          const designAnalysis = analysis.designAnalysis as any;
+          if (designAnalysis.screenshotData?.screenshotUrl) {
+            screenshotUrls.push(designAnalysis.screenshotData.screenshotUrl);
+          }
+        }
+        
+        // Extract from page-level design analysis if present
+        if (analysis.pages && Array.isArray(analysis.pages)) {
+          analysis.pages.forEach((page: any) => {
+            if (page.designAnalysis?.screenshotData?.screenshotUrl) {
+              screenshotUrls.push(page.designAnalysis.screenshotData.screenshotUrl);
+            }
+          });
+        }
+        
+        // Delete screenshots from GCS if any were found
+        if (screenshotUrls.length > 0) {
+          console.log(`Deleting ${screenshotUrls.length} screenshots from GCS for analysis ${id}`);
+          try {
+            const { deleteMultipleScreenshots, extractFileNameFromGCSUrl, isGCSUrl } = await import('../storage/gcs-storage');
+            
+            // Extract filenames from GCS URLs
+            const fileNames = screenshotUrls
+              .filter(url => isGCSUrl(url))
+              .map(url => extractFileNameFromGCSUrl(url))
+              .filter((fileName): fileName is string => fileName !== null);
+            
+            if (fileNames.length > 0) {
+              await deleteMultipleScreenshots(fileNames);
+              console.log(`Successfully deleted ${fileNames.length} screenshots from GCS`);
+            }
+          } catch (gcsError) {
+            console.error(`Error deleting screenshots from GCS for analysis ${id}:`, gcsError);
+            // Don't fail the analysis deletion if GCS cleanup fails
+          }
+        }
+      }
+
+      // Delete associated content conversations
       await db
         .delete(contentConversations)
         .where(eq(contentConversations.analysisId, id));
 
-      // Then delete the analysis
+      // Delete the analysis
       const [deletedAnalysis] = await db
         .delete(analyses)
         .where(eq(analyses.id, id))
         .returning();
 
-      console.log(`Deleted analysis with ID: ${id} and associated conversations`);
+      console.log(`Deleted analysis with ID: ${id}, associated conversations, and GCS screenshots`);
       return !!deletedAnalysis;
     } catch (error) {
       console.error(`Error deleting analysis with ID ${id}:`, error);
