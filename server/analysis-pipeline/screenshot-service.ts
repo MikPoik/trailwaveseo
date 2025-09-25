@@ -39,15 +39,10 @@ export async function captureScreenshot(
     const requestBody = {
       url: url,
       apiKey: apiKey,
-      width: options.width || 1920,
-      height: options.height || 1080,
+      doScroll:true,
       format: options.format || 'png',
-      full_page: options.full_page !== false,
-      delay: options.delay || 2000,
-      mobile: options.mobile || false,
-      tablet: options.tablet || false,
-      desktop: options.desktop !== false,
-      retina: options.retina !== false
+      fullPage: true,
+
     };
 
     // Make POST request to screenshotapi.com
