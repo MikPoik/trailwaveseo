@@ -56,7 +56,7 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 2. **Navigation**: Is the navigation intuitive and accessible?
 3. **Mobile Responsiveness**: Based on the layout, how well would this adapt to mobile?
 4. **Accessibility**: Are there potential accessibility issues visible?
-5. **Branding & Visual Appeal**: How consistent and appealing is the visual design?
+5. **Branding & Visual Appeal**: How consistent and appealing is the visual design? Include color, typography, and imagery.
 6. **User Experience**: How user-friendly does the interface appear?
 
 Please provide:
@@ -66,10 +66,11 @@ Please provide:
 - Main weaknesses that need attention
 - A brief summary of the overall design assessment
 
-Focus on practical, implementable suggestions that would improve user experience and conversion rates.`;
+Focus on practical, implementable and concrete suggestions that would improve user experience and conversion rates. Also including color suggestions
+**Write response in same language as the page content.**`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         {
           role: "user",
