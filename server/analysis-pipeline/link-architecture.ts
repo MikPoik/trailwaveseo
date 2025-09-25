@@ -89,7 +89,7 @@ export async function analyzeLinkArchitecture(
   );
 
   // Generate recommendations
-  const recommendations = generateLinkArchitectureRecommendations(
+  const recommendations = generateLinkRecommendations(
     linkDistribution,
     anchorTextAnalysis,
     linkEquityFlow,
@@ -416,29 +416,14 @@ function generateLinkRecommendations(
 
   const recommendations: LinkArchitectureRecommendation[] = [];
 
-  // Detect language from page content for localized recommendations
-  const isNonEnglish = pages && pages.length > 0 && pages.some(page => 
-    page.title && (
-      // Check for non-English characters or common non-English words
-      /[àáâãäåæçèéêëìíîïñòóôõöøùúûüý]/i.test(page.title) ||
-      /\b(ja|und|och|og|et|ou|y|i|en|de|la|le|der|die|das|se|si|är|är|on|är|för|att|med|av|på|till|från|som|det|är|har|kan|ska|kommer|går|får|ger|tar|ser|hör|känner|tror|vet|vill|skulle|måste|bör|behöver|finns|ligger|står|sitter|kommer|går|åker|reser|arbetar|studerar|läser|skriver|talar|pratar|lyssnar|tittar|äter|dricker|sover|vaknar|träffar|möter|hjälper|hjälper|älskar|gillar|tycker|känner|tänker|förstår|minns|glömmer|lär|undervisar|leker|spelar|sjunger|dansar|springer|går|cyklar|kör|flyger|simmar|klättrar|hoppar|kastar|fångar|skjuter|träffar|missar|vinner|förlorar|börjar|slutar|fortsätter|stannar|väntar|skyndar|kommer|går|stannar|åker|reser|bor|lever|dör|föds|växer|blir|förändras|utvecklas|förbättras|försämras|ökar|minskar|höjer|sänker|öppnar|stänger|startar|stoppar|pausar|avbryter|återupptar|återvänder|lämnar|anländer|avgår|ankomst|avresa)/i.test(page.title)
-    )
-  );
-
   // Internal linking density
   if (internalLinkStructure.averageLinksPerPage < 3) {
     recommendations.push({
       category: 'internal-linking',
       priority: 'high',
-      title: isNonEnglish ? 'Öka intern länkdensitet' : 'Increase Internal Link Density',
-      description: isNonEnglish ? 
-        `Genomsnitt på ${internalLinkStructure.averageLinksPerPage.toFixed(1)} interna länkar per sida är under rekommenderat 3-5` :
-        `Average of ${internalLinkStructure.averageLinksPerPage.toFixed(1)} internal links per page is below recommended 3-5`,
-      actionItems: isNonEnglish ? [
-        'Lägg till kontextuella interna länkar inom innehållet',
-        'Skapa ämneskluster med nav-sidor',
-        'Länka till relaterat innehåll i sidopaneler eller footers'
-      ] : [
+      title: 'Increase Internal Link Density',
+      description: `Average of ${internalLinkStructure.averageLinksPerPage.toFixed(1)} internal links per page is below recommended 3-5`,
+      actionItems: [
         'Add contextual internal links within content',
         'Create topic clusters with hub pages',
         'Link to related content in sidebars or footers'
@@ -453,15 +438,9 @@ function generateLinkRecommendations(
     recommendations.push({
       category: 'orphaned-pages',
       priority: 'critical',
-      title: isNonEnglish ? 'Fixa öppnade sidor' : 'Fix Orphaned Pages',
-      description: isNonEnglish ? 
-        `${internalLinkStructure.orphanPages.length} sidor har inga interna länkar som pekar på dem` :
-        `${internalLinkStructure.orphanPages.length} pages have no internal links pointing to them`,
-      actionItems: isNonEnglish ? [
-        'Lägg till navigeringslänkar till öppnade sidor',
-        'Skapa kontextuella länkar från relaterat innehåll',
-        'Inkludera öppnade sidor i sitemaps och menyer'
-      ] : [
+      title: 'Fix Orphaned Pages',
+      description: `${internalLinkStructure.orphanPages.length} pages have no internal links pointing to them`,
+      actionItems: [
         'Add navigation links to orphaned pages',
         'Create contextual links from related content',
         'Include orphaned pages in sitemaps and menus'
@@ -476,16 +455,9 @@ function generateLinkRecommendations(
     recommendations.push({
       category: 'anchor-text',
       priority: 'medium',
-      title: isNonEnglish ? 'Diversifiera ankartext' : 'Diversify Anchor Text',
-      description: isNonEnglish ? 
-        `${Math.round(anchorTextAnalysis.genericAnchors)}% av ankartexten är generisk ("klicka här", "läs mer")` :
-        `${Math.round(anchorTextAnalysis.genericAnchors)}% of anchor text is generic ("click here", "read more")`,
-      actionItems: isNonEnglish ? [
-        'Ersätt generisk ankartext med beskrivande termer',
-        'Använd nyckelord naturligt i ankartexten',
-        'Beskriv den länkade sidans innehåll i ankartexten',
-        'Gör ankartexten handlingsbar och specifik'
-      ] : [
+      title: 'Diversify Anchor Text',
+      description: `${Math.round(anchorTextAnalysis.genericAnchors)}% of anchor text is generic ("click here", "read more")`,
+      actionItems: [
         'Replace generic anchor text with descriptive terms',
         'Use keywords naturally in anchor text',
         'Describe the linked page content in anchor text',
@@ -506,21 +478,15 @@ function generateLinkRecommendations(
     recommendations.push({
       category: 'link-equity',
       priority: 'medium',
-      title: isNonEnglish ? 'Förbättra länkauktoritetsfördelning' : 'Improve Link Equity Distribution',
-      description: isNonEnglish ? 
-        `${linkEquityDistribution.linkEquityDistribution}% av länkauktoriteten är koncentrerad till toppsidrorna` :
-        `${linkEquityDistribution.linkEquityDistribution}% of link equity is concentrated in top pages`,
-      actionItems: isNonEnglish ? [
-        'Lägg till länkar till underlänkade men viktiga sidor',
-        'Skapa ämneskluster för att distribuera auktoritet',
-        'Ta bort eller nofollow onödiga länkar till överlänkade sidor'
-      ] : [
+      title: 'Improve Link Equity Distribution',
+      description: `${linkEquityDistribution.linkEquityDistribution}% of link equity is concentrated in top pages`,
+      actionItems: [
         'Add links to underlinked but important pages',
         'Create topic clusters to distribute authority',
         'Remove or nofollow unnecessary links to over-linked pages'
       ],
       impact: 6,
-      affectedPages: pages?.slice(0, 5).map(p => p.url) ?? [] // Suggest top pages as potential hubs
+      affectedPages: pages?.slice(0, 5).map(p => p.url) ?? []
     });
   }
 

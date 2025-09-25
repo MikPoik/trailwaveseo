@@ -271,41 +271,30 @@ function calculatePerformanceScore(
  * Generate performance recommendations
  */
 function generatePerformanceRecommendations(
-  resourceOptimization: ResourceOptimizationAnalysis, // Renamed from resources
-  loadingPatterns: LoadingPatternsAnalysis, // Renamed from loading
-  userExperienceMetrics: UserExperienceMetrics, // Renamed from ux
-  pages?: PageAnalysisResult[] // Added pages parameter for language detection
+  resourceOptimization: ResourceOptimizationAnalysis,
+  loadingPatterns: LoadingPatternsAnalysis,
+  userExperienceMetrics: UserExperienceMetrics,
+  pages?: PageAnalysisResult[]
 ): PerformanceRecommendation[] {
 
   const recommendations: PerformanceRecommendation[] = [];
 
-  // Detect language from page content for localized recommendations
-  const isNonEnglish = pages && pages.length > 0 && pages.some(page => 
-    page.title && (
-      // Check for non-English characters or common non-English words
-      /[àáâãäåæçèéêëìíîïñòóôõöøùúûüý]/i.test(page.title) ||
-      /\b(ja|und|och|og|et|ou|y|i|en|de|la|le|der|die|das|se|si|är|är|on|är|för|att|med|av|på|till|från|som|det|är|har|kan|ska|kommer|går|får|ger|tar|ser|hör|känner|tror|vet|vill|skulle|måste|bör|behöver|finns|ligger|står|sitter|kommer|går|åker|reser|arbetar|studerar|läser|skriver|talar|pratar|lyssnar|tittar|äter|dricker|sover|vaknar|träffar|möter|hjälper|hjälper|älskar|gillar|tycker|känner|tänker|förstår|minns|glömmer|lär|undervisar|leker|spelar|sjunger|dansar|springer|går|cyklar|kör|flyger|simmar|klättrar|hoppar|kastar|fångar|skjuter|träffar|missar|vinner|förlorar|börjar|slutar|fortsätter|stannar|väntar|skyndar|kommer|går|stannar|åker|reser|bor|lever|dör|föds|växer|blir|förändras|utvecklas|förbättras|försämras|ökar|minskar|höjer|sänker|öppnar|stänger|startar|stoppar|pausar|avbryter|återupptar|återvänder|lämnar|anländer|avgår|ankomst|avresa)/i.test(page.title)
-    )
-  );
-
   // Page loading recommendations
-  if (loadingPatterns.loadingScore < 80) { // Using loadingScore as a proxy for general loading issues
+  if (loadingPatterns.loadingScore < 80) {
     recommendations.push({
       category: 'loading',
-      priority: loadingPatterns.loadingScore < 60 ? 'critical' : 'high', // Adjusted priority based on score
-      title: isNonEnglish ? 'Optimera sidladdningshastighet' : 'Optimize Page Loading Speed',
-      description: isNonEnglish ? 
-        `Sidans laddningsmönster kan förbättras för snabbare upplevelse.` :
-        `Page loading patterns can be improved for a faster experience.`,
+      priority: loadingPatterns.loadingScore < 60 ? 'critical' : 'high',
+      title: 'Optimize Page Loading Speed',
+      description: 'Page loading patterns can be improved for a faster experience.',
       actionItems: [
-        isNonEnglish ? 'Optimera kritiska resurser' : 'Optimize critical resources',
-        isNonEnglish ? 'Implementera lazy loading' : 'Implement lazy loading',
-        isNonEnglish ? 'Minska render-blocking resurser' : 'Reduce render-blocking resources',
-        isNonEnglish ? 'Använd asynkron laddning för skript' : 'Use asynchronous loading for scripts'
+        'Optimize critical resources',
+        'Implement lazy loading',
+        'Reduce render-blocking resources',
+        'Use asynchronous loading for scripts'
       ],
       impact: 7,
-      estimatedImprovement: isNonEnglish ? 'Snabbare laddningstider' : 'Faster loading times',
-      affectedPages: pages ? pages.filter(p => (p.loadingScore || 0) < 70).map(p => p.url) : [] // Placeholder for affected pages
+      estimatedImprovement: 'Faster loading times',
+      affectedPages: pages ? pages.filter(p => (p.loadingScore || 0) < 70).map(p => p.url) : []
     });
   }
 
@@ -320,19 +309,17 @@ function generatePerformanceRecommendations(
     recommendations.push({
       category: 'image-optimization',
       priority: resourceOptimization.imageOptimization < 60 ? 'critical' : 'high',
-      title: isNonEnglish ? 'Optimera bildresurser' : 'Optimize Image Resources',
-      description: isNonEnglish ? 
-        `Bildoptimering kan förbättras för bättre prestanda och tillgänglighet.` :
-        `Image optimization can be improved for better performance and accessibility.`,
+      title: 'Optimize Image Resources',
+      description: 'Image optimization can be improved for better performance and accessibility.',
       actionItems: [
-        isNonEnglish ? 'Lägg till alt-text till alla bilder' : 'Add alt text to all images',
-        isNonEnglish ? 'Specificera bredd- och höjdattribut' : 'Specify width and height attributes',
-        isNonEnglish ? 'Komprimera bilder utan kvalitetsförlust' : 'Compress images without quality loss',
-        isNonEnglish ? 'Använd moderna bildformat (WebP, AVIF)' : 'Use modern image formats (WebP, AVIF)',
-        isNonEnglish ? 'Implementera lazy loading för bilder' : 'Implement lazy loading for images'
+        'Add alt text to all images',
+        'Specify width and height attributes',
+        'Compress images without quality loss',
+        'Use modern image formats (WebP, AVIF)',
+        'Implement lazy loading for images'
       ],
       impact: 6,
-      estimatedImprovement: isNonEnglish ? '15-30% snabbare laddning' : '15-30% faster loading',
+      estimatedImprovement: '15-30% faster loading',
       affectedPages: pagesWithImageIssues.map(p => p.url)
     });
   }
@@ -342,18 +329,16 @@ function generatePerformanceRecommendations(
     recommendations.push({
       category: 'resource-count',
       priority: resourceOptimization.resourceCount.total > 150 ? 'critical' : 'high',
-      title: isNonEnglish ? 'Minska antalet resurser' : 'Reduce Resource Count',
-      description: isNonEnglish ? 
-        `Webbplatsen laddar många resurser, vilket kan sakta ner sidladdningen.` :
-        `The website loads a high number of resources, which can slow down page loading.`,
+      title: 'Reduce Resource Count',
+      description: 'The website loads a high number of resources, which can slow down page loading.',
       actionItems: [
-        isNonEnglish ? 'Kombinera CSS- och JavaScript-filer' : 'Combine CSS and JavaScript files',
-        isNonEnglish ? 'Ta bort oanvända resurser' : 'Remove unused resources',
-        isNonEnglish ? 'Använd CSS Sprites för bilder' : 'Use CSS Sprites for images'
+        'Combine CSS and JavaScript files',
+        'Remove unused resources',
+        'Use CSS Sprites for images'
       ],
       impact: 5,
-      estimatedImprovement: isNonEnglish ? 'Förbättrad laddningstid' : 'Improved loading time',
-      affectedPages: pages ? pages.filter(p => (p.resourceCount?.total || 0) > 100).map(p => p.url) : [] // Placeholder
+      estimatedImprovement: 'Improved loading time',
+      affectedPages: pages ? pages.filter(p => (p.resourceCount?.total || 0) > 100).map(p => p.url) : []
     });
   }
 
@@ -362,19 +347,17 @@ function generatePerformanceRecommendations(
     recommendations.push({
       category: 'accessibility',
       priority: userExperienceMetrics.contentAccessibility < 60 ? 'critical' : 'high',
-      title: isNonEnglish ? 'Förbättra innehållstillgänglighet' : 'Improve Content Accessibility',
-      description: isNonEnglish ? 
-        'Förbättra tillgängligheten för en bättre användarupplevelse och SEO-ranking.' :
-        'Better accessibility improves user experience and SEO rankings.',
+      title: 'Improve Content Accessibility',
+      description: 'Better accessibility improves user experience and SEO rankings.',
       actionItems: [
-        isNonEnglish ? 'Lägg till beskrivande alt-text till alla bilder' : 'Add descriptive alt text to all images',
-        isNonEnglish ? 'Säkerställ korrekt rubrikhierarki (singel H1, logiska H2-H6)' : 'Ensure proper heading hierarchy (single H1, logical H2-H6)',
-        isNonEnglish ? 'Använd beskrivande länkar' : 'Use descriptive link text',
-        isNonEnglish ? 'Bibehåll god färgkontrast' : 'Maintain good color contrast',
-        isNonEnglish ? 'Säkerställ att tangentbordsnavigering fungerar' : 'Ensure keyboard navigation works'
+        'Add descriptive alt text to all images',
+        'Ensure proper heading hierarchy (single H1, logical H2-H6)',
+        'Use descriptive link text',
+        'Maintain good color contrast',
+        'Ensure keyboard navigation works'
       ],
       impact: 7,
-      estimatedImprovement: isNonEnglish ? 'Bättre användarupplevelse och SEO' : 'Better user experience and SEO',
+      estimatedImprovement: 'Better user experience and SEO',
       affectedPages: pages ? pages.filter(p => {
         const h1Count = p.headings.filter(h => h.level === 1).length;
         const imagesWithoutAlt = p.images?.filter(img => !img.alt).length || 0;
@@ -389,19 +372,17 @@ function generatePerformanceRecommendations(
     recommendations.push({
       category: 'readability',
       priority: userExperienceMetrics.contentReadability < 40 ? 'critical' : 'high',
-      title: isNonEnglish ? 'Förbättra innehållsläsbarhet' : 'Improve Content Readability',
-      description: isNonEnglish ? 
-        `${hardToReadPages.length} sidor har låga läsbarhetspoäng, vilket gör innehållet svårt att förstå.` :
-        `${hardToReadPages.length} pages have low readability scores, making content hard to understand.`,
+      title: 'Improve Content Readability',
+      description: `${hardToReadPages.length} pages have low readability scores, making content hard to understand.`,
       actionItems: [
-        isNonEnglish ? 'Använd kortare meningar och stycken' : 'Use shorter sentences and paragraphs',
-        isNonEnglish ? 'Ersätt komplexa ord med enklare alternativ' : 'Replace complex words with simpler alternatives',
-        isNonEnglish ? 'Lägg till punktlistor och listor för att bryta upp text' : 'Add bullet points and lists to break up text',
-        isNonEnglish ? 'Använd fler underrubriker för att organisera innehåll' : 'Use more subheadings to organize content',
-        isNonEnglish ? 'Skriv i aktiv form' : 'Write in active voice'
+        'Use shorter sentences and paragraphs',
+        'Replace complex words with simpler alternatives',
+        'Add bullet points and lists to break up text',
+        'Use more subheadings to organize content',
+        'Write in active voice'
       ],
       impact: 5,
-      estimatedImprovement: isNonEnglish ? 'Bättre användarengagemang och tid på sidan' : 'Better user engagement and time on page',
+      estimatedImprovement: 'Better user engagement and time on page',
       affectedPages: hardToReadPages.map(p => p.url)
     });
   }

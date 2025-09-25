@@ -321,30 +321,14 @@ function generateTechnicalRecommendations(
   
   const recommendations: TechnicalRecommendation[] = [];
 
-  // Detect language from page content for localized recommendations
-  const isNonEnglish = pages && pages.length > 0 && pages.some(page => 
-    page.title && (
-      // Check for non-English characters or common non-English words
-      /[àáâãäåæçèéêëìíîïñòóôõöøùúûüý]/i.test(page.title) ||
-      /\b(ja|und|och|og|et|ou|y|i|en|de|la|le|der|die|das|se|si|är|är|on|är|för|att|med|av|på|till|från|som|det|är|har|kan|ska|kommer|går|får|ger|tar|ser|hör|känner|tror|vet|vill|skulle|måste|bör|behöver|finns|ligger|står|sitter|kommer|går|åker|reser|arbetar|studerar|läser|skriver|talar|pratar|lyssnar|tittar|äter|dricker|sover|vaknar|träffar|möter|hjälper|hjälper|älskar|gillar|tycker|känner|tänker|förstår|minns|glömmer|lär|undervisar|leker|spelar|sjunger|dansar|springer|går|cyklar|kör|flyger|simmar|klättrar|hoppar|kastar|fångar|skjuter|träffar|missar|vinner|förlorar|börjar|slutar|fortsätter|stannar|väntar|skyndar|kommer|går|stannar|åker|reser|bor|lever|dör|föds|växer|blir|förändras|utvecklas|förbättras|försämras|ökar|minskar|höjer|sänker|öppnar|stänger|startar|stoppar|pausar|avbryter|återupptar|återvänder|lämnar|anländer|avgår|ankomst|avresa)/i.test(page.title)
-    )
-  );
-
   // Core Web Vitals recommendations
   if (coreWebVitals.loadingSpeed < 70) {
     recommendations.push({
       category: 'performance',
       priority: 'high',
-      title: isNonEnglish ? 'Förbättra sidladdningshastighet' : 'Improve Page Loading Speed',
-      description: isNonEnglish ? 
-        'Dina sidor laddas långsammare än optimalt, vilket påverkar användarupplevelsen och SEO-ranking.' :
-        'Your pages are loading slower than optimal, affecting user experience and SEO rankings.',
-      actionItems: isNonEnglish ? [
-        'Optimera och komprimera bilder',
-        'Minimera CSS- och JavaScript-filer',
-        'Aktivera webbläsarcache',
-        'Överväg att använda ett CDN'
-      ] : [
+      title: 'Improve Page Loading Speed',
+      description: 'Your pages are loading slower than optimal, affecting user experience and SEO rankings.',
+      actionItems: [
         'Optimize and compress images',
         'Minimize CSS and JavaScript files',
         'Enable browser caching',
@@ -359,13 +343,9 @@ function generateTechnicalRecommendations(
     recommendations.push({
       category: 'mobile',
       priority: 'critical',
-      title: isNonEnglish ? 'Lägg till Viewport Meta Tag' : 'Add Viewport Meta Tag',
-      description: isNonEnglish ? 
-        'Saknad viewport meta tag förhindrar korrekt mobilvisning.' :
-        'Missing viewport meta tag prevents proper mobile display.',
-      actionItems: isNonEnglish ? [
-        'Lägg till <meta name="viewport" content="width=device-width, initial-scale=1"> på alla sidor'
-      ] : [
+      title: 'Add Viewport Meta Tag',
+      description: 'Missing viewport meta tag prevents proper mobile display.',
+      actionItems: [
         'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to all pages'
       ],
       impact: 9
@@ -377,15 +357,9 @@ function generateTechnicalRecommendations(
     recommendations.push({
       category: 'security',
       priority: 'critical',
-      title: isNonEnglish ? 'Aktivera HTTPS' : 'Enable HTTPS',
-      description: isNonEnglish ? 
-        'Din webbplats använder inte HTTPS, vilket är en rankingfaktor och säkerhetsproblem.' :
-        'Your website is not using HTTPS, which is a ranking factor and security concern.',
-      actionItems: isNonEnglish ? [
-        'Installera SSL-certifikat',
-        'Konfigurera HTTPS-omdirigeringar',
-        'Uppdatera interna länkar till HTTPS'
-      ] : [
+      title: 'Enable HTTPS',
+      description: 'Your website is not using HTTPS, which is a ranking factor and security concern.',
+      actionItems: [
         'Install SSL certificate',
         'Configure HTTPS redirects',
         'Update internal links to HTTPS'
@@ -399,15 +373,9 @@ function generateTechnicalRecommendations(
     recommendations.push({
       category: 'structured-data',
       priority: 'medium',
-      title: isNonEnglish ? 'Implementera strukturerad data' : 'Implement Structured Data',
-      description: isNonEnglish ? 
-        'Att lägga till strukturerad data markup kan förbättra utseendet i sökresultaten.' :
-        'Adding structured data markup can enhance search result appearance.',
-      actionItems: isNonEnglish ? [
-        'Lägg till Organisation eller Företag schema',
-        'Implementera Artikel schema för innehållssidor',
-        'Överväg Produkt schema om tillämpligt'
-      ] : [
+      title: 'Implement Structured Data',
+      description: 'Adding structured data markup can enhance search result appearance.',
+      actionItems: [
         'Add Organization or Business schema',
         'Implement Article schema for content pages',
         'Consider Product schema if applicable'
