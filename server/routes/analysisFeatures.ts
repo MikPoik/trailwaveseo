@@ -140,29 +140,29 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
             });
           }
 
-          // Check if user has enough credits for basic competitor analysis (1 credit required)
-          const basicAnalysisCost = 1;
-          if (usage && usage.credits < basicAnalysisCost) {
+          // Check if user has enough credits for competitor analysis (1 credit required)
+          const competitorAnalysisCost = 1;
+          if (usage && usage.credits < competitorAnalysisCost) {
             return res.status(403).json({
               error: "Insufficient credits",
-              message: `Competitor analysis requires ${basicAnalysisCost} credit. You have ${usage.credits} credits remaining.`,
-              creditsNeeded: basicAnalysisCost,
+              message: `Competitor analysis requires ${competitorAnalysisCost} credit. You have ${usage.credits} credits remaining.`,
+              creditsNeeded: competitorAnalysisCost,
               creditsAvailable: usage.credits
             });
           }
 
-          // Deduct 1 credit for basic competitor analysis
-          const creditResult = await storage.atomicDeductCredits(userId!, basicAnalysisCost);
+          // Deduct 1 credit for competitor analysis
+          const creditResult = await storage.atomicDeductCredits(userId!, competitorAnalysisCost);
           if (!creditResult.success) {
             return res.status(403).json({
               error: "Insufficient credits",
-              message: `Competitor analysis requires ${basicAnalysisCost} credit. You have ${creditResult.remainingCredits} credits remaining.`,
-              creditsNeeded: basicAnalysisCost,
+              message: `Competitor analysis requires ${competitorAnalysisCost} credit. You have ${creditResult.remainingCredits} credits remaining.`,
+              creditsNeeded: competitorAnalysisCost,
               creditsAvailable: creditResult.remainingCredits
             });
           }
 
-          console.log(`Deducted ${basicAnalysisCost} credit for competitor analysis. User ${userId} has ${creditResult.remainingCredits} credits remaining.`);
+          console.log(`Deducted ${competitorAnalysisCost} credit for competitor analysis. User ${userId} has ${creditResult.remainingCredits} credits remaining.`);
         } else {
           // Unauthenticated users cannot use competitor analysis
           return res.status(401).json({
@@ -240,49 +240,22 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
           recommendations: []
         };
 
-        // Generate enhanced recommendations using the modular system
+        // Generate insights using the modular system (already included in 1-credit cost)
         try {
-          const aiInsightsCost = 2;
           let enhancedInsights: any[] = [];
 
           if (userId) {
-            const userUsage = await storage.getUserUsage(userId);
-            const isTrialUser = userUsage?.accountStatus === "trial";
-
-            if (isTrialUser) {
-              // Trial users now pay 2 credits for competitor analysis
-              const creditResult = await storage.atomicDeductCredits(userId, aiInsightsCost);
-              if (creditResult.success) {
-                enhancedInsights = competitiveResult.insights;
-                console.log(`Trial user ${userId}: used enhanced modular recommendations (${enhancedInsights.length} insights, ${aiInsightsCost} credits used)`);
-              } else {
-                return res.status(402).json({ 
-                  error: 'Insufficient credits for competitor analysis. Purchase more credits to continue.',
-                  remainingCredits: creditResult.remainingCredits,
-                  requiredCredits: aiInsightsCost
-                });
-              }
-            } else {
-              // Paid users get AI-powered insights if they have credits
-              const creditResult = await storage.atomicDeductCredits(userId, aiInsightsCost);
-              if (creditResult.success) {
-                // Use the modular system with AI enhancement
-                const aiEnhancedResult = await analyzeCompetitor(
-                  mainAnalysis,
-                  competitorAnalysis,
-                  openaiClient,
-                  { includeAI: true, maxTokens: 2000 }
-                );
-                enhancedInsights = aiEnhancedResult.insights;
-                console.log(`Generated ${enhancedInsights.length} AI-enhanced competitive insights for user ${userId} (${aiInsightsCost} credits used)`);
-              } else {
-                // Fallback to modular system without AI
-                enhancedInsights = competitiveResult.insights;
-                console.log(`Insufficient credits for AI insights, using enhanced modular recommendations for user ${userId}`);
-              }
-            }
+            // All users get AI-enhanced insights as part of the 1-credit competitor analysis
+            const aiEnhancedResult = await analyzeCompetitor(
+              mainAnalysis,
+              competitorAnalysis,
+              openaiClient,
+              { includeAI: true, maxTokens: 2000 }
+            );
+            enhancedInsights = aiEnhancedResult.insights;
+            console.log(`Generated ${enhancedInsights.length} AI-enhanced competitive insights for user ${userId} (included in 1-credit analysis)`);
           } else {
-            // Unauthenticated users get modular system insights (better than basic)
+            // Unauthenticated users get basic modular system insights
             enhancedInsights = competitiveResult.insights;
           }
 
