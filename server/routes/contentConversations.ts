@@ -165,6 +165,18 @@ async function generateAIResponse(analysis: any, pageUrl: string, userMessage: s
       }
     }
 
+    // Check if screenshot is available for this page
+    let screenshotUrl = null;
+    if (analysis.designAnalysis && Array.isArray(analysis.designAnalysis)) {
+      const pageScreenshot = analysis.designAnalysis.find((design: any) => 
+        design.screenshotData?.url === pageUrl
+      );
+      
+      if (pageScreenshot?.screenshotData?.screenshotUrl && !pageScreenshot.screenshotData.error) {
+        screenshotUrl = pageScreenshot.screenshotData.screenshotUrl;
+      }
+    }
+
     // Build the system prompt with context
     const systemPrompt = `You are a helpful SEO content editor assistant. You have access to comprehensive analysis data for a website and can help users improve their content.
 
@@ -180,6 +192,7 @@ GUIDELINES:
 4. Reference specific SEO issues from the analysis when relevant
 5. Keep responses focused and practical
 6. If you need fresh page content and it's not available, mention that dynamic content fetching would help
+7. ${screenshotUrl ? 'You have access to a visual screenshot of this page - use it to provide visual design feedback when relevant' : 'No visual screenshot is available for this page'}
 
 LANGUAGE REQUIREMENT: Always respond in the same language as the website content. Look at the page title, headings, and content to determine the language, then write your responses in that exact same language.
 
@@ -187,12 +200,36 @@ Previous conversation context: ${conversationHistory.length > 0 ? JSON.stringify
 
     //console.log(systemPrompt);
 
+    // Prepare messages array - include screenshot if available and relevant
+    const messages: any[] = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // If screenshot is available and user message might benefit from visual context
+    if (screenshotUrl && shouldIncludeScreenshot(userMessage)) {
+      messages.push({
+        role: 'user',
+        content: [
+          { 
+            type: 'text', 
+            text: `Here's the current page screenshot for visual reference, followed by my question: ${userMessage}` 
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: screenshotUrl,
+              detail: 'high'
+            }
+          }
+        ]
+      });
+    } else {
+      messages.push({ role: 'user', content: userMessage });
+    }
+
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage }
-      ],
+      model: process.env.OPENAI_MODEL || 'gpt-4o',
+      messages,
       max_tokens: 1500,
       temperature: 0.7,
     });
@@ -209,6 +246,28 @@ function buildAnalysisContext(analysis: any, pageData: any, pageUrl: string): st
   let context = `Website: ${analysis.domain}\n`;
   context += `Page: ${pageUrl}\n`;
   context += `Analysis Date: ${analysis.date}\n\n`;
+
+  // Add screenshot information if available
+  if (analysis.designAnalysis && Array.isArray(analysis.designAnalysis)) {
+    const pageScreenshot = analysis.designAnalysis.find((design: any) => 
+      design.screenshotData?.url === pageUrl
+    );
+    
+    if (pageScreenshot?.screenshotData?.screenshotUrl && !pageScreenshot.screenshotData.error) {
+      context += `SCREENSHOT AVAILABLE: ${pageScreenshot.screenshotData.screenshotUrl}\n`;
+      context += `Screenshot captured: ${pageScreenshot.screenshotData.captureTimestamp}\n`;
+      
+      if (pageScreenshot.overallScore !== undefined) {
+        context += `Design score: ${pageScreenshot.overallScore}/100\n`;
+      }
+      
+      if (pageScreenshot.summary) {
+        context += `Design summary: ${pageScreenshot.summary}\n`;
+      }
+      
+      context += '\n';
+    }
+  }
 
   if (pageData) {
     context += `PAGE DETAILS:\n`;
@@ -343,6 +402,41 @@ function shouldFetchFreshContent(message: string): boolean {
 
   const lowerMessage = message.toLowerCase();
   return indicators.some(indicator => lowerMessage.includes(indicator));
+}
+
+// Check if message would benefit from visual screenshot context
+function shouldIncludeScreenshot(message: string): boolean {
+  const visualIndicators = [
+    'design',
+    'layout',
+    'visual',
+    'appearance',
+    'look',
+    'style',
+    'color',
+    'font',
+    'image',
+    'button',
+    'navigation',
+    'menu',
+    'header',
+    'footer',
+    'sidebar',
+    'page structure',
+    'user interface',
+    'ui',
+    'ux',
+    'branding',
+    'logo',
+    'spacing',
+    'alignment',
+    'mobile',
+    'responsive',
+    'screenshot'
+  ];
+
+  const lowerMessage = message.toLowerCase();
+  return visualIndicators.some(indicator => lowerMessage.includes(indicator));
 }
 
 // Fetch fresh page content

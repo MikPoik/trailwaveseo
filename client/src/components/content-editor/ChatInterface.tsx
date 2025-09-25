@@ -201,7 +201,12 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
             </Button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            The AI has access to your page analysis, SEO suggestions, and business context
+            The AI has access to your page analysis, SEO suggestions, business context
+            {analysis.designAnalysis?.some((design: any) => 
+              design.screenshotData?.url === pageUrl && 
+              design.screenshotData?.screenshotUrl && 
+              !design.screenshotData?.error
+            ) && ', and visual screenshot'}
           </p>
         </div>
       </CardContent>
