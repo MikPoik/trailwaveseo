@@ -231,16 +231,11 @@ function preparePagesList(
   
   // Remove duplicates after normalization
   pages = Array.from(new Set(pages));
-  
-  // Limit the number of pages to analyze
-  pages = pages.length > maxPages 
-    ? pages.slice(0, maxPages) 
-    : pages;
 
-  console.log(`Preparing ${pages.length} pages for analysis (max setting: ${maxPages})`);
+  console.log(`Preparing pages for analysis (discovered: ${pages.length}, max setting: ${maxPages})`);
 
-  // Always ensure homepage/root is analyzed first for better context
-  pages = ensureHomepageFirst(pages, domain);
+  // Always ensure homepage/root is analyzed first for better context, but respect max pages limit
+  pages = ensureHomepageFirst(pages, domain, maxPages);
   
   return pages;
 }
@@ -274,7 +269,7 @@ function normalizeUrlForAnalysis(url: string): string {
 /**
  * Ensure homepage is first in the analysis list for better context
  */
-function ensureHomepageFirst(pages: string[], domain: string): string[] {
+function ensureHomepageFirst(pages: string[], domain: string, maxPages: number): string[] {
   
   // Normalize domain by removing www prefix for consistency
   const normalizedDomain = domain.toLowerCase().startsWith('www.') 
@@ -283,16 +278,43 @@ function ensureHomepageFirst(pages: string[], domain: string): string[] {
   const rootUrl = `https://${normalizedDomain}`;
   const normalizedRootUrl = rootUrl.endsWith('/') ? rootUrl.slice(0, -1) : rootUrl;
 
-  // Remove any existing homepage variants from the array (case-insensitive)
-  const filteredPages = pages.filter(page => {
+  // Check if homepage is already in the pages list
+  const hasHomepage = pages.some(page => {
     const normalizedPage = (page.endsWith('/') ? page.slice(0, -1) : page).toLowerCase();
     const rootUrlLower = normalizedRootUrl.toLowerCase();
-    return normalizedPage !== rootUrlLower && 
-           normalizedPage !== `${rootUrlLower}/index.html` &&
-           normalizedPage !== `${rootUrlLower}/index.php` &&
-           normalizedPage !== `${rootUrlLower}/home`;
+    return normalizedPage === rootUrlLower || 
+           normalizedPage === `${rootUrlLower}/index.html` ||
+           normalizedPage === `${rootUrlLower}/index.php` ||
+           normalizedPage === `${rootUrlLower}/home`;
   });
 
-  // Add homepage at the beginning (using lowercase domain)
-  return [normalizedRootUrl, ...filteredPages];
+  let finalPages: string[];
+
+  if (hasHomepage) {
+    // Homepage is already in the list, just reorder and limit
+    const filteredPages = pages.filter(page => {
+      const normalizedPage = (page.endsWith('/') ? page.slice(0, -1) : page).toLowerCase();
+      const rootUrlLower = normalizedRootUrl.toLowerCase();
+      return normalizedPage !== rootUrlLower && 
+             normalizedPage !== `${rootUrlLower}/index.html` &&
+             normalizedPage !== `${rootUrlLower}/index.php` &&
+             normalizedPage !== `${rootUrlLower}/home`;
+    });
+    
+    // Put homepage first, then other pages, respecting max limit
+    finalPages = [normalizedRootUrl, ...filteredPages].slice(0, maxPages);
+  } else {
+    // Homepage not in list, add it only if we have room or if maxPages > 1
+    if (maxPages === 1) {
+      // For maxPages = 1, analyze only the requested page(s), don't force homepage
+      finalPages = pages.slice(0, 1);
+      console.log(`Max pages is 1, analyzing only the requested page: ${finalPages[0]}`);
+    } else {
+      // Add homepage first, then other pages, respecting max limit
+      finalPages = [normalizedRootUrl, ...pages].slice(0, maxPages);
+    }
+  }
+
+  console.log(`Final pages list: ${finalPages.length} pages (max: ${maxPages})`);
+  return finalPages;
 }
