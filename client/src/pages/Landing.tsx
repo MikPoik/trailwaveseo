@@ -12,7 +12,8 @@ import {
   TrendingUp,
   FileText,
   Users,
-  Globe
+  Globe,
+  Mail
 } from "lucide-react";
 import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
@@ -79,7 +80,7 @@ const Landing = () => {
               Comprehensive website analysis tools powered by AI to give you actionable SEO insights, technical audits, and competitive advantages for better search engine rankings
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="relative overflow-hidden border-0 bg-background/50 backdrop-blur-sm">
               <CardContent className="p-8">
@@ -176,7 +177,7 @@ const Landing = () => {
               Get comprehensive SEO insights in just a few simple steps
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
@@ -187,7 +188,7 @@ const Landing = () => {
                 Simply enter your website domain and configure analysis settings
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                 <Bot className="w-8 h-8 text-primary-foreground" />
@@ -197,7 +198,7 @@ const Landing = () => {
                 Our AI crawls your site, analyzes content, and identifies optimization opportunities
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                 <Target className="w-8 h-8 text-primary-foreground" />
@@ -207,7 +208,7 @@ const Landing = () => {
                 Receive detailed reports with prioritized issues and actionable recommendations
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                 <TrendingUp className="w-8 h-8 text-primary-foreground" />
@@ -229,7 +230,7 @@ const Landing = () => {
               Trusted by developers and marketers
             </h2>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold text-primary mb-2">10,000+</div>
@@ -282,6 +283,10 @@ const Landing = () => {
               <p className="text-muted-foreground">
                 Professional AI-powered SEO analysis platform for comprehensive website optimization and search engine ranking improvement
               </p>
+              <div className="flex items-center mt-4 space-x-2 text-muted-foreground">
+                <Mail className="w-5 h-5" />
+                <span>support@trailwaveseo.com</span>
+              </div>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Product</h4>

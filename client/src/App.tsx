@@ -13,6 +13,7 @@ import AnalysisDetails from "@/pages/AnalysisDetails";
 import Account from "@/pages/Account";
 import ContentEditor from "@/pages/ContentEditor";
 import Sidebar from "@/components/Sidebar";
+import Footer from "@/components/Footer";
 import { useAuth } from "./hooks/useAuth";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>; path: string }) {
@@ -119,11 +120,14 @@ function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-1 md:flex-row">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+      </div>
+      <Footer />
     </div>
   );
 }
