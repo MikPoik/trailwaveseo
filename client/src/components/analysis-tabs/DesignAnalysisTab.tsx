@@ -1,12 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { WebsiteAnalysis } from "@/lib/types";
 import { Eye, Layout, Smartphone, Accessibility, Palette, Navigation, AlertCircle, CheckCircle, Info } from "lucide-react";
 
 interface DesignAnalysisTabProps {
   analysis: WebsiteAnalysis;
 }
+
+// Simple markdown formatter for basic formatting
+const formatMarkdown = (text: string): string => {
+  if (!text) return text;
+  
+  return text
+    // Bold text: **text** or __text__
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+    // Italic text: *text* or _text_
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+    .replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>')
+    // Code: `text`
+    .replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm">$1</code>')
+    // Line breaks
+    .replace(/\n/g, '<br />');
+};
 
 const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
   const designAnalysis = analysis.designAnalysis || analysis.enhancedInsights?.designAnalysis;
@@ -128,7 +146,10 @@ const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
           
           {designAnalysis.summary && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-700">{designAnalysis.summary}</p>
+              <div 
+                className="text-sm text-gray-700"
+                dangerouslySetInnerHTML={{ __html: formatMarkdown(designAnalysis.summary) }}
+              />
             </div>
           )}
         </CardContent>
@@ -170,14 +191,18 @@ const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
                       <Eye className="h-4 w-4" />
                       Page Screenshot
                     </h4>
-                    <div className="max-w-md">
-                      <img 
-                        src={pageAnalysis.screenshotData.screenshotUrl}
-                        alt={`Screenshot of ${pageAnalysis.screenshotData.url}`}
-                        className="w-full border rounded-lg shadow-sm"
-                        loading="lazy"
-                        data-testid={`screenshot-${index}`}
-                      />
+                    <div className="border rounded-lg overflow-hidden bg-white">
+                      <ScrollArea className="h-96 w-full">
+                        <div className="p-2">
+                          <img 
+                            src={pageAnalysis.screenshotData.screenshotUrl}
+                            alt={`Screenshot of ${pageAnalysis.screenshotData.url}`}
+                            className="w-full shadow-sm"
+                            loading="lazy"
+                            data-testid={`screenshot-${index}`}
+                          />
+                        </div>
+                      </ScrollArea>
                     </div>
                   </div>
                 )}
@@ -204,7 +229,7 @@ const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
                       {pageAnalysis.strengths.slice(0, 3).map((strength: string, strengthIndex: number) => (
                         <li key={strengthIndex} className="text-sm text-gray-700 flex items-start gap-2">
                           <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                          {strength}
+                          <span dangerouslySetInnerHTML={{ __html: formatMarkdown(strength) }} />
                         </li>
                       ))}
                     </ul>
@@ -241,16 +266,25 @@ const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
                                 </div>
                               </div>
                               
-                              <p className="text-sm text-gray-700 mb-2">
-                                {rec.description}
-                              </p>
+                              <div 
+                                className="text-sm text-gray-700 mb-2"
+                                dangerouslySetInnerHTML={{ __html: formatMarkdown(rec.description) }}
+                              />
                               
                               <div className="text-xs text-gray-600 space-y-1">
                                 <div>
-                                  <span className="font-medium">Recommendation:</span> {rec.recommendation}
+                                  <span className="font-medium">Recommendation:</span> 
+                                  <span 
+                                    className="ml-1"
+                                    dangerouslySetInnerHTML={{ __html: formatMarkdown(rec.recommendation) }}
+                                  />
                                 </div>
                                 <div>
-                                  <span className="font-medium">Expected Impact:</span> {rec.expectedImpact}
+                                  <span className="font-medium">Expected Impact:</span> 
+                                  <span 
+                                    className="ml-1"
+                                    dangerouslySetInnerHTML={{ __html: formatMarkdown(rec.expectedImpact) }}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -265,7 +299,10 @@ const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
                 {pageAnalysis.summary && (
                   <div className="bg-blue-50 rounded-lg p-4">
                     <h4 className="font-medium mb-2 text-blue-900">Analysis Summary</h4>
-                    <p className="text-sm text-blue-800">{pageAnalysis.summary}</p>
+                    <div 
+                      className="text-sm text-blue-800"
+                      dangerouslySetInnerHTML={{ __html: formatMarkdown(pageAnalysis.summary) }}
+                    />
                   </div>
                 )}
               </CardContent>
