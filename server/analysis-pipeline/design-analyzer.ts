@@ -38,6 +38,27 @@ export async function analyzePageDesign(
     };
   }
 
+  // Check if the screenshot URL is a data URL - OpenAI can't process these
+  if (screenshotData.screenshotUrl.startsWith('data:')) {
+    console.warn(`Skipping design analysis for ${screenshotData.url} - data URLs not supported by OpenAI`);
+    return {
+      overallScore: 75, // Neutral score since we have a screenshot but can't analyze it
+      screenshotData,
+      recommendations: [{
+        category: 'layout',
+        severity: 'medium',
+        title: 'Design Analysis Limited',
+        description: 'Screenshot captured but AI analysis unavailable due to technical constraints',
+        recommendation: 'Screenshot is available for manual review in the interface',
+        expectedImpact: 'Manual review of the screenshot can still provide valuable insights',
+        implementation: 'Review the captured screenshot manually for layout and design improvements'
+      }],
+      strengths: ['Screenshot successfully captured'],
+      weaknesses: ['AI analysis unavailable for data URL screenshots'],
+      summary: 'Screenshot captured successfully but automated design analysis could not be completed'
+    };
+  }
+
   try {
     console.log(`Analyzing design for: ${screenshotData.url}`);
 

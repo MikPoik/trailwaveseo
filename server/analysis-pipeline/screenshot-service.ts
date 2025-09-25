@@ -67,17 +67,37 @@ export async function captureScreenshot(
       throw new Error(`Screenshot API error: ${response.status} - ${errorText}`);
     }
 
-    // The API returns the image directly, so we need to convert to base64 data URL
-    const imageBuffer = await response.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
-    const mimeType = response.headers.get('content-type') || 'image/png';
-    const dataUrl = `data:${mimeType};base64,${base64Image}`;
+    // Check if the response contains a JSON with the screenshot URL
+    const contentType = response.headers.get('content-type') || '';
+    
+    let screenshotUrl: string;
+    
+    if (contentType.includes('application/json')) {
+      // API returned JSON with screenshot URL
+      const jsonResponse = await response.json();
+      screenshotUrl = jsonResponse.screenshot || jsonResponse.url || jsonResponse.image_url || '';
+      
+      if (!screenshotUrl) {
+        throw new Error('Screenshot URL not found in API response');
+      }
+    } else if (contentType.includes('image/')) {
+      // API returned the image directly - we need to save it and provide a URL
+      // For now, convert to base64 data URL as fallback but log a warning
+      const imageBuffer = await response.arrayBuffer();
+      const base64Image = Buffer.from(imageBuffer).toString('base64');
+      const mimeType = contentType;
+      screenshotUrl = `data:${mimeType};base64,${base64Image}`;
+      
+      console.warn(`Screenshot API returned image directly for ${url}, using data URL which may not work with OpenAI`);
+    } else {
+      throw new Error(`Unexpected response content type: ${contentType}`);
+    }
     
     console.log(`Screenshot captured successfully for: ${url}`);
     
     return {
       url: url,
-      screenshotUrl: dataUrl,
+      screenshotUrl: screenshotUrl,
       captureTimestamp: new Date().toISOString()
     };
 
