@@ -24,7 +24,7 @@ export async function generateInsightsExplanations(
   linkArchitectureExplanation: string;
   performanceExplanation: string;
 }> {
-  
+
   try {
     console.log(`Generating AI explanations for enhanced insights on ${domain}...`);
 
@@ -79,8 +79,9 @@ export async function generateInsightsExplanations(
       recommendations: performanceAnalysis.recommendations?.length || 0
     };
 
-    const prompt = `You are an SEO expert analyzing ${domain}. Provide specific, data-driven explanations for each score using the actual metrics provided.
+    const prompt = `Provide a comprehensive SEO analysis explanation for this website analysis. IMPORTANT: Write your entire response in the EXACT same language as the website content. Look at the page titles, headings, and content to determine the language, then write your analysis in that same language.
 
+Analysis data:
 WEBSITE: ${domain} (${pages.length} pages analyzed)
 
 TECHNICAL SEO DATA (Score: ${technicalDetails.score}/100):
@@ -130,7 +131,7 @@ Please respond with a JSON object in the following format:
       messages: [
         { 
           role: "system", 
-          content: "You are an SEO expert providing data-driven insights. Use specific numbers and metrics in your explanations. Be concrete and actionable, not generic. Help users understand exactly what to fix first." 
+          content: "You are an expert SEO consultant providing strategic insights. Your explanations should be clear, actionable, and focused on business impact. Use data to support your recommendations and provide specific next steps. IMPORTANT: Always write your response in the EXACT same language as the website content being analyzed. Match the language of the page titles, headings, and content exactly."
         },
         { role: "user", content: prompt }
       ],

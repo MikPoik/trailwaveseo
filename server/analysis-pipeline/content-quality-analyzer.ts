@@ -176,6 +176,8 @@ For each duplicate group, provide:
 - Specific improvement strategy
 - Type classification
 
+IMPORTANT: Write your analysis and recommendations in the EXACT same language as the website content above. Look at the titles, headings, and descriptions to determine the language, then write your response in that same language.
+
 Respond in JSON format:
 {
   "titleDuplicates": [{"content": "...", "urls": [...], "similarityScore": 95, "impactLevel": "Critical", "improvementStrategy": "...", "duplicationType": "exact"}],
@@ -254,6 +256,8 @@ Analyze:
 4. Natural language flow vs forced keyword insertion
 
 Provide actionable recommendations for improvement.
+
+IMPORTANT: Write your analysis and recommendations in the EXACT same language as the website content above. Look at the titles, content previews, and meta descriptions to determine the language, then write your response in that same language.
 
 Respond in JSON format:
 {

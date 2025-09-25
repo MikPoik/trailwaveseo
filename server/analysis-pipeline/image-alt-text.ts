@@ -47,10 +47,10 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
           'User-Agent': 'Mozilla/5.0 (compatible; SEO-Analyzer/1.0)'
         }
       });
-      
+
       const imageBuffer = Buffer.from(response.data);
       imageBase64 = imageBuffer.toString('base64');
-      
+
       // Check if image is too large (OpenAI has limits)
       if (imageBase64.length > 20000000) { // ~20MB base64 limit
         console.warn(`Image too large for analysis: ${imageUrl}`);
@@ -61,9 +61,9 @@ export async function generateImageAltText(imageUrl: string, pageContext: {
       return '';
     }
 
-    const businessContext = pageContext.businessType && pageContext.industry 
+    const businessContext = pageContext.businessType && pageContext.industry
       ? `Business: ${pageContext.businessType} in ${pageContext.industry} industry`
-      : pageContext.businessType 
+      : pageContext.businessType
         ? `Business: ${pageContext.businessType}`
         : pageContext.industry
           ? `Industry: ${pageContext.industry}`
@@ -94,6 +94,7 @@ Requirements:
 - Use industry-appropriate terminology when describing the image
 - Be specific and helpful for screen readers
 - If the image appears to be related to the business services, incorporate that understanding
+- IMPORTANT: Write the alt text in the EXACT same language as the page content above. Look at the title, headings, and business context to determine the language, then write your alt text in that same language.
 
 Return only the alt text, no extra formatting.`
             },
@@ -111,7 +112,7 @@ Return only the alt text, no extra formatting.`
     });
 
     const altText = response.choices[0].message.content?.trim() || '';
-    
+
     // Cache the result
     if (altText) {
       altTextCache.set(cacheKey, altText);
@@ -154,7 +155,7 @@ export async function generateBatchImageAltText(images: Array<{
 
   for (let i = 0; i < images.length; i += BATCH_SIZE) {
     const batch = images.slice(i, i + BATCH_SIZE);
-    
+
     const batchPromises = batch.map(async (img) => {
       try {
         const altText = await generateImageAltText(img.src, img.context);

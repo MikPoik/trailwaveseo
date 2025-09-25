@@ -177,6 +177,8 @@ For each item, evaluate:
 3. **SEO Effectiveness** (0-100): How well optimized is this for search engines?
 4. **Readability** (0-100): How clear, well-structured, and easy to understand?
 
+IMPORTANT: Write your analysis, strengths, weaknesses, and recommendations in the EXACT same language as the content above. Look at the content items to determine the language, then write your response in that same language.
+
 Respond with JSON format:
 {
   "scores": [
