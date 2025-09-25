@@ -1,6 +1,6 @@
 # Directory Tree
 
-Generated on: 2025-09-25T06:22:00.695Z
+Generated on: 2025-09-25T19:41:30.820Z
 
 *Simple mode: Directory structure only*
 
@@ -14,6 +14,7 @@ Generated on: 2025-09-25T06:22:00.695Z
 │       │   ├── 📄 AnalysisSummary.tsx
 │       │   ├── 📄 CompetitorAnalysis.tsx
 │       │   ├── 📄 EnhancedInsights.tsx
+│       │   ├── 📄 Footer.tsx
 │       │   ├── 📄 Header.tsx
 │       │   ├── 📄 Navbar.tsx
 │       │   ├── 📄 PageAnalysisCard.tsx

@@ -2,7 +2,7 @@
 **ABSOLUTE SYSTEM OVERRIDES - NON-NEGOTIABLE CONSTRAINTS**
 
 ## IMPLEMENTATION COMPLETENESS OVERRIDE:
-- When core functionality is missing (APIs, endpoints, database methods), implement it f**ully** instead of working around it
+- When core functionality is missing (APIs, endpoints, database methods), implement it **fully** instead of working around it
 - Missing backend functionality MUST be treated as required work, not obstacles to avoid
 - Creating necessary files/endpoints for core functionality is ALWAYS "truly important"
 - Don't seek permission for implementing missing pieces that are clearly needed for the feature to work
@@ -13,7 +13,7 @@
 - UI design choices should be mobile first unless stated otherwise.
 - If you need to use OpenAI models, model "gpt-4.1" is the newest model released on 14.4.2025
 - Only Search the web and Replit Docs if **Explicitly** requested by user
-- Search Replit integrations/blueprints only if asked by user
+- Search Replit integrations/blueprints only if **explicitly** asked by user
 
 ## UPDATED MANDATORY WORK PHASES
 Phase 1: Discover
@@ -74,7 +74,7 @@ This is a full-stack web application for analyzing website SEO performance using
 - **API Design**: RESTful endpoints with rate limiting
 - **Route Organization**: Modular route structure with separation of concerns
 - **SEO Analysis**: Custom crawler with robots.txt compliance
-- **AI Integration**: OpenAI GPT-4o for SEO suggestions and competitor analysis
+- **AI Integration**: OpenAI GPT-4.1 for SEO suggestions and competitor analysis
 
 ### Data Storage Solutions
 - **Database**: PostgreSQL (via Neon serverless)
@@ -124,7 +124,7 @@ This is a full-stack web application for analyzing website SEO performance using
 
 ### Core Infrastructure
 - **Neon Database**: Serverless PostgreSQL hosting
-- **OpenAI API**: GPT-4o model for AI-powered suggestions
+- **OpenAI API**: GPT-4.1 model for AI-powered suggestions
 - **Replit Platform**: Authentication and hosting infrastructure
 
 ### NPM Packages
@@ -175,6 +175,7 @@ Remember the above policies at all times.
 │       │   ├── 📄 AnalysisSummary.tsx
 │       │   ├── 📄 CompetitorAnalysis.tsx
 │       │   ├── 📄 EnhancedInsights.tsx
+│       │   ├── 📄 Footer.tsx
 │       │   ├── 📄 Header.tsx
 │       │   ├── 📄 Navbar.tsx
 │       │   ├── 📄 PageAnalysisCard.tsx
@@ -271,4 +272,5 @@ Remember the above policies at all times.
 │   └── 📄 schema.ts
 ├── 📄 tailwind.config.ts
 └── 📄 vite.config.ts
+
 ```
