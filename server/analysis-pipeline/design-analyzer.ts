@@ -102,10 +102,10 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 - Return ONLY valid JSON, no additional text
 - **Write suggestions and analysis in the same language as the page content**
 
-NOTE: due to automatic screenshot capture, page's navigation menu might be showing in wrong position. Assume navigation menu is correctly placed on the page. Ignore possible Cookie consent banners or other temporary elements. Focus on the main content layout and design.`;
+NOTE: due to automatic screenshot capture, page'stop  navigation menu might be showing in wrong position. Respond as the navigation menu is correctly placed on the page. Ignore possible Cookie consent banners or other temporary elements.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1",
       messages: [
         {
           role: "user",
