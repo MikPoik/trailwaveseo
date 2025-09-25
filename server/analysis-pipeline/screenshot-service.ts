@@ -1,10 +1,11 @@
 
 /**
  * Screenshot capture service using screenshotapi.com
- * Captures page screenshots for design analysis
+ * Captures page screenshots for design analysis and stores them in GCS
  */
 
 import type { ScreenshotData } from '../../shared/schema';
+import { uploadScreenshotToGCS } from '../storage/gcs-storage';
 
 interface ScreenshotApiOptions {
   url: string;
@@ -72,11 +73,16 @@ export async function captureScreenshot(
       throw new Error('Screenshot URL (outputUrl) not found in API response');
     }
     
-    console.log(`Screenshot captured successfully for: ${url}`);
+    console.log(`Screenshot captured successfully for: ${url}. Uploading to GCS...`);
+    
+    // Upload screenshot to GCS for permanent storage
+    const gcsUploadResult = await uploadScreenshotToGCS(screenshotUrl, url);
+    
+    console.log(`Screenshot uploaded to GCS: ${gcsUploadResult.publicUrl}`);
     
     return {
       url: url,
-      screenshotUrl: screenshotUrl,
+      screenshotUrl: gcsUploadResult.publicUrl, // Use GCS URL instead of temporary URL
       captureTimestamp: new Date().toISOString()
     };
 
