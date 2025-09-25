@@ -739,7 +739,7 @@ export class DatabaseStorage implements IStorage {
         if (screenshotUrls.length > 0) {
           console.log(`Deleting ${screenshotUrls.length} screenshots from GCS for analysis ${id}`);
           try {
-            const { deleteMultipleScreenshots, extractFileNameFromGCSUrl, isGCSUrl } = await import('../storage/gcs-storage');
+            const { deleteMultipleScreenshots, extractFileNameFromGCSUrl, isGCSUrl } = await import('./storage/gcs-storage');
             
             // Extract filenames from GCS URLs
             const fileNames = screenshotUrls
