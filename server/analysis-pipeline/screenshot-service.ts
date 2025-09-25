@@ -35,31 +35,30 @@ export async function captureScreenshot(
   try {
     console.log(`Capturing screenshot for: ${url}`);
     
-    // Build query parameters for the GET request
-    const params = new URLSearchParams({
+    // Build request body for POST request
+    const requestBody = {
       url: url,
       apiKey: apiKey,
-      width: String(options.width || 1920),
-      height: String(options.height || 1080),
+      width: options.width || 1920,
+      height: options.height || 1080,
       format: options.format || 'png',
-      full_page: options.full_page !== false ? 'true' : 'false',
-      delay: String(options.delay || 2000)
-    });
+      full_page: options.full_page !== false,
+      delay: options.delay || 2000,
+      mobile: options.mobile || false,
+      tablet: options.tablet || false,
+      desktop: options.desktop !== false,
+      retina: options.retina !== false
+    };
 
-    // Add device type parameters
-    if (options.mobile) params.append('mobile', 'true');
-    if (options.tablet) params.append('tablet', 'true');
-    if (options.desktop !== false) params.append('desktop', 'true');
-    if (options.retina !== false) params.append('retina', 'true');
-
-    // Make GET request to screenshotapi.com
-    const apiUrl = `https://api.screenshotapi.com/take?${params.toString()}`;
-    
-    const response = await fetch(apiUrl, {
-      method: 'GET',
+    // Make POST request to screenshotapi.com
+    const response = await fetch('https://api.screenshotapi.com/take', {
+      method: 'POST',
       headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
         'User-Agent': 'SEO-Analyzer/1.0'
-      }
+      },
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
