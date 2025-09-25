@@ -5,7 +5,6 @@
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
-import fetch from 'node-fetch';
 
 // Initialize S3-compatible client for Google Cloud Storage
 const gcsClient = new S3Client({
@@ -56,7 +55,7 @@ export async function uploadScreenshotToGCS(
       throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
     }
 
-    const imageBuffer = await imageResponse.buffer();
+    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
     const fileName = generateScreenshotFileName(sourceUrl);
 
     console.log(`Uploading screenshot to GCS: ${fileName} (${imageBuffer.length} bytes)`);
