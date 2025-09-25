@@ -1,3 +1,4 @@
+
 /**
  * Screenshot capture service using screenshotapi.com
  * Captures page screenshots for design analysis
@@ -18,17 +19,6 @@ interface ScreenshotApiOptions {
   delay?: number;
 }
 
-interface ScreenshotApiResponse {
-  screenshot: string; // Base64 encoded image or URL
-  url: string;
-  metadata?: {
-    width: number;
-    height: number;
-    format: string;
-    size: number;
-  };
-}
-
 /**
  * Capture screenshot using screenshotapi.com
  */
@@ -45,26 +35,31 @@ export async function captureScreenshot(
   try {
     console.log(`Capturing screenshot for: ${url}`);
     
-    const requestOptions: ScreenshotApiOptions = {
+    // Build query parameters for the GET request
+    const params = new URLSearchParams({
       url: url,
-      width: options.width || 1920,
-      height: options.height || 1080,
+      apiKey: apiKey,
+      width: String(options.width || 1920),
+      height: String(options.height || 1080),
       format: options.format || 'png',
-      full_page: options.full_page !== false, // Default to full page
-      desktop: options.desktop !== false, // Default to desktop view
-      retina: options.retina !== false, // Default to retina quality
-      delay: options.delay || 2000, // Wait 2 seconds for page to load
-      ...options
-    };
+      full_page: options.full_page !== false ? 'true' : 'false',
+      delay: String(options.delay || 2000)
+    });
 
-    // Make API request to screenshotapi.com
-    const response = await fetch('https://shot.screenshotapi.net/screenshot', {
-      method: 'POST',
+    // Add device type parameters
+    if (options.mobile) params.append('mobile', 'true');
+    if (options.tablet) params.append('tablet', 'true');
+    if (options.desktop !== false) params.append('desktop', 'true');
+    if (options.retina !== false) params.append('retina', 'true');
+
+    // Make GET request to screenshotapi.com
+    const apiUrl = `https://api.screenshotapi.com/take?${params.toString()}`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(requestOptions)
+        'User-Agent': 'SEO-Analyzer/1.0'
+      }
     });
 
     if (!response.ok) {
@@ -73,13 +68,17 @@ export async function captureScreenshot(
       throw new Error(`Screenshot API error: ${response.status} - ${errorText}`);
     }
 
-    const result: ScreenshotApiResponse = await response.json();
+    // The API returns the image directly, so we need to convert to base64 data URL
+    const imageBuffer = await response.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    const mimeType = response.headers.get('content-type') || 'image/png';
+    const dataUrl = `data:${mimeType};base64,${base64Image}`;
     
     console.log(`Screenshot captured successfully for: ${url}`);
     
     return {
       url: url,
-      screenshotUrl: result.screenshot,
+      screenshotUrl: dataUrl,
       captureTimestamp: new Date().toISOString()
     };
 
