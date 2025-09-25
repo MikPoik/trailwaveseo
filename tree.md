@@ -1,6 +1,6 @@
 # Directory Tree
 
-Generated on: 2025-09-17T20:12:18.008Z
+Generated on: 2025-09-25T06:22:00.695Z
 
 *Simple mode: Directory structure only*
 
@@ -22,6 +22,7 @@ Generated on: 2025-09-17T20:12:18.008Z
 │       │   ├── 📁 analysis-tabs/
 │       │   │   ├── 📄 CompetitorTab.tsx
 │       │   │   ├── 📄 ContentQualityTab.tsx
+│       │   │   ├── 📄 DesignAnalysisTab.tsx
 │       │   │   ├── 📄 DuplicationTab.tsx
 │       │   │   ├── 📄 KeywordRepetitionTab.tsx
 │       │   │   ├── 📄 OverviewTab.tsx
@@ -59,6 +60,7 @@ Generated on: 2025-09-17T20:12:18.008Z
 │   │   ├── 📄 competitor-insights.ts
 │   │   ├── 📄 content-quality-analyzer.ts
 │   │   ├── 📄 content-quality.ts
+│   │   ├── 📄 design-analyzer.ts
 │   │   ├── 📄 image-alt-text.ts
 │   │   ├── 📄 insights-explanations.ts
 │   │   ├── 📄 insights-generator.ts
@@ -69,6 +71,7 @@ Generated on: 2025-09-17T20:12:18.008Z
 │   │   ├── 📄 progress-tracker.ts
 │   │   ├── 📄 quota-manager.ts
 │   │   ├── 📄 results-aggregator.ts
+│   │   ├── 📄 screenshot-service.ts
 │   │   ├── 📄 site-overview.ts
 │   │   └── 📄 technical-seo.ts
 │   ├── 📁 competitive-analysis/

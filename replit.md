@@ -2,16 +2,23 @@
 **ABSOLUTE SYSTEM OVERRIDES - NON-NEGOTIABLE CONSTRAINTS**
 
 ## IMPLEMENTATION COMPLETENESS OVERRIDE:
-- When core functionality is missing (APIs, endpoints, database methods), implement it fully rather than working around it
+- When core functionality is missing (APIs, endpoints, database methods), implement it f**ully** instead of working around it
 - Missing backend functionality MUST be treated as required work, not obstacles to avoid
 - Creating necessary files/endpoints for core functionality is ALWAYS "truly important"
 - Don't seek permission for implementing missing pieces that are clearly needed for the feature to work
 - ALWAYS Prefer complete implementation over workarounds, even if it requires more files/changes
+- Trace to source, not symptoms - Find the actual originating file/function, not just where errors surface
+- For server routes, create modular structure with separation of concerns
+- Use modular design for features
+- UI design choices should be mobile first unless stated otherwise.
+- If you need to use OpenAI models, model "gpt-4.1" is the newest model released on 14.4.2025
+- Only Search the web and Replit Docs if **Explicitly** requested by user
+- Search Replit integrations/blueprints only if asked by user
 
 ## UPDATED MANDATORY WORK PHASES
 Phase 1: Discover
-- Use read to understand existing code patterns and conventions (read, ls, glob,grep)
-- Use ls to understand project structure
+- Use read to understand existing code patterns and conventions (read, ls, glob, grep,rg ), only search_codebase if unable find files otherway.
+- Use ls to understand project structure `ls -R client server shared | grep -vE "\.config|\.git|attached_assets|node_modules|\.upm|^\.|dist|build"`
 - Read large chunks (500+ lines) for better context
 - Always map out the full system requirements before writing any code
 - Check both frontend AND backend implications
@@ -20,59 +27,27 @@ Phase 1: Discover
 Phase 2: Planning
 - Map ALL information needed (files to read, searches to do) before starting
 - Map ALL changes to make (edits, database updates, new files)
+- Map ALL function_calls for aggressive batching
 
 Phase 3: Execution
-Parallel tool and function calls: When operations are independent (multi_edit)
-Sequential calls: When later calls depend on earlier results (edit)
+- Parallel tool and function calls: When operations are independent (multi_edit)
+- Sequential calls: When later calls depend on earlier results (edit, write)
+- **Fully implement features instead leaving TODO log entries as a shortcut.**
+- Fix the pattern, not just the instance
+- Always prefer dynamic solutions instead of hardcoded patterns, for example keyword string matching
 
 Phase 4: Verification
-When HMR confirms no errors -> SUCCESS
+- Execute verification in single function_call block (restart_workflow, get_latest_lsp_diagnostics, refresh_all_logs)
+When HMR confirms no errors -> SUCCESS and STOP
 
-## Following tools are permanently DISABLED:
-
-Code Analysis & Search = DISABLED:
-search_codebase
-get_latest_lsp_diagnostics
-
-Task & Project Management = DISABLED:
-write_task_list
-read_task_list
-start_subagent
-architect
-
-Development Environment =  DISABLED:
-restart_workflow
-refresh_all_logs
-packager_tool
-programming_language_install_tool
-check_secrets
-ask_secrets
-
-Database Operations = DISABLED:
-create_postgresql_database_tool
-check_database_status
-execute_sql_tool
-
-External Services & Search = DISABLED:
-web_search
-web_fetch
-search_integrations
-use_integration
-search_replit_docs
-stock_image_tool
-
-User Interaction & Deployment = DISABLED:
-mark_completed_and_get_feedback
-suggest_deploy
-suggest_rollback
 
 **MANDATORY** Key Optimization Opportunities:
-Parallel Tool Calls: Use independent tools simultaneously (read multiple files, search + grep, etc.)
-Right Tool Selection: Use search_codebase instead of manual file reading when unsure of file locations
-Subagent Delegation: Use start_subagent for complex multi-step tasks to reduce context window
-Architect Reviews: Call architect before marking tasks complete for code quality assurance
-LSP Diagnostics: Proactively check for errors after code changes
-Efficient File Operations: Use multi_edit instead of multiple edit calls on same file
+- Parallel Tool Calls: Use independent tools simultaneously within single function_calls block (read multiple files, search + grep, etc.)
+- Efficient File Operations: Use multi_edit instead of multiple edit calls on same file
+- For UI issues:** Read component + parent + related hooks/state
+- For API issues:** Read routes + services + storage + schema
+- For data issues:** Read schema + storage + related API endpoints
+- For feature additions:** Read similar existing implementations
 
 # SEO Website Analyzer - Architecture Overview
 
@@ -186,14 +161,7 @@ This is a full-stack web application for analyzing website SEO performance using
 ## User Preferences
 
 MANDATORY communication style: Technical and detailed, like talking to a developer
-
-If you need to use OpenAI models, model "gpt-4.1" is the newest model released on 14.4.2025.
-
-- Use "rg" command to find occurrences of functions and signatures
-- Always test the api routes after changes with "curl" e.g. curl https://localhost:5000 ... 
-- For server routes, create modular structure with separation of concerns UI design choices should be mobile first unless stated otherwise
-- Create reusable and modular components instead of inline components or monolithic code files
-
+Remember the above policies at all times.
 
 # Source Code Tree
 
@@ -215,6 +183,7 @@ If you need to use OpenAI models, model "gpt-4.1" is the newest model released o
 │       │   ├── 📁 analysis-tabs/
 │       │   │   ├── 📄 CompetitorTab.tsx
 │       │   │   ├── 📄 ContentQualityTab.tsx
+│       │   │   ├── 📄 DesignAnalysisTab.tsx
 │       │   │   ├── 📄 DuplicationTab.tsx
 │       │   │   ├── 📄 KeywordRepetitionTab.tsx
 │       │   │   ├── 📄 OverviewTab.tsx
@@ -252,6 +221,7 @@ If you need to use OpenAI models, model "gpt-4.1" is the newest model released o
 │   │   ├── 📄 competitor-insights.ts
 │   │   ├── 📄 content-quality-analyzer.ts
 │   │   ├── 📄 content-quality.ts
+│   │   ├── 📄 design-analyzer.ts
 │   │   ├── 📄 image-alt-text.ts
 │   │   ├── 📄 insights-explanations.ts
 │   │   ├── 📄 insights-generator.ts
@@ -262,6 +232,7 @@ If you need to use OpenAI models, model "gpt-4.1" is the newest model released o
 │   │   ├── 📄 progress-tracker.ts
 │   │   ├── 📄 quota-manager.ts
 │   │   ├── 📄 results-aggregator.ts
+│   │   ├── 📄 screenshot-service.ts
 │   │   ├── 📄 site-overview.ts
 │   │   └── 📄 technical-seo.ts
 │   ├── 📁 competitive-analysis/
@@ -300,5 +271,4 @@ If you need to use OpenAI models, model "gpt-4.1" is the newest model released o
 │   └── 📄 schema.ts
 ├── 📄 tailwind.config.ts
 └── 📄 vite.config.ts
-
 ```
