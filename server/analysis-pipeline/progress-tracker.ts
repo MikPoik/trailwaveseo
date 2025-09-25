@@ -119,6 +119,29 @@ export function emitAIProgress(
 }
 
 /**
+ * Emit design analysis progress update
+ */
+export function emitDesignProgress(
+  context: AnalysisContext,
+  totalPages: number,
+  analyzedPages: any[],
+  currentOperation: string = 'Analyzing Design...'
+): void {
+  
+  const update: ProgressUpdate = {
+    status: 'in-progress',
+    domain: context.domain,
+    pagesFound: totalPages,
+    pagesAnalyzed: analyzedPages.length,
+    currentPageUrl: currentOperation,
+    analyzedPages: analyzedPages.map(p => p.url),
+    percentage: 60 // Design analysis happens within insights generation
+  };
+  
+  context.events.emit(context.domain, update);
+}
+
+/**
  * Emit final processing progress update
  */
 export function emitFinalProgress(

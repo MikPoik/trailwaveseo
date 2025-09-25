@@ -124,30 +124,23 @@ export async function orchestrateAnalysis(
       throw new Error('Analysis cancelled by user');
     }
     
-    // Step 4: Capture screenshots and analyze design
-    console.log('Step 4: Capturing screenshots and analyzing design...');
-    const designAnalysis = await captureAndAnalyzeDesign(context, analyzedPages, options);
-    
-    // Step 5: Generate insights and suggestions  
-    console.log('Step 5: Generating insights...');
+    // Step 4: Generate insights and suggestions  
+    console.log('Step 4: Generating insights...');
     const insights = await generateInsights(context, analyzedPages, options);
-    
-    // Add design analysis to insights
-    insights.designAnalysis = designAnalysis;
     
     // Check for cancellation
     if (controller.signal.aborted) {
       throw new Error('Analysis cancelled by user');
     }
     
-    // Step 6: Aggregate results and save
-    console.log('Step 6: Aggregating results...');
+    // Step 5: Aggregate results and save
+    console.log('Step 5: Aggregating results...');
     const result = await aggregateResults(context, analyzedPages, insights, options);
     
     // Set final processing stats
     result.processingStats.totalProcessingTime = Date.now() - startTime;
     
-    // Step 7: Final progress update
+    // Step 6: Final progress update
     await reportCompletion(context, result);
     
     const totalTime = Date.now() - startTime;
@@ -255,6 +248,10 @@ async function captureAndAnalyzeDesign(
   try {
     console.log('Starting screenshot capture and design analysis...');
     
+    // Emit design analysis progress
+    const { emitDesignProgress } = await import('./progress-tracker.js');
+    emitDesignProgress(context, analyzedPages.length, analyzedPages, 'Capturing screenshots...');
+    
     // Select up to 5 most important pages for design analysis
     const pagesToAnalyze = selectPagesForDesignAnalysis(analyzedPages).slice(0, 5);
     
@@ -268,6 +265,9 @@ async function captureAndAnalyzeDesign(
     const screenshots = await captureMultipleScreenshots(
       pagesToAnalyze.map(p => p.url)
     );
+    
+    // Update progress after screenshot capture
+    emitDesignProgress(context, analyzedPages.length, analyzedPages, 'Analyzing page designs...');
     
     // Analyze design from screenshots
     const { analyzeMultiplePageDesigns } = await import('./design-analyzer.js');
@@ -362,6 +362,7 @@ async function generateInsights(
   
   const insights: any = {
     aiInsights: null,
+    designAnalysis: null,
     technicalAnalysis: null,
     contentQualityAnalysis: null,
     linkArchitectureAnalysis: null,
@@ -372,6 +373,12 @@ async function generateInsights(
   if (options.useAI && !options.isCompetitorAnalysis) {
     const { generateComprehensiveInsights } = await import('./insights-generator.js');
     insights.aiInsights = await generateComprehensiveInsights(context, analyzedPages, options);
+  }
+
+  // Capture screenshots and analyze design as part of AI insights
+  if (options.useAI && !options.isCompetitorAnalysis && context.settings.useAI) {
+    console.log('Analyzing Design...');
+    insights.designAnalysis = await captureAndAnalyzeDesign(context, analyzedPages, options);
   }
 
   // Generate enhanced analysis insights including unified content quality analysis
