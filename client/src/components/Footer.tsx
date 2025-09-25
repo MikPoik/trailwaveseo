@@ -12,7 +12,7 @@ export default function Footer({ className = "" }: FooterProps) {
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-center md:text-left">
             <p className="text-muted-foreground">
-              &copy; 2024 TrailWave SEO. Built with ❤️ on Replit.
+              &copy; 2025 TrailWave SEO. Built with ❤️ on Replit.
             </p>
           </div>
           <div className="flex items-center space-x-2 text-muted-foreground">
