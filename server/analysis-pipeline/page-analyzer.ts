@@ -45,6 +45,8 @@ export interface PageAnalysisResult {
   semanticKeywords: string[];
   suggestions?: string[];
   suggestionsTeaser?: string;
+  hasJsonLd: boolean;
+  structuredData: any[];
 }
 
 /**
@@ -306,20 +308,51 @@ async function performEnhancedPageAnalysis(
  * Extract basic SEO elements from page
  */
 function extractBasicSeoElements($: cheerio.CheerioAPI, url: string) {
-  const title = $('title').text().trim();
-  const metaDescription = $('meta[name="description"]').attr('content') || null;
-  const metaKeywords = $('meta[name="keywords"]').attr('content') || null;
-  const metaKeywordsArray = metaKeywords ? metaKeywords.split(',').map(k => k.trim()) : null;
-  const canonical = $('link[rel="canonical"]').attr('href') || null;
+  // Extract meta tags for SEO analysis
+  const metaTags = $('meta').map((_, el) => ({
+    name: $(el).attr('name') || $(el).attr('property') || $(el).attr('http-equiv'),
+    content: $(el).attr('content')
+  })).get().filter(tag => tag.name && tag.content);
+
+  // Extract meta description
+  const metaDescription = $('meta[name="description"]').attr('content') || 
+                         $('meta[property="og:description"]').attr('content') || '';
+
+  // Extract robots meta
   const robotsMeta = $('meta[name="robots"]').attr('content') || null;
 
+  // Extract canonical URL
+  const canonical = $('link[rel="canonical"]').attr('href') || null;
+
+  // Check for JSON-LD structured data
+  const jsonLdScripts = $('script[type="application/ld+json"]');
+  const hasJsonLd = jsonLdScripts.length > 0;
+
+  // Extract JSON-LD data for analysis
+  const structuredData: any[] = [];
+  jsonLdScripts.each((_, script) => {
+    try {
+      const jsonContent = $(script).html();
+      if (jsonContent) {
+        const parsedData = JSON.parse(jsonContent);
+        structuredData.push(parsedData);
+      }
+    } catch (error) {
+      // Invalid JSON-LD, skip
+      console.warn(`Invalid JSON-LD found on ${url}:`, error);
+    }
+  });
+
   return {
-    title,
+    title: $('title').text().trim(),
     metaDescription,
-    metaKeywords,
-    metaKeywordsArray,
+    metaKeywords: $('meta[name="keywords"]').attr('content') || null,
+    metaKeywordsArray: $('meta[name="keywords"]').attr('content')?.split(',').map(k => k.trim()) || null,
     canonical,
-    robotsMeta
+    robotsMeta,
+    metaTags,
+    hasJsonLd,
+    structuredData
   };
 }
 
@@ -588,7 +621,7 @@ async function detectSeoIssues(
 ): Promise<SeoIssue[]> {
 
   const issues: SeoIssue[] = [];
-  const { title, metaDescription, headings, images } = { ...basicElements, ...contentElements };
+  const { title, metaDescription, headings, images, metaTags, robotsMeta, canonical, hasJsonLd, structuredData } = { ...basicElements, ...contentElements };
 
   // Title analysis
   if (!title || title.length === 0) {
@@ -675,6 +708,29 @@ async function detectSeoIssues(
       title: 'Low Content Volume',
       description: `Page has only ${contentQuality.wordCount} words.`
     });
+  }
+
+  // JSON-LD analysis
+  if (!hasJsonLd) {
+    issues.push({
+      category: 'structured-data' as SeoCategory,
+      severity: 'warning',
+      title: 'Missing JSON-LD',
+      description: 'This page does not have JSON-LD structured data, which can improve search engine understanding.'
+    });
+  } else if (structuredData && structuredData.length > 0) {
+    const hasOrganizationSchema = structuredData.some(data => data['@type'] === 'Organization');
+    const hasLocalBusinessSchema = structuredData.some(data => Array.isArray(data['@type']) ? data['@type'].includes('LocalBusiness') : data['@type'] === 'LocalBusiness');
+    const hasProductSchema = structuredData.some(data => data['@type'] === 'Product');
+
+    if (!hasOrganizationSchema && !hasLocalBusinessSchema && !hasProductSchema) {
+      issues.push({
+        category: 'structured-data' as SeoCategory,
+        severity: 'info',
+        title: 'JSON-LD Schema Type Not Recognized',
+        description: 'The detected JSON-LD schema type is not one of the commonly recognized types (Organization, LocalBusiness, Product).'
+      });
+    }
   }
 
   return issues;

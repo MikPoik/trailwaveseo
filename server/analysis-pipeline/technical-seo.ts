@@ -237,11 +237,17 @@ async function analyzeTechnicalElements(pages: PageAnalysisResult[], domain: str
   let twitterCardData: any = {};
 
   // Check if any page has JSON-LD structured data
-  const hasJsonLd = pages.some(page => (page as any).hasJsonLd);
+  const hasJsonLd = pages.some(page => page.hasJsonLd);
   
   pages.forEach(page => {
     // JSON-LD structured data detection
-    if ((page as any).hasJsonLd) structuredDataScore += 1;
+    if (page.hasJsonLd) {
+      structuredDataScore += 1;
+      // Collect structured data from all pages
+      if (page.structuredData && page.structuredData.length > 0) {
+        allSchemaMarkup.push(...page.structuredData);
+      }
+    }
 
     // Canonical URL implementation
     if (page.canonical) canonicalImplementation += 1;
@@ -379,6 +385,39 @@ function generateTechnicalRecommendations(
         'Add Organization or Business schema',
         'Implement Article schema for content pages',
         'Consider Product schema if applicable'
+      ],
+      impact: 6
+    });
+  }
+
+  // Sitemap recommendations
+  if (!technical.xmlSitemap) {
+    recommendations.push({
+      category: 'technical-seo',
+      priority: 'medium',
+      title: 'Create XML Sitemap',
+      description: 'XML sitemap helps search engines discover and index your pages more efficiently.',
+      actionItems: [
+        'Generate an XML sitemap for your website',
+        'Submit sitemap to Google Search Console',
+        'Include sitemap URL in robots.txt file'
+      ],
+      impact: 7
+    });
+  }
+
+  // JSON-LD specific recommendations
+  if (!technical.hasJsonLd) {
+    recommendations.push({
+      category: 'structured-data',
+      priority: 'medium',
+      title: 'Add JSON-LD Structured Data',
+      description: 'JSON-LD is the preferred format for structured data by Google.',
+      actionItems: [
+        'Implement JSON-LD schema markup',
+        'Add Organization schema to homepage',
+        'Include appropriate schema types for your content',
+        'Validate structured data using Google\'s Rich Results Test'
       ],
       impact: 6
     });
