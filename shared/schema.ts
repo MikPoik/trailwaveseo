@@ -143,7 +143,7 @@ export interface ScreenshotData {
 }
 
 export interface DesignRecommendation {
-  category: 'layout' | 'navigation' | 'visual_hierarchy' | 'accessibility' | 'mobile_responsiveness' | 'branding' | 'content_structure';
+  category: 'layout' | 'navigation' | 'visual_hierarchy' | 'accessibility' | 'mobile_responsiveness' | 'branding' | 'content_structure' | 'brand_color_psychology';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;

@@ -68,7 +68,13 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 4. **Mobile Responsiveness**: Based on the layout, how well would this adapt to mobile?
 5. **Accessibility**: Are there potential accessibility issues visible?
 6. **Branding & Visual Appeal**: How consistent and appealing is the visual design? Include color, typography, and imagery.
-7. **User Experience**: How user-friendly does the interface appear?
+7. **Brand Color Analysis & Emotional Impact**: 
+   - What emotions and feelings do the color choices convey to users?
+   - How do the colors align with brand perception (trustworthy, modern, professional, friendly, etc.)?
+   - Is there good color harmony and visual cohesion?
+   - Do the colors support the intended brand message and target audience?
+   - Are there any cultural or psychological associations with the color palette?
+8. **User Experience**: How user-friendly does the interface appear?
 
 **You must respond with valid JSON only in this exact format:**
 
@@ -102,7 +108,7 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 - Score from 0-100 based on overall design quality
 - Focus on practical, implementable suggestions
 - Include both strengths (2-5 items) and weaknesses (2-5 items)
-- Recommendations should have varied categories: layout, navigation, visual_hierarchy, accessibility, mobile_responsiveness, branding, content_structure
+- Recommendations should have varied categories: layout, navigation, visual_hierarchy, accessibility, mobile_responsiveness, branding, content_structure, brand_color_psychology
 - Severity levels: critical, high, medium, low
 - Write response in same language as the page content if non-English
 - Return ONLY valid JSON, no additional text
@@ -254,7 +260,7 @@ function validateAndStructureAnalysis(
  * Validate recommendation category
  */
 function validateCategory(category: any): DesignRecommendation["category"] {
-  const validCategories = ["layout", "navigation", "visual_hierarchy", "accessibility", "mobile_responsiveness", "branding", "content_structure"];
+  const validCategories = ["layout", "navigation", "visual_hierarchy", "accessibility", "mobile_responsiveness", "branding", "content_structure", "brand_color_psychology"];
   return validCategories.includes(category) ? category : "layout";
 }
 
