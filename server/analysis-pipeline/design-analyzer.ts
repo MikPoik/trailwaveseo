@@ -99,7 +99,10 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 - Recommendations should have varied categories: layout, navigation, visual_hierarchy, accessibility, mobile_responsiveness, branding
 - Severity levels: critical, high, medium, low
 - Write response in same language as the page content if non-English
-- Return ONLY valid JSON, no additional text`;
+- Return ONLY valid JSON, no additional text
+- **Write suggestions and analysis in the same language as the page content**
+
+NOTE: due to automatic screenshot capture, page's navigation menu might be showing in wrong position. Assume navigation menu is correctly placed on the page. Ignore possible Cookie consent banners or other temporary elements. Focus on the main content layout and design.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
