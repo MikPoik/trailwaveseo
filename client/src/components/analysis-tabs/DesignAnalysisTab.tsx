@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WebsiteAnalysis } from "@/lib/types";
-import { Eye, Layout, Smartphone, Accessibility, Palette, Navigation, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { Eye, Layout, Smartphone, Accessibility, Palette, Navigation, AlertCircle, CheckCircle, Info, FileText } from "lucide-react";
 
 interface DesignAnalysisTabProps {
   analysis: WebsiteAnalysis;
@@ -96,6 +96,8 @@ const DesignAnalysisTab = ({ analysis }: DesignAnalysisTabProps) => {
       case 'branding':
       case 'visual_hierarchy':
         return <Palette className="h-4 w-4" />;
+      case 'content_structure':
+        return <FileText className="h-4 w-4" />;
       default:
         return <Eye className="h-4 w-4" />;
     }

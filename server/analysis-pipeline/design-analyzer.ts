@@ -59,10 +59,16 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 
 1. **Layout & Visual Hierarchy**: How well organized is the content? Is there clear visual hierarchy?
 2. **Navigation**: Is the navigation intuitive and accessible?
-3. **Mobile Responsiveness**: Based on the layout, how well would this adapt to mobile?
-4. **Accessibility**: Are there potential accessibility issues visible?
-5. **Branding & Visual Appeal**: How consistent and appealing is the visual design? Include color, typography, and imagery.
-6. **User Experience**: How user-friendly does the interface appear?
+3. **Content Structure & Readability**: 
+   - Are paragraphs appropriately positioned and spaced?
+   - Do text blocks appear too dense or overwhelming?
+   - Is there good balance between text and white space?
+   - Are paragraphs too long without proper breaks?
+   - Does the content flow naturally and encourage reading?
+4. **Mobile Responsiveness**: Based on the layout, how well would this adapt to mobile?
+5. **Accessibility**: Are there potential accessibility issues visible?
+6. **Branding & Visual Appeal**: How consistent and appealing is the visual design? Include color, typography, and imagery.
+7. **User Experience**: How user-friendly does the interface appear?
 
 **You must respond with valid JSON only in this exact format:**
 
@@ -96,7 +102,7 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 - Score from 0-100 based on overall design quality
 - Focus on practical, implementable suggestions
 - Include both strengths (2-5 items) and weaknesses (2-5 items)
-- Recommendations should have varied categories: layout, navigation, visual_hierarchy, accessibility, mobile_responsiveness, branding
+- Recommendations should have varied categories: layout, navigation, visual_hierarchy, accessibility, mobile_responsiveness, branding, content_structure
 - Severity levels: critical, high, medium, low
 - Write response in same language as the page content if non-English
 - Return ONLY valid JSON, no additional text
@@ -248,7 +254,7 @@ function validateAndStructureAnalysis(
  * Validate recommendation category
  */
 function validateCategory(category: any): DesignRecommendation["category"] {
-  const validCategories = ["layout", "navigation", "visual_hierarchy", "accessibility", "mobile_responsiveness", "branding"];
+  const validCategories = ["layout", "navigation", "visual_hierarchy", "accessibility", "mobile_responsiveness", "branding", "content_structure"];
   return validCategories.includes(category) ? category : "layout";
 }
 
