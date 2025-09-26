@@ -14,7 +14,8 @@ import {
   BarChart3,
   FileText,
   Users,
-  Shield
+  Shield,
+  MessageSquare
 } from "lucide-react";
 import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
@@ -34,15 +35,15 @@ const Pricing = () => {
           <div className="text-center">
             <Badge variant="secondary" className="mb-6">
               <Coins className="w-3 h-3 mr-1" />
-              Fair Credit-Based Pricing
+              Credit-Based Pricing Packages
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
               Simple, Transparent Pricing
-              <span className="text-primary block">Pay Only for What You Use</span>
+              <span className="text-primary block">Choose Your Credit Package</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
               Our credit-based system ensures you only pay for the SEO analysis you need. 
-              Start with a generous free trial, then scale with flexible pricing that grows with your business.
+              Purchase credit packages that fit your usage and scale with your business growth.
             </p>
           </div>
         </div>
@@ -53,146 +54,136 @@ const Pricing = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             
-            {/* Free Trial */}
+            {/* Starter Pack */}
             <Card className="relative border-2 border-muted">
               <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl">Free Trial</CardTitle>
+                <CardTitle className="text-2xl">Starter Pack</CardTitle>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">Free</span>
-                  <span className="text-muted-foreground ml-2">to start</span>
+                  <span className="text-4xl font-bold">€4.99</span>
                 </div>
                 <p className="text-muted-foreground mt-2">
-                  Perfect for testing our platform
+                  50 Credits • ~€0.100 per credit
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>50 free credits included</span>
+                    <span>50 credits for scans & AI features</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>10 website scans (5 credits each)</span>
+                    <span>Scans: 3 credits each</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Basic SEO analysis</span>
+                    <span>AI suggestions: 1 credit per page</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Export to CSV/JSON</span>
+                    <span>Competitor analysis: 1 credits</span>
                   </div>
                   <div className="flex items-center">
-                    <X className="w-5 h-5 text-muted-foreground mr-3" />
-                    <span className="text-muted-foreground">AI-powered suggestions</span>
-                  </div>
-                  <div className="flex items-center">
-                    <X className="w-5 h-5 text-muted-foreground mr-3" />
-                    <span className="text-muted-foreground">Competitor analysis</span>
+                    <Check className="w-5 h-5 text-green-500 mr-3" />
+                    <span>Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
                 <Button onClick={handleGetStarted} className="w-full">
-                  Start Free Trial
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <Coins className="w-4 h-4 mr-2" />
+                  Purchase Credits
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Pro Plan */}
+            {/* Pro Pack */}
             <Card className="relative border-2 border-primary shadow-lg">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground px-3 py-1">
+                <Badge className="bg-blue-500 text-white px-3 py-1">
                   <Star className="w-3 h-3 mr-1" />
                   Most Popular
                 </Badge>
               </div>
               <CardHeader className="text-center pb-8 pt-8">
-                <CardTitle className="text-2xl">Pro</CardTitle>
+                <CardTitle className="text-2xl">Pro Pack</CardTitle>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">$29</span>
-                  <span className="text-muted-foreground ml-2">/month</span>
+                  <span className="text-4xl font-bold">€9.99</span>
                 </div>
                 <p className="text-muted-foreground mt-2">
-                  For growing businesses and agencies
+                  120 Credits • ~€0.083 per credit
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>500 credits per month</span>
+                    <span>120 credits for scans & AI features</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>166+ website scans (3 credits each)</span>
+                    <span>Scans: 3 credits each</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>AI-powered SEO suggestions</span>
+                    <span>AI suggestions: 1 credit per page</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Competitor analysis</span>
+                    <span>Competitor analysis: 1 credits</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Priority support</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Advanced export options</span>
+                    <span>Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
                 <Button onClick={handleGetStarted} className="w-full" size="lg">
-                  Start Pro Plan
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <Coins className="w-4 h-4 mr-2" />
+                  Purchase Credits
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Enterprise */}
+            {/* Business Pack */}
             <Card className="relative border-2 border-muted">
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl">Enterprise</CardTitle>
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-purple-500 text-white px-3 py-1">
+                  Best Value
+                </Badge>
+              </div>
+              <CardHeader className="text-center pb-8 pt-8">
+                <CardTitle className="text-2xl">Business Pack</CardTitle>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">$99</span>
-                  <span className="text-muted-foreground ml-2">/month</span>
+                  <span className="text-4xl font-bold">€19.99</span>
                 </div>
                 <p className="text-muted-foreground mt-2">
-                  For large teams and organizations
+                  280 Credits • ~€0.071 per credit
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>2000 credits per month</span>
+                    <span>280 credits for scans & AI features</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>666+ website scans (3 credits each)</span>
+                    <span>Scans: 3 credits each</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Advanced AI features</span>
+                    <span>AI suggestions: 1 credit per page</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>White-label reports</span>
+                    <span>Competitor analysis: 1 credits</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>API access</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Dedicated support</span>
+                    <span>Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} variant="outline" className="w-full">
-                  Contact Sales
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button onClick={handleGetStarted} className="w-full">
+                  <Coins className="w-4 h-4 mr-2" />
+                  Purchase Credits
                 </Button>
               </CardContent>
             </Card>
@@ -222,14 +213,14 @@ const Pricing = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span>Trial Users</span>
-                    <Badge variant="outline">5 credits per scan</Badge>
-                  </div>
                   <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
-                    <span>Paid Users</span>
-                    <Badge className="bg-primary text-primary-foreground">3 credits per scan</Badge>
+                    <span>Website Scan</span>
+                    <Badge className="bg-primary text-primary-foreground">3 credits</Badge>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    Each comprehensive website scan including technical SEO analysis, 
+                    page discovery, and basic optimization recommendations.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -238,18 +229,22 @@ const Pricing = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bot className="h-5 w-5 text-primary" />
-                  Premium Features
+                  AI-Powered Features
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span>AI Suggestions</span>
-                    <Badge variant="outline">+1 credit</Badge>
+                    <span>AI Suggestions (per page)</span>
+                    <Badge variant="outline">1 credit</Badge>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span>Competitor Analysis</span>
-                    <Badge variant="outline">+2 credits</Badge>
+                    <Badge variant="outline">1 credit</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span>Chat (per 10 messages)</span>
+                    <Badge variant="outline">1 credit</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -258,15 +253,15 @@ const Pricing = () => {
         </div>
       </section>
 
-      {/* Features Comparison */}
+      {/* Value Comparison */}
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-4">
-              Feature Comparison
+              Package Comparison
             </h2>
             <p className="text-xl text-muted-foreground">
-              Choose the plan that best fits your SEO analysis needs
+              Choose the package that best fits your SEO analysis needs
             </p>
           </div>
 
@@ -274,40 +269,52 @@ const Pricing = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-4 pr-8">Features</th>
-                  <th className="text-center py-4 px-4">Free Trial</th>
-                  <th className="text-center py-4 px-4">Pro</th>
-                  <th className="text-center py-4 px-4">Enterprise</th>
+                  <th className="text-left py-4 pr-8">Package Details</th>
+                  <th className="text-center py-4 px-4">Starter Pack</th>
+                  <th className="text-center py-4 px-4">Pro Pack</th>
+                  <th className="text-center py-4 px-4">Business Pack</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 <tr>
-                  <td className="py-4 pr-8 font-medium">Monthly Credits</td>
+                  <td className="py-4 pr-8 font-medium">Total Credits</td>
                   <td className="text-center py-4 px-4">50</td>
-                  <td className="text-center py-4 px-4">500</td>
-                  <td className="text-center py-4 px-4">2000</td>
+                  <td className="text-center py-4 px-4">120</td>
+                  <td className="text-center py-4 px-4">280</td>
                 </tr>
                 <tr>
-                  <td className="py-4 pr-8 font-medium">Website Scans</td>
-                  <td className="text-center py-4 px-4">~10</td>
-                  <td className="text-center py-4 px-4">166+</td>
-                  <td className="text-center py-4 px-4">666+</td>
+                  <td className="py-4 pr-8 font-medium">Price</td>
+                  <td className="text-center py-4 px-4">€4.99</td>
+                  <td className="text-center py-4 px-4">€9.99</td>
+                  <td className="text-center py-4 px-4">€19.99</td>
                 </tr>
                 <tr>
-                  <td className="py-4 pr-8 font-medium">Basic SEO Analysis</td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <td className="py-4 pr-8 font-medium">Cost per Credit</td>
+                  <td className="text-center py-4 px-4">~€0.100</td>
+                  <td className="text-center py-4 px-4">~€0.083</td>
+                  <td className="text-center py-4 px-4">~€0.071</td>
                 </tr>
                 <tr>
-                  <td className="py-4 pr-8 font-medium">AI-Powered Suggestions</td>
-                  <td className="text-center py-4 px-4"><X className="w-5 h-5 text-muted-foreground mx-auto" /></td>
+                  <td className="py-4 pr-8 font-medium">Website Scans (~16 scans)</td>
+                  <td className="text-center py-4 px-4">~16 scans</td>
+                  <td className="text-center py-4 px-4">~40 scans</td>
+                  <td className="text-center py-4 px-4">~93 scans</td>
+                </tr>
+                <tr>
+                  <td className="py-4 pr-8 font-medium">AI Features</td>
+                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                 </tr>
                 <tr>
                   <td className="py-4 pr-8 font-medium">Competitor Analysis</td>
-                  <td className="text-center py-4 px-4"><X className="w-5 h-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="py-4 pr-8 font-medium">Chat Support</td>
+                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                 </tr>
@@ -315,18 +322,6 @@ const Pricing = () => {
                   <td className="py-4 pr-8 font-medium">Export Reports</td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 pr-8 font-medium">Priority Support</td>
-                  <td className="text-center py-4 px-4"><X className="w-5 h-5 text-muted-foreground mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 pr-8 font-medium">API Access</td>
-                  <td className="text-center py-4 px-4"><X className="w-5 h-5 text-muted-foreground mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><X className="w-5 h-5 text-muted-foreground mx-auto" /></td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                 </tr>
               </tbody>
@@ -347,42 +342,41 @@ const Pricing = () => {
           <div className="space-y-8">
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-3">How do credits work?</h3>
+                <h3 className="text-lg font-semibold mb-3">How do credit packages work?</h3>
                 <p className="text-muted-foreground">
-                  Credits are consumed based on the features you use. A basic website scan costs 3-5 credits 
-                  depending on your plan, while premium features like AI suggestions and competitor analysis 
-                  require additional credits.
+                  Purchase credit packages that suit your needs. Credits are consumed based on the features you use:
+                  website scans (3 credits), AI suggestions (1 credit per page), competitor analysis (1 credit), 
+                  and chat support (1 credit per 10 messages).
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-3">What happens if I run out of credits?</h3>
+                <h3 className="text-lg font-semibold mb-3">Do credits expire?</h3>
                 <p className="text-muted-foreground">
-                  You can upgrade your plan at any time or purchase additional credit packages. 
-                  Your account will show your remaining credit balance, and you'll receive notifications 
-                  when running low.
+                  No, credits do not expire. Once purchased, you can use them at your own pace. 
+                  This gives you complete flexibility to analyze websites when needed.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-3">Can I cancel anytime?</h3>
+                <h3 className="text-lg font-semibold mb-3">Can I purchase multiple packages?</h3>
                 <p className="text-muted-foreground">
-                  Yes, you can cancel your subscription at any time. Your remaining credits will stay 
-                  active until the end of your billing period, and you won't be charged for the next cycle.
+                  Yes, you can purchase multiple credit packages. All credits will be added to your account balance 
+                  and can be used for any features across the platform.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-3">Do credits roll over?</h3>
+                <h3 className="text-lg font-semibold mb-3">What's the difference between packages?</h3>
                 <p className="text-muted-foreground">
-                  Unused credits do not roll over to the next billing period. We recommend choosing a plan 
-                  that matches your expected monthly usage to get the best value.
+                  The main difference is the number of credits and cost efficiency. Larger packages offer 
+                  better value per credit: Starter (€0.100/credit), Pro (€0.083/credit), Business (€0.071/credit).
                 </p>
               </CardContent>
             </Card>
@@ -397,11 +391,11 @@ const Pricing = () => {
             Ready to improve your SEO?
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Start with our free trial and see the difference professional SEO analysis can make
+            Choose your credit package and start analyzing your website's SEO performance today
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={handleGetStarted} className="text-lg px-8">
-              Start Free Trial
+              Get Started Now
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button variant="outline" size="lg" asChild className="text-lg px-8">
