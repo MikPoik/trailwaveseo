@@ -33,9 +33,14 @@ const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             {!isAuthenticated && (
-              <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                How It Works
-              </Link>
+              <>
+                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                  How It Works
+                </Link>
+                <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Pricing
+                </Link>
+              </>
             )}
             {isAuthenticated && (
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -78,13 +83,22 @@ const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
           <div className="md:hidden border-t bg-background/95 backdrop-blur-sm">
             <nav className="px-4 py-4 space-y-4">
               {!isAuthenticated && (
-                <Link 
-                  href="/how-it-works" 
-                  className="block text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  How It Works
-                </Link>
+                <>
+                  <Link 
+                    href="/how-it-works" 
+                    className="block text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    How It Works
+                  </Link>
+                  <Link 
+                    href="/pricing" 
+                    className="block text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Pricing
+                  </Link>
+                </>
               )}
               {isAuthenticated && (
                 <Link 

@@ -8,6 +8,7 @@ import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import SiteHistory from "@/pages/SiteHistory";
 import HowItWorks from "@/pages/HowItWorks";
+import Pricing from "@/pages/Pricing";
 import Settings from "@/pages/Settings";
 import AnalysisDetails from "@/pages/AnalysisDetails";
 import Account from "@/pages/Account";
@@ -50,6 +51,7 @@ function Router() {
         {/* Public Landing Page */}
         <Route path="/" component={Landing} />
         <Route path="/how-it-works" component={HowItWorks} />
+        <Route path="/pricing" component={Pricing} />
         
         {/* Protected Application Routes */}
         <Route path="/dashboard">
