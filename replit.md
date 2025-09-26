@@ -38,7 +38,7 @@ Phase 3: Execution
 
 Phase 4: Verification
 - Execute verification in single function_call block (restart_workflow, get_latest_lsp_diagnostics, refresh_all_logs)
-When HMR confirms no errors -> SUCCESS and STOP
+When HMR confirms no errors -> SUCCESS and STOP and return to user
 
 
 **MANDATORY** Key Optimization Opportunities:
