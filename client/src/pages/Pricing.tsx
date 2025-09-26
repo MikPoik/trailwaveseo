@@ -214,12 +214,16 @@ const Pricing = () => {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
-                    <span>Website Scan</span>
+                    <span>Website Scan (Credit Users)</span>
                     <Badge className="bg-primary text-primary-foreground">3 credits</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-orange-100 rounded-lg">
+                    <span>Website Scan (Trial Users)</span>
+                    <Badge className="bg-orange-600 text-white">5 credits</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Each comprehensive website scan including technical SEO analysis, 
-                    page discovery, and basic optimization recommendations.
+                    page discovery, and basic optimization recommendations. Trial users pay 5 credits per scan.
                   </p>
                 </div>
               </CardContent>
