@@ -372,13 +372,73 @@ function extractBasicSeoElements($: cheerio.CheerioAPI, url: string) {
  * Extract content elements and analyze quality
  */
 function extractContentElements($: cheerio.CheerioAPI, url: string, settings: any) {
-  // Extract headings
+  // Enhanced heading extraction for SSR React components
   const headings: Heading[] = [];
-  // Modified to also capture H1 tags that might be part of SSR rendered React components
+  
+  // Traditional heading tags
   $('h1, h2, h3, h4, h5, h6').each((_, el) => {
-    headings.push({
-      level: parseInt($(el).get(0).tagName.substring(1)), // Extract level from tag name (e.g., 'h1' -> 1)
-      text: $(el).text().trim()
+    const text = $(el).text().trim();
+    if (text) {
+      headings.push({
+        level: parseInt($(el).get(0).tagName.substring(1)),
+        text: text
+      });
+    }
+  });
+
+  // Look for heading-like elements in SSR React components
+  // These often use div/span with heading-like classes instead of semantic heading tags
+  const headingSelectors = [
+    '[class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"]', // Very large text (likely H1)
+    '[class*="text-3xl"]', // Large text (likely H2)
+    '[class*="text-2xl"]', // Medium-large text (likely H3)
+    '[class*="text-xl"]', // Medium text (likely H4/H5/H6)
+    '[class*="font-bold"][class*="text-lg"]', // Bold large text
+    '[class*="heading"]', // Explicit heading classes
+    '[class*="title"]' // Title classes
+  ];
+
+  headingSelectors.forEach((selector, index) => {
+    $(selector).each((_, el) => {
+      const $el = $(el);
+      const text = $el.text().trim();
+      
+      // Skip if already processed as a semantic heading
+      if ($el.is('h1, h2, h3, h4, h5, h6')) return;
+      
+      // Skip if this element contains other heading elements
+      if ($el.find('h1, h2, h3, h4, h5, h6').length > 0) return;
+      
+      // Skip if text is too long (likely not a heading)
+      if (text.length > 200) return;
+      
+      // Skip if text is too short or looks like UI text
+      if (text.length < 3 || text.match(/^(menu|login|signup|cart|search|home|about|contact)$/i)) return;
+
+      if (text) {
+        // Determine heading level based on text size classes
+        let level = 6; // Default to H6
+        if (selector.includes('text-4xl') || selector.includes('text-5xl') || selector.includes('text-6xl') || selector.includes('text-7xl')) {
+          level = 1;
+        } else if (selector.includes('text-3xl')) {
+          level = 2;
+        } else if (selector.includes('text-2xl')) {
+          level = 3;
+        } else if (selector.includes('text-xl')) {
+          level = 4;
+        } else if (selector.includes('text-lg')) {
+          level = 5;
+        }
+
+        // Avoid duplicates by checking if we already have this exact text
+        const isDuplicate = headings.some(h => h.text === text && Math.abs(h.level - level) <= 1);
+        if (!isDuplicate) {
+          headings.push({
+            level: level,
+            text: text
+          });
+        }
+      }
     });
   });
 
@@ -404,45 +464,76 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
   const maxTotalLength = 15000;
   const maxParagraphLength = 1000;
 
-  // Extract all text content for comprehensive analysis
-  // This needs to be more robust for SSR React pages, potentially by looking for
-  // elements with specific data attributes or by trying to execute client-side scripts if possible.
-  // For now, we improve the cheerio parsing by removing common non-content tags and script/style.
+  // Enhanced content extraction for SSR React pages
+  // Remove non-content elements more aggressively
   const allTextContent = $('body').clone()
-    .find('script, style, nav, header, footer, aside, .menu, .navigation, .sidebar, .comments') // Added more non-content selectors
+    .find('script, style, nav, header, footer, aside, .menu, .navigation, .sidebar, .comments, noscript, [aria-hidden="true"]')
     .remove()
     .end()
     .text()
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Extract paragraphs with enhanced metadata
-  $('p').each((_, el) => {
-    if (totalContentLength >= maxTotalLength) {
-      return false;
-    }
+  // Enhanced paragraph extraction for modern SSR pages
+  // Look for paragraphs in various containers including divs with text-like classes
+  const paragraphSelectors = [
+    'p', // Traditional paragraphs
+    'div[class*="text-"]', // Tailwind text utility classes
+    'div[class*="prose"]', // Prose content
+    'div[class*="content"]', // Content containers
+    'div[class*="description"]', // Description containers
+    'div[class*="lead"]', // Lead text
+    '[class*="text-lg"]', // Large text (often paragraph-like)
+    '[class*="text-base"]', // Base text size
+    '[class*="text-muted"]', // Muted text (often descriptions)
+    'span[class*="text-"]' // Text spans that might contain paragraph content
+  ];
 
-    let paragraphText = $(el).text().trim();
-    if (paragraphText.length > 0) {
-      // Extract sentences from paragraph
-      const paragraphSentences = paragraphText.match(/[^\.!?]+[\.!?]+/g) || [];
-      sentences.push(...paragraphSentences.map(s => s.trim()));
-
-      if (paragraphText.length > maxParagraphLength) {
-        paragraphText = paragraphText.substring(0, maxParagraphLength) + '...';
-      }
-
-      if (totalContentLength + paragraphText.length <= maxTotalLength) {
-        paragraphs.push(paragraphText);
-        totalContentLength += paragraphText.length;
-      } else {
-        const remainingLength = maxTotalLength - totalContentLength;
-        if (remainingLength > 0) {
-          paragraphs.push(paragraphText.substring(0, remainingLength) + '...');
-        }
+  paragraphSelectors.forEach(selector => {
+    $(selector).each((_, el) => {
+      if (totalContentLength >= maxTotalLength) {
         return false;
       }
-    }
+
+      const $el = $(el);
+      
+      // Skip if this element is inside another paragraph-like element we've already processed
+      const isNested = $el.parents(paragraphSelectors.join(', ')).length > 0;
+      if (isNested && selector !== 'p') return;
+
+      // Skip if element contains other block elements (likely not a paragraph)
+      const hasBlockChildren = $el.find('div, p, h1, h2, h3, h4, h5, h6, ul, ol, li').length > 0;
+      if (hasBlockChildren && selector !== 'p') return;
+
+      let paragraphText = $el.text().trim();
+      
+      // Filter out very short text that's likely not paragraph content
+      if (paragraphText.length < 20) return;
+      
+      // Filter out text that looks like navigation or UI elements
+      if (paragraphText.match(/^(home|about|contact|menu|login|signup|cart|search)$/i)) return;
+      
+      if (paragraphText.length > 0) {
+        // Extract sentences from paragraph
+        const paragraphSentences = paragraphText.match(/[^\.!?]+[\.!?]+/g) || [];
+        sentences.push(...paragraphSentences.map(s => s.trim()));
+
+        if (paragraphText.length > maxParagraphLength) {
+          paragraphText = paragraphText.substring(0, maxParagraphLength) + '...';
+        }
+
+        if (totalContentLength + paragraphText.length <= maxTotalLength) {
+          paragraphs.push(paragraphText);
+          totalContentLength += paragraphText.length;
+        } else {
+          const remainingLength = maxTotalLength - totalContentLength;
+          if (remainingLength > 0) {
+            paragraphs.push(paragraphText.substring(0, remainingLength) + '...');
+          }
+          return false;
+        }
+      }
+    });
   });
 
   return {
@@ -610,18 +701,22 @@ function extractCardElements($: cheerio.CheerioAPI, url: string) {
 
   console.log(`Analyzing card elements for ${url}`);
 
-  // Common card selectors for modern UI frameworks
+  // Enhanced card selectors for modern UI frameworks and SSR React components
   const cardSelectors = [
     '.card', // Traditional card class
     '[class*="card"]', // Any class containing "card"
-    '[class*="rounded"]', // Rounded containers (common in cards)
-    '[class*="shadow"]', // Shadow containers (common in cards)
+    '[class*="rounded-lg"][class*="bg-card"]', // Tailwind card pattern
+    '[class*="rounded-lg"][class*="shadow"]', // Rounded with shadow
     '[class*="border"][class*="rounded"]', // Bordered rounded containers
-    '[class*="bg-card"]', // Tailwind card background
+    '[class*="bg-card"][class*="text-card-foreground"]', // Tailwind card with foreground
+    '[class*="rounded"][class*="border-0"][class*="shadow"]', // Borderless rounded with shadow
     '[data-card]', // Data attribute cards
     '[role="article"]', // Semantic article cards
-    '.grid > div', // Grid items that might be cards
-    '.flex > div' // Flex items that might be cards
+    '.grid > div[class*="rounded"]', // Grid items with rounded borders
+    '.flex > div[class*="shadow"]', // Flex items with shadows
+    'article', // Semantic articles
+    'section[class*="rounded"]', // Rounded sections
+    'div[class*="hover:shadow"]' // Elements with hover shadow effects
   ];
 
   cardSelectors.forEach(selector => {
