@@ -47,6 +47,14 @@ export interface PageAnalysisResult {
   suggestionsTeaser?: string;
   hasJsonLd: boolean;
   structuredData: any[];
+  cardElements?: Array<{
+    type: string;
+    title: string;
+    content: string;
+    classes: string;
+    hasImage: boolean;
+    hasCTA: boolean;
+  }>;
 }
 
 /**
@@ -215,6 +223,9 @@ async function performEnhancedPageAnalysis(
     // Extract CTA elements
     const ctaElements = extractCtaElements($, url);
 
+    // Extract card elements
+    const cardElements = extractCardElements($, url);
+
     // Analyze content quality
     const contentQuality = analyzeContentQuality(contentElements);
 
@@ -294,6 +305,7 @@ async function performEnhancedPageAnalysis(
       images: processedImages, // Use processed images with alt text
       ...linkElements,
       ctaElements,
+      cardElements, // Add detected card elements
       issues,
       ...contentQuality
     };
@@ -362,14 +374,13 @@ function extractBasicSeoElements($: cheerio.CheerioAPI, url: string) {
 function extractContentElements($: cheerio.CheerioAPI, url: string, settings: any) {
   // Extract headings
   const headings: Heading[] = [];
-  for (let i = 1; i <= 6; i++) {
-    $(`h${i}`).each((_, el) => {
-      headings.push({
-        level: i,
-        text: $(el).text().trim()
-      });
+  // Modified to also capture H1 tags that might be part of SSR rendered React components
+  $('h1, h2, h3, h4, h5, h6').each((_, el) => {
+    headings.push({
+      level: parseInt($(el).get(0).tagName.substring(1)), // Extract level from tag name (e.g., 'h1' -> 1)
+      text: $(el).text().trim()
     });
-  }
+  });
 
   // Extract images
   const images: AnalysisImage[] = [];
@@ -394,8 +405,11 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
   const maxParagraphLength = 1000;
 
   // Extract all text content for comprehensive analysis
+  // This needs to be more robust for SSR React pages, potentially by looking for
+  // elements with specific data attributes or by trying to execute client-side scripts if possible.
+  // For now, we improve the cheerio parsing by removing common non-content tags and script/style.
   const allTextContent = $('body').clone()
-    .find('script, style, nav, header, footer, aside, .menu, .navigation')
+    .find('script, style, nav, header, footer, aside, .menu, .navigation, .sidebar, .comments') // Added more non-content selectors
     .remove()
     .end()
     .text()
@@ -580,6 +594,82 @@ function extractCtaElements($: cheerio.CheerioAPI, url: string) {
   console.log(`Found ${ctaElements.length} CTA elements on ${url}`);
   return ctaElements;
 }
+
+/**
+ * Extract card elements from modern component-based layouts
+ */
+function extractCardElements($: cheerio.CheerioAPI, url: string) {
+  const cardElements: Array<{
+    type: string;
+    title: string;
+    content: string;
+    classes: string;
+    hasImage: boolean;
+    hasCTA: boolean;
+  }> = [];
+
+  console.log(`Analyzing card elements for ${url}`);
+
+  // Common card selectors for modern UI frameworks
+  const cardSelectors = [
+    '.card', // Traditional card class
+    '[class*="card"]', // Any class containing "card"
+    '[class*="rounded"]', // Rounded containers (common in cards)
+    '[class*="shadow"]', // Shadow containers (common in cards)
+    '[class*="border"][class*="rounded"]', // Bordered rounded containers
+    '[class*="bg-card"]', // Tailwind card background
+    '[data-card]', // Data attribute cards
+    '[role="article"]', // Semantic article cards
+    '.grid > div', // Grid items that might be cards
+    '.flex > div' // Flex items that might be cards
+  ];
+
+  cardSelectors.forEach(selector => {
+    $(selector).each((_, el) => {
+      const $el = $(el);
+      const classes = $el.attr('class') || '';
+
+      // Skip if this element is nested inside another card
+      if ($el.closest('.card, [class*="card"]').length > 1) return;
+
+      // Look for card-like styling patterns
+      const hasCardStyling = 
+        classes.includes('card') ||
+        classes.includes('shadow') ||
+        (classes.includes('border') && classes.includes('rounded')) ||
+        classes.includes('bg-card') ||
+        $el.attr('data-card') !== undefined;
+
+      if (!hasCardStyling && selector !== '[role="article"]') return;
+
+      // Extract card content
+      const title = $el.find('h1, h2, h3, h4, h5, h6, [class*="title"], [class*="heading"]').first().text().trim();
+      const contentText = $el.text().trim();
+
+      // Skip if content is too short (likely not a meaningful card)
+      if (contentText.length < 20) return;
+
+      // Skip if content is too long (likely a page section, not a card)
+      if (contentText.length > 500) return;
+
+      const hasImage = $el.find('img, [role="img"], picture').length > 0;
+      const hasCTA = $el.find('a, button, [role="button"], [class*="btn"], [class*="button"]').length > 0;
+
+      cardElements.push({
+        type: 'component_card',
+        title: title || 'Untitled Card',
+        content: contentText.substring(0, 200) + (contentText.length > 200 ? '...' : ''),
+        classes: classes,
+        hasImage: hasImage,
+        hasCTA: hasCTA
+      });
+    });
+  });
+
+  console.log(`Found ${cardElements.length} card elements on ${url}`);
+  return cardElements;
+}
+
 
 /**
  * Analyze content quality metrics
