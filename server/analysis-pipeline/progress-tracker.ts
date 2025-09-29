@@ -184,13 +184,16 @@ export async function reportAnalysisCompletion(
   };
   
   console.log(`[PROGRESS] Emitting completion event for domain: ${context.domain}`);
+  console.log(`[PROGRESS] Completion data keys:`, Object.keys(completionUpdate));
+  console.log(`[PROGRESS] Analysis result keys:`, Object.keys(result));
   console.log(`[PROGRESS] Completion with analysis data - pages: ${result.pages.length}, enhancedInsights:`, !!result.enhancedInsights);
   
+  // Emit the completion event
   context.events.emit(context.domain, completionUpdate);
   console.log(`[PROGRESS] Completion event emitted for ${context.domain} - ${result.pages.length} pages analyzed`);
   
-  // Add a small delay to ensure the event is processed
-  await new Promise(resolve => setTimeout(resolve, 100));
+  // Add a longer delay to ensure SSE processes the event
+  await new Promise(resolve => setTimeout(resolve, 500));
 }
 
 /**

@@ -134,6 +134,8 @@ export function registerAnalysisRoutes(app: Express) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
     // Send initial update
     res.write(`data: ${JSON.stringify({
@@ -148,14 +150,31 @@ export function registerAnalysisRoutes(app: Express) {
 
     // Event handler for this specific domain
     const progressHandler = (data: any) => {
-      console.log(`[SSE] Sending progress update for ${domain}:`, data.status, `${data.percentage}%`);
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
+      try {
+        console.log(`[SSE] Sending progress update for ${domain}:`, data.status, `${data.percentage}%`);
+        
+        // Ensure we have a clean JSON string
+        const jsonData = JSON.stringify(data);
+        res.write(`data: ${jsonData}\n\n`);
 
-      // If analysis is completed or errored, end the connection
-      if (data.status === 'completed' || data.status === 'error') {
-        console.log(`[SSE] Ending connection for ${domain} - status: ${data.status}`);
+        // If analysis is completed or errored, end the connection after a small delay
+        if (data.status === 'completed' || data.status === 'error' || data.status === 'cancelled') {
+          console.log(`[SSE] Ending connection for ${domain} - status: ${data.status}`);
+          
+          // Small delay to ensure the completion event is sent before closing
+          setTimeout(() => {
+            analysisEvents.removeListener(domain, progressHandler);
+            if (!res.headersSent) {
+              res.end();
+            }
+          }, 250);
+        }
+      } catch (error) {
+        console.error(`[SSE] Error sending progress update for ${domain}:`, error);
         analysisEvents.removeListener(domain, progressHandler);
-        res.end();
+        if (!res.headersSent) {
+          res.end();
+        }
       }
     };
 
@@ -164,6 +183,13 @@ export function registerAnalysisRoutes(app: Express) {
 
     // Handle client disconnect
     req.on('close', () => {
+      console.log(`[SSE] Client disconnected for ${domain}`);
+      analysisEvents.removeListener(domain, progressHandler);
+    });
+
+    // Handle connection errors
+    req.on('error', () => {
+      console.log(`[SSE] Connection error for ${domain}`);
       analysisEvents.removeListener(domain, progressHandler);
     });
   });

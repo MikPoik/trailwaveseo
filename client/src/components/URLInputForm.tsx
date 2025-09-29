@@ -34,9 +34,9 @@ const urlSchema = z.object({
 
 type FormValues = z.infer<typeof urlSchema>;
 
-const URLInputForm = ({ 
-  onAnalyzeStart, 
-  onAnalysisUpdate, 
+const URLInputForm = ({
+  onAnalyzeStart,
+  onAnalysisUpdate,
   onAnalysisComplete,
   analysisState
 }: URLInputFormProps) => {
@@ -74,33 +74,52 @@ const URLInputForm = ({
 
       return new Promise<WebsiteAnalysis>((resolve, reject) => {
         source.onmessage = (event) => {
-          const data = JSON.parse(event.data);
+          console.log("[SSE] Received event:", event.data);
 
-          if (data.status === "in-progress") {
-            onAnalysisUpdate({
-              domain,
-              pagesFound: data.pagesFound,
-              pagesAnalyzed: data.pagesAnalyzed,
-              currentPageUrl: data.currentPageUrl,
-              analyzedPages: data.analyzedPages,
-              percentage: data.percentage || 0
-            });
-          } else if (data.status === "completed") {
-            source.close();
-            if (data.analysis) {
-              // Dispatch custom event to notify other components that analysis is complete
-              window.dispatchEvent(new CustomEvent('analysisComplete', { detail: data.analysis }));
-              resolve(data.analysis);
-            } else {
-              reject(new Error("Analysis completed but no analysis data received"));
+          try {
+            const data = JSON.parse(event.data);
+            console.log("[SSE] Parsed data:", data);
+
+            if (data.status === "in-progress") {
+              onAnalysisUpdate({
+                domain,
+                pagesFound: data.pagesFound,
+                pagesAnalyzed: data.pagesAnalyzed,
+                currentPageUrl: data.currentPageUrl,
+                analyzedPages: data.analyzedPages,
+                percentage: data.percentage || 0
+              });
+            } else if (data.status === "completed") {
+              console.log("[SSE] Analysis completed, closing connection");
+              source.close();
+
+              if (data.analysis) {
+                console.log("[SSE] Analysis data received:", Object.keys(data.analysis));
+                // Dispatch custom event to notify other components that analysis is complete
+                window.dispatchEvent(new CustomEvent('analysisComplete', { detail: data.analysis }));
+                resolve(data.analysis);
+              } else {
+                console.error("[SSE] No analysis data in completion event");
+                reject(new Error("Analysis completed but no analysis data received"));
+              }
+            } else if (data.status === "error") {
+              console.log("[SSE] Analysis error:", data.error);
+              source.close();
+              reject(new Error(data.error || "Analysis failed"));
+            } else if (data.status === "cancelled") {
+              console.log("[SSE] Analysis cancelled");
+              source.close();
+              reject(new Error("Analysis was cancelled"));
             }
-          } else if (data.status === "error") {
+          } catch (parseError) {
+            console.error("[SSE] Failed to parse event data:", parseError);
             source.close();
-            reject(new Error(data.error || "Analysis failed"));
+            reject(new Error("Failed to parse progress data"));
           }
         };
 
         source.onerror = (error) => {
+          console.error("[SSE] Connection error:", error);
           source.close();
           reject(new Error("Failed to connect to analysis progress stream"));
         };
@@ -191,8 +210,8 @@ const URLInputForm = ({
             <p className="mt-1 text-sm text-gray-500">Enter a website URL without the https:// prefix</p>
           </div>
 
-          <RadioGroup 
-            defaultValue="sitemap" 
+          <RadioGroup
+            defaultValue="sitemap"
             className="flex items-center space-x-4"
             disabled={isPending || analysisState === "analyzing"}
             onValueChange={(value) => {
@@ -211,8 +230,8 @@ const URLInputForm = ({
 
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="advanced-options" 
+              <Checkbox
+                id="advanced-options"
                 checked={showAdvanced}
                 onCheckedChange={toggleAdvanced}
                 disabled={isPending || analysisState === "analyzing"}
@@ -220,8 +239,8 @@ const URLInputForm = ({
               <Label htmlFor="advanced-options">Show advanced options</Label>
             </div>
             <div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isPending || analysisState === "analyzing"}
               >
                 {isPending || analysisState === "analyzing" ? "Analyzing..." : "Analyze Website"}
