@@ -153,7 +153,7 @@ async function generateAIResponse(analysis: any, pageUrl: string, userMessage: s
     // Build context from analysis data
     const context = buildAnalysisContext(analysis, pageData, pageUrl);
 
-    // Use provided fresh content or fetch if user message indicates need
+    // Use provided fresh content (which may be fallback) or fetch if user message indicates need
     let freshContent = providedFreshContent;
     const needsFreshContent = shouldFetchFreshContent(userMessage);
 
@@ -162,6 +162,19 @@ async function generateAIResponse(analysis: any, pageUrl: string, userMessage: s
         freshContent = await fetchPageContent(pageUrl);
       } catch (error) {
         console.warn('Could not fetch fresh content, using analysis data:', error);
+        // Create fallback from page data if available
+        if (pageData) {
+          freshContent = {
+            title: pageData.title,
+            metaDescription: pageData.metaDescription,
+            headings: pageData.headings || [],
+            paragraphs: pageData.paragraphs || [],
+            images: pageData.images || [],
+            wordCount: pageData.wordCount || pageData.contentMetrics?.wordCount,
+            lastFetched: 'From analysis data (fallback)',
+            isFallback: true
+          };
+        }
       }
     }
 
@@ -183,7 +196,7 @@ async function generateAIResponse(analysis: any, pageUrl: string, userMessage: s
 ANALYSIS CONTEXT:
 ${context}
 
-${freshContent ? `FRESH PAGE CONTENT:\n${JSON.stringify(freshContent, null, 2)}` : ''}
+${freshContent ? `${freshContent.isFallback ? 'CACHED PAGE CONTENT (from analysis data)' : 'FRESH PAGE CONTENT'}:\n${JSON.stringify(freshContent, null, 2)}` : ''}
 
 GUIDELINES:
 1. Provide specific, actionable content suggestions
@@ -191,7 +204,7 @@ GUIDELINES:
 3. When asked to rewrite or improve content, provide the complete improved version
 4. Reference specific SEO issues from the analysis when relevant
 5. Keep responses focused and practical
-6. If you need fresh page content and it's not available, mention that dynamic content fetching would help
+6. If you're using cached/fallback data instead of fresh content, acknowledge this when relevant and mention that content may have changed since analysis
 7. ${screenshotUrl ? 'You have access to a visual screenshot of this page - use it to provide visual design feedback when relevant' : 'No visual screenshot is available for this page'}
 
 LANGUAGE REQUIREMENT: Always respond in the same language as the website content. Look at the page title, headings, and content to determine the language, then write your responses in that exact same language.

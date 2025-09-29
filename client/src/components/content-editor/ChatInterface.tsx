@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,8 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
     enabled: !!analysisId && !!pageUrl,
   });
 
-  // Fetch fresh content on load
-  const { data: freshContent, isLoading: isLoadingContent } = useQuery({
+  // Fetch fresh content on load with fallback to existing data
+  const { data: freshContent, isLoading: isLoadingContent, error: freshContentError } = useQuery({
     queryKey: [`/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/fetch-content`],
     queryFn: async () => {
       const response = await apiRequest('POST', `/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/fetch-content`, {});
@@ -42,23 +42,59 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
     enabled: !!analysisId && !!pageUrl,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnMount: false, // Only fetch once unless manually triggered
+    retry: 1, // Only retry once
+    retryDelay: 1000,
   });
 
-  // Notify parent when fresh content is loaded
+  // Create fallback content from existing page data
+  const fallbackContent = useMemo(() => {
+    if (!pageData) return null;
+    
+    return {
+      title: pageData.title,
+      metaDescription: pageData.metaDescription,
+      headings: pageData.headings || [],
+      paragraphs: pageData.paragraphs || [],
+      images: pageData.images || [],
+      wordCount: pageData.wordCount || pageData.contentMetrics?.wordCount,
+      lastFetched: 'From analysis data (fallback)',
+      isFallback: true
+    };
+  }, [pageData]);
+
+  // Determine which content to use and notify parent
   useEffect(() => {
-    if (freshContent?.content && onFreshContentLoaded) {
-      onFreshContentLoaded(freshContent.content);
+    let contentToUse = null;
+
+    if (freshContent?.content) {
+      // Use fresh content if available
+      contentToUse = freshContent.content;
+    } else if (freshContentError && fallbackContent) {
+      // Use fallback if fresh content failed and fallback is available
+      contentToUse = fallbackContent;
+      console.warn('Fresh content fetch failed, using fallback data:', freshContentError);
     }
-  }, [freshContent, onFreshContentLoaded]);
+
+    if (contentToUse && onFreshContentLoaded) {
+      onFreshContentLoaded(contentToUse);
+    }
+  }, [freshContent, freshContentError, fallbackContent, onFreshContentLoaded]);
 
   const messages: ChatMessage[] = conversation?.messages || [];
 
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
+      // Determine which content to send - fresh content or fallback
+      let contentToSend = freshContent?.content;
+      
+      if (!contentToSend && freshContentError && fallbackContent) {
+        contentToSend = fallbackContent;
+      }
+
       const response = await apiRequest('POST', `/api/content-conversations/${analysisId}/${encodeURIComponent(pageUrl)}/message`, { 
         message: userMessage,
-        freshContent: freshContent?.content // Pass fresh content if available
+        freshContent: contentToSend // Pass fresh content or fallback if available
       });
       return await response.json();
     },
@@ -207,6 +243,9 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
               design.screenshotData?.screenshotUrl && 
               !design.screenshotData?.error
             ) && ', and visual screenshot'}
+            {freshContentError && fallbackContent && (
+              <span className="text-amber-600"> (using cached page data)</span>
+            )}
           </p>
         </div>
       </CardContent>
