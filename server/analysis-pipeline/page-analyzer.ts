@@ -386,16 +386,48 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
     }
   });
 
-  // Look for heading-like elements in SSR React components
+  // Enhanced heading selectors for modern React/Tailwind/SSR components
   // These often use div/span with heading-like classes instead of semantic heading tags
   const headingSelectors = [
-    '[class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"]', // Very large text (likely H1)
-    '[class*="text-3xl"]', // Large text (likely H2)
-    '[class*="text-2xl"]', // Medium-large text (likely H3)
-    '[class*="text-xl"]', // Medium text (likely H4/H5/H6)
-    '[class*="font-bold"][class*="text-lg"]', // Bold large text
-    '[class*="heading"]', // Explicit heading classes
-    '[class*="title"]' // Title classes
+    // Tailwind typography scale - Extra large (H1 candidates)
+    '[class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"], [class*="text-8xl"], [class*="text-9xl"]',
+    // Large text (H2 candidates)
+    '[class*="text-3xl"]',
+    // Medium-large text (H3 candidates) 
+    '[class*="text-2xl"]',
+    // Medium text (H4/H5/H6 candidates)
+    '[class*="text-xl"], [class*="text-lg"][class*="font-bold"], [class*="text-lg"][class*="font-semibold"]',
+    
+    // Font weight combinations (often used for headings)
+    '[class*="font-bold"][class*="text-"], [class*="font-extrabold"], [class*="font-black"]',
+    '[class*="font-semibold"][class*="text-lg"], [class*="font-medium"][class*="text-xl"]',
+    
+    // Explicit semantic classes
+    '[class*="heading"], [class*="title"], [class*="headline"]',
+    '[class*="hero-title"], [class*="page-title"], [class*="section-title"]',
+    '[class*="display-"], [class*="lead-"]', // Bootstrap-style classes
+    
+    // ARIA and role-based selectors (accessibility-focused React apps)
+    '[role="heading"], [aria-level]',
+    
+    // Component library patterns (MUI, Chakra, etc.)
+    '[class*="MuiTypography-h"], [class*="chakra-heading"]',
+    '[class*="Typography--variant-h"], [class*="Heading--"]',
+    
+    // Next.js/Gatsby common patterns
+    '[class*="prose"] h1, [class*="prose"] h2, [class*="prose"] h3, [class*="prose"] h4, [class*="prose"] h5, [class*="prose"] h6',
+    '[data-testid*="heading"], [data-testid*="title"]',
+    
+    // Styled-components and CSS-in-JS patterns
+    '[class*="styled__Heading"], [class*="sc-"][class*="heading"]',
+    
+    // Utility-first framework alternatives to Tailwind
+    '[class*="fs-1"], [class*="fs-2"], [class*="fs-3"]', // Bootstrap font-size
+    '[class*="text-size-"], [class*="font-size-"]', // Generic patterns
+    
+    // Modern design system patterns
+    '[class*="typography-h"], [class*="type-h"], [class*="text-h"]',
+    '[class*="scale-"], [class*="level-"]' // Design token patterns
   ];
 
   headingSelectors.forEach((selector, index) => {
@@ -416,18 +448,46 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
       if (text.length < 3 || text.match(/^(menu|login|signup|cart|search|home|about|contact)$/i)) return;
 
       if (text) {
-        // Determine heading level based on text size classes
+        // Enhanced heading level determination based on multiple factors
         let level = 6; // Default to H6
-        if (selector.includes('text-4xl') || selector.includes('text-5xl') || selector.includes('text-6xl') || selector.includes('text-7xl')) {
+        const classes = $el.attr('class') || '';
+        const role = $el.attr('role') || '';
+        const ariaLevel = $el.attr('aria-level');
+        
+        // Priority 1: Explicit ARIA level
+        if (ariaLevel) {
+          level = Math.max(1, Math.min(6, parseInt(ariaLevel)));
+        }
+        // Priority 2: Explicit role heading with level indicators
+        else if (role === 'heading' && ariaLevel) {
+          level = Math.max(1, Math.min(6, parseInt(ariaLevel)));
+        }
+        // Priority 3: Component library patterns
+        else if (classes.includes('MuiTypography-h')) {
+          const match = classes.match(/MuiTypography-h([1-6])/);
+          if (match) level = parseInt(match[1]);
+        }
+        else if (classes.includes('Typography--variant-h')) {
+          const match = classes.match(/Typography--variant-h([1-6])/);
+          if (match) level = parseInt(match[1]);
+        }
+        // Priority 4: Size-based detection with enhanced logic
+        else if (selector.includes('text-4xl') || selector.includes('text-5xl') || selector.includes('text-6xl') || selector.includes('text-7xl') || selector.includes('text-8xl') || selector.includes('text-9xl') || classes.includes('hero-title') || classes.includes('display-1')) {
           level = 1;
-        } else if (selector.includes('text-3xl')) {
+        } else if (selector.includes('text-3xl') || classes.includes('page-title') || classes.includes('display-2') || classes.includes('fs-1')) {
           level = 2;
-        } else if (selector.includes('text-2xl')) {
+        } else if (selector.includes('text-2xl') || classes.includes('section-title') || classes.includes('display-3') || classes.includes('fs-2')) {
           level = 3;
-        } else if (selector.includes('text-xl')) {
+        } else if (selector.includes('text-xl') || classes.includes('fs-3')) {
           level = 4;
-        } else if (selector.includes('text-lg')) {
+        } else if (selector.includes('text-lg') || classes.includes('lead')) {
           level = 5;
+        }
+        // Priority 5: Semantic class patterns
+        else if (classes.includes('title') || classes.includes('heading') || classes.includes('headline')) {
+          // Determine level based on position in document and context
+          const parents = $el.parents('main, article, section').length;
+          level = Math.min(3, Math.max(1, parents + 1));
         }
 
         // Avoid duplicates by checking if we already have this exact text
