@@ -475,66 +475,161 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
     .trim();
 
   // Enhanced paragraph extraction for modern SSR pages
-  // Look for paragraphs in various containers including divs with text-like classes
-  const paragraphSelectors = [
-    'p', // Traditional paragraphs
-    'div[class*="text-"]', // Tailwind text utility classes
-    'div[class*="prose"]', // Prose content
-    'div[class*="content"]', // Content containers
-    'div[class*="description"]', // Description containers
-    'div[class*="lead"]', // Lead text
-    '[class*="text-lg"]', // Large text (often paragraph-like)
-    '[class*="text-base"]', // Base text size
-    '[class*="text-muted"]', // Muted text (often descriptions)
-    'span[class*="text-"]' // Text spans that might contain paragraph content
+  // More comprehensive approach - extract text from meaningful containers
+  const textExtractionStrategy = [
+    // Strategy 1: Traditional semantic elements
+    { selector: 'p', priority: 1, name: 'traditional_paragraphs' },
+    
+    // Strategy 2: Main content areas
+    { selector: 'main p, article p, section p', priority: 1, name: 'semantic_paragraphs' },
+    
+    // Strategy 3: Text utility classes (Tailwind/modern CSS frameworks)
+    { selector: '[class*="text-lg"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 2, name: 'large_text' },
+    { selector: '[class*="text-base"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 2, name: 'base_text' },
+    { selector: '[class*="text-muted"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 2, name: 'muted_text' },
+    
+    // Strategy 4: Content containers
+    { selector: '[class*="prose"] div, [class*="content"] div', priority: 3, name: 'content_containers' },
+    { selector: '[class*="description"]:not(meta)', priority: 3, name: 'descriptions' },
+    { selector: '[class*="lead"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 3, name: 'lead_text' },
+    
+    // Strategy 5: Generic text containers (last resort)
+    { selector: 'div:not(:has(div)):not(:has(section)):not(:has(article))', priority: 4, name: 'leaf_divs' }
   ];
 
-  paragraphSelectors.forEach(selector => {
-    $(selector).each((_, el) => {
-      if (totalContentLength >= maxTotalLength) {
-        return false;
-      }
-
+  const extractedTexts = new Set(); // Track extracted text to avoid duplicates
+  
+  textExtractionStrategy.forEach(strategy => {
+    if (totalContentLength >= maxTotalLength) return;
+    
+    $(strategy.selector).each((_, el) => {
+      if (totalContentLength >= maxTotalLength) return false;
+      
       const $el = $(el);
       
-      // Skip if this element is inside another paragraph-like element we've already processed
-      const isNested = $el.parents(paragraphSelectors.join(', ')).length > 0;
-      if (isNested && selector !== 'p') return;
-
-      // Skip if element contains other block elements (likely not a paragraph)
-      const hasBlockChildren = $el.find('div, p, h1, h2, h3, h4, h5, h6, ul, ol, li').length > 0;
-      if (hasBlockChildren && selector !== 'p') return;
-
-      let paragraphText = $el.text().trim();
+      // Get direct text content (not including nested elements for some strategies)
+      let elementText = '';
       
-      // Filter out very short text that's likely not paragraph content
-      if (paragraphText.length < 20) return;
+      if (strategy.priority <= 2) {
+        // For high-priority strategies, get all text content
+        elementText = $el.text().trim();
+      } else {
+        // For lower-priority strategies, be more selective
+        // Get direct text content and immediate children text
+        elementText = $el.contents()
+          .filter(function() {
+            return this.nodeType === 3 || // Text nodes
+                   (this.nodeType === 1 && $(this).is('span, strong, em, b, i, a:not(:has(div)):not(:has(p))')); // Simple inline elements
+          })
+          .text()
+          .trim();
+      }
       
-      // Filter out text that looks like navigation or UI elements
-      if (paragraphText.match(/^(home|about|contact|menu|login|signup|cart|search)$/i)) return;
+      // Skip if no meaningful text
+      if (!elementText || elementText.length < 15) return;
       
-      if (paragraphText.length > 0) {
-        // Extract sentences from paragraph
-        const paragraphSentences = paragraphText.match(/[^\.!?]+[\.!?]+/g) || [];
-        sentences.push(...paragraphSentences.map(s => s.trim()));
-
-        if (paragraphText.length > maxParagraphLength) {
-          paragraphText = paragraphText.substring(0, maxParagraphLength) + '...';
+      // Skip navigation, menu, and UI elements
+      if (elementText.match(/^(menu|nav|navigation|header|footer|sidebar|cookie|privacy|terms|login|signup|register|cart|search|home|about|contact|back to top|skip to|toggle|close|open)$/i)) return;
+      
+      // Skip if text is very short phrases that are likely UI elements
+      if (elementText.length < 30 && elementText.split(' ').length < 5) return;
+      
+      // Skip if we've already extracted this exact text
+      if (extractedTexts.has(elementText)) return;
+      
+      // Skip if this text is contained within already extracted text
+      let isDuplicate = false;
+      for (const existing of extractedTexts) {
+        if (existing.includes(elementText) || elementText.includes(existing)) {
+          isDuplicate = true;
+          break;
         }
-
-        if (totalContentLength + paragraphText.length <= maxTotalLength) {
-          paragraphs.push(paragraphText);
-          totalContentLength += paragraphText.length;
-        } else {
-          const remainingLength = maxTotalLength - totalContentLength;
-          if (remainingLength > 0) {
-            paragraphs.push(paragraphText.substring(0, remainingLength) + '...');
-          }
-          return false;
+      }
+      if (isDuplicate) return;
+      
+      // Additional filtering for lower priority extractions
+      if (strategy.priority >= 3) {
+        // Skip if element has many child elements (likely a container)
+        const childElementCount = $el.children().length;
+        if (childElementCount > 3) return;
+        
+        // Skip if text seems to be a title or heading based on length and caps
+        if (elementText.length < 100 && elementText.toUpperCase() === elementText) return;
+        
+        // Skip if it looks like a button or link text
+        if (elementText.match(/^(click|read more|learn more|get started|sign up|download|buy now|order now|contact us|call now)$/i)) return;
+      }
+      
+      // Extract sentences for readability analysis
+      const elementSentences = elementText.match(/[^\.!?]+[\.!?]+/g) || [];
+      if (elementSentences.length > 0) {
+        sentences.push(...elementSentences.map(s => s.trim()));
+      } else if (elementText.length > 50) {
+        // If no proper sentences, treat the whole text as one sentence for analysis
+        sentences.push(elementText);
+      }
+      
+      // Truncate if too long
+      let finalText = elementText;
+      if (finalText.length > maxParagraphLength) {
+        finalText = finalText.substring(0, maxParagraphLength) + '...';
+      }
+      
+      // Add to paragraphs if within limits
+      if (totalContentLength + finalText.length <= maxTotalLength) {
+        paragraphs.push(finalText);
+        extractedTexts.add(elementText);
+        totalContentLength += finalText.length;
+        
+        console.log(`[Content Extraction] Found ${finalText.length} chars via ${strategy.name}: "${finalText.substring(0, 50)}..."`);
+      } else {
+        const remainingLength = maxTotalLength - totalContentLength;
+        if (remainingLength > 50) { // Only add if we have meaningful space left
+          const truncated = finalText.substring(0, remainingLength) + '...';
+          paragraphs.push(truncated);
+          extractedTexts.add(elementText);
+          totalContentLength += truncated.length;
+          console.log(`[Content Extraction] Added truncated ${truncated.length} chars via ${strategy.name}`);
         }
+        return false;
       }
     });
   });
+  
+  // Fallback: If still no meaningful content, try a more aggressive approach
+  if (paragraphs.length === 0 || totalContentLength < 100) {
+    console.log(`[Content Extraction] Fallback mode - trying aggressive extraction`);
+    
+    // Remove common non-content elements and extract all remaining text
+    const cleanedBody = $('body').clone();
+    cleanedBody.find('script, style, nav, header, footer, aside, noscript, [aria-hidden="true"], .menu, .navigation, .sidebar, .comments, .cookie, .popup, .modal').remove();
+    
+    const fallbackText = cleanedBody.text().replace(/\s+/g, ' ').trim();
+    
+    if (fallbackText.length > 100) {
+      // Split into sentences and take meaningful chunks
+      const fallbackSentences = fallbackText.match(/[^\.!?]+[\.!?]+/g) || [];
+      
+      if (fallbackSentences.length > 0) {
+        let fallbackContent = '';
+        for (const sentence of fallbackSentences) {
+          const cleanSentence = sentence.trim();
+          if (cleanSentence.length > 20 && fallbackContent.length + cleanSentence.length < maxTotalLength) {
+            fallbackContent += cleanSentence + ' ';
+            sentences.push(cleanSentence);
+          }
+        }
+        
+        if (fallbackContent.trim().length > 100) {
+          paragraphs.push(fallbackContent.trim());
+          totalContentLength = fallbackContent.length;
+          console.log(`[Content Extraction] Fallback extracted ${fallbackContent.length} chars`);
+        }
+      }
+    }
+  }
+  
+  console.log(`[Content Extraction] Final stats: ${paragraphs.length} paragraphs, ${totalContentLength} total chars, ${sentences.length} sentences`);
 
   return {
     headings,
