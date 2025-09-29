@@ -380,7 +380,7 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
     const text = $(el).text().trim();
     if (text) {
       headings.push({
-        level: parseInt($(el).get(0).tagName.substring(1)),
+        level: parseInt($(el).get(0)?.tagName.substring(1) || '6'),
         text: text
       });
     }
@@ -539,7 +539,7 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
       
       // Skip if this text is contained within already extracted text
       let isDuplicate = false;
-      for (const existing of extractedTexts) {
+      for (const existing of Array.from(extractedTexts)) {
         if (existing.includes(elementText) || elementText.includes(existing)) {
           isDuplicate = true;
           break;
@@ -999,9 +999,9 @@ async function detectSeoIssues(
       description: 'This page does not have JSON-LD structured data, which can improve search engine understanding.'
     });
   } else if (structuredData && structuredData.length > 0) {
-    const hasOrganizationSchema = structuredData.some(data => data['@type'] === 'Organization');
-    const hasLocalBusinessSchema = structuredData.some(data => Array.isArray(data['@type']) ? data['@type'].includes('LocalBusiness') : data['@type'] === 'LocalBusiness');
-    const hasProductSchema = structuredData.some(data => data['@type'] === 'Product');
+    const hasOrganizationSchema = structuredData.some((data: any) => data['@type'] === 'Organization');
+    const hasLocalBusinessSchema = structuredData.some((data: any) => Array.isArray(data['@type']) ? data['@type'].includes('LocalBusiness') : data['@type'] === 'LocalBusiness');
+    const hasProductSchema = structuredData.some((data: any) => data['@type'] === 'Product');
 
     if (!hasOrganizationSchema && !hasLocalBusinessSchema && !hasProductSchema) {
       issues.push({
