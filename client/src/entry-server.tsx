@@ -1,3 +1,4 @@
+
 import { renderToPipeableStream } from "react-dom/server";
 import { Writable } from "node:stream";
 import type { QueryClient } from "@tanstack/react-query";
@@ -22,6 +23,14 @@ function createApp(queryClient: QueryClient, url: string, search?: string) {
   );
 }
 
+function cleanHtml(html: string): string {
+  // Remove null characters and other problematic control characters
+  return html
+    .replace(/\0/g, "") // Remove null characters
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // Remove other control characters except \t, \n, \r
+    .replace(/\uFEFF/g, ""); // Remove BOM characters
+}
+
 export function generateHTML(url: string, search?: string): Promise<{ html: string; ssrContext: SSRContext }> {
   return new Promise((resolve, reject) => {
     const queryClient = createQueryClient();
@@ -36,9 +45,15 @@ export function generateHTML(url: string, search?: string): Promise<{ html: stri
             callback();
           },
           final(callback) {
-            const html = Buffer.concat(chunks).toString("utf8");
-            resolve({ html, ssrContext });
-            callback();
+            try {
+              const rawHtml = Buffer.concat(chunks).toString("utf8");
+              const cleanedHtml = cleanHtml(rawHtml);
+              resolve({ html: cleanedHtml, ssrContext });
+              callback();
+            } catch (error) {
+              reject(error);
+              callback();
+            }
           },
         });
 
@@ -52,7 +67,11 @@ export function generateHTML(url: string, search?: string): Promise<{ html: stri
           reject(error);
         }
       },
+      onShellError(error) {
+        reject(error);
+      },
       onError(error) {
+        console.error("SSR rendering error:", error);
         reject(error);
       },
     });
@@ -72,7 +91,13 @@ function escapeHtml(value?: string): string {
     return "";
   }
 
-  return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE_LOOKUP[char] ?? char);
+  // Remove null characters and other problematic characters first
+  const cleanValue = value
+    .replace(/\0/g, "") // Remove null characters
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // Remove other control characters except \t, \n, \r
+    .replace(/\uFEFF/g, ""); // Remove BOM characters
+
+  return cleanValue.replace(/[&<>"']/g, (char) => HTML_ESCAPE_LOOKUP[char] ?? char);
 }
 
 export function generateMetaTags(url: string): string {
@@ -84,7 +109,7 @@ export function generateMetaTags(url: string): string {
     `<title>${escapeHtml(metadata.title)}</title>`,
     `<meta name="description" content="${escapeHtml(metadata.description)}" />`,
     metadata.keywords ? `<meta name="keywords" content="${escapeHtml(metadata.keywords)}" />` : "",
-    `<meta name="author" content="BotTailor" />`,
+    `<meta name="author" content="TrailWave SEO" />`,
     `<meta name="robots" content="index, follow" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
