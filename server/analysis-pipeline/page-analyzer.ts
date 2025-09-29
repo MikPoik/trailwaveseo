@@ -1043,20 +1043,54 @@ function extractCardElements($: cheerio.CheerioAPI, url: string) {
 
   // Enhanced card selectors for modern UI frameworks and SSR React components
   const cardSelectors = [
-    '.card', // Traditional card class
-    '[class*="card"]', // Any class containing "card"
-    '[class*="rounded-lg"][class*="bg-card"]', // Tailwind card pattern
-    '[class*="rounded-lg"][class*="shadow"]', // Rounded with shadow
-    '[class*="border"][class*="rounded"]', // Bordered rounded containers
-    '[class*="bg-card"][class*="text-card-foreground"]', // Tailwind card with foreground
-    '[class*="rounded"][class*="border-0"][class*="shadow"]', // Borderless rounded with shadow
-    '[data-card]', // Data attribute cards
-    '[role="article"]', // Semantic article cards
-    '.grid > div[class*="rounded"]', // Grid items with rounded borders
-    '.flex > div[class*="shadow"]', // Flex items with shadows
-    'article', // Semantic articles
-    'section[class*="rounded"]', // Rounded sections
-    'div[class*="hover:shadow"]' // Elements with hover shadow effects
+    // Traditional and semantic patterns
+    '.card', '[class*="card"]', 'article', '[role="article"]', '[data-card]',
+    
+    // Tailwind CSS patterns
+    '[class*="rounded-lg"][class*="bg-card"]', '[class*="rounded-lg"][class*="shadow"]',
+    '[class*="border"][class*="rounded"]', '[class*="bg-card"][class*="text-card-foreground"]',
+    '[class*="rounded"][class*="border-0"][class*="shadow"]', '[class*="hover:shadow"]',
+    '[class*="rounded-md"][class*="p-"], [class*="rounded-xl"][class*="p-"]', // Padded rounded containers
+    '[class*="bg-white"][class*="shadow"], [class*="bg-gray-"][class*="shadow"]', // Background + shadow
+    
+    // Grid and layout patterns
+    '.grid > div[class*="rounded"], .grid > div[class*="border"]',
+    '.flex > div[class*="shadow"], .flex > div[class*="border"]',
+    '[class*="grid-cols-"] > div[class*="p-"]', '[class*="flex-col"] > div[class*="rounded"]',
+    
+    // Next.js specific patterns
+    '[class*="_card_"], [class*="card_module"]', // CSS Modules
+    '[data-testid*="card"], [data-testid*="item"], [data-testid*="post"]',
+    
+    // Gatsby specific patterns  
+    '.gatsby-card, [class*="gatsby-card"]',
+    '[class*="post-card"], [class*="blog-card"], [class*="article-card"]',
+    
+    // Component library patterns
+    '.MuiCard-root, .MuiPaper-root[class*="elevation"]', // Material-UI
+    '.chakra-card, [class*="chakra-card"]', // Chakra UI
+    '.ant-card', // Ant Design
+    '.card-component, [class*="Card--"]', // Styled components
+    
+    // Blog/CMS component patterns
+    '[class*="post-preview"], [class*="post-item"], [class*="blog-post"]',
+    '[class*="entry-"], [class*="article-"], [class*="content-item"]',
+    
+    // E-commerce patterns
+    '[class*="product-"], [class*="item-"], [class*="listing-"]',
+    '[class*="tile"], [class*="thumbnail"]',
+    
+    // Modern design system patterns
+    '[class*="surface"], [class*="panel"], [class*="container"][class*="elevated"]',
+    '[data-component="card"], [data-component="item"]',
+    
+    // React component data attributes
+    '[data-react-component*="card"], [data-react-component*="item"]',
+    '[data-component-name*="Card"], [data-component-name*="Item"]',
+    
+    // Framework-agnostic modern patterns
+    'section[class*="rounded"]', 'div[class*="hover:scale"]', 
+    '[class*="transition"][class*="shadow"]', '[class*="backdrop-blur"]'
   ];
 
   cardSelectors.forEach(selector => {
