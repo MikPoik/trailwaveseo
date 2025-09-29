@@ -1,9 +1,11 @@
-
 User-agent: *
 Allow: /
+Allow: /how-it-works
+Allow: /pricing
 Disallow: /api/
-Disallow: /dashboard/
-Disallow: /account/
-Disallow: /settings/
+Disallow: /dashboard/admin/
+Disallow: /admin/
+Disallow: /dashboard
 
+# Generated on 2025-09-29T19:25:12.728Z
 Sitemap: https://trailwaveseo.com/sitemap.xml

@@ -18,11 +18,11 @@ export interface RouteDefinition {
 const ROOT_PATH = "/";
 
 export const DEFAULT_ROUTE_METADATA: RouteMetadata = {
-  title: "BotTailor – AI-Powered SEO Analysis",
+  title: "TrailWave SEO – AI-Powered Website Analysis",
   description:
     "Audit your website, uncover technical SEO issues, and ship better content with AI-assisted insights.",
-  ogImage: "https://bottailor.com/og-image.jpg",
-  canonical: "https://bottailor.com/",
+  ogImage: "https://trailwaveseo.com/og-image.jpg",
+  canonical: "https://trailwaveseo.com/",
 };
 
 export function normalizeRoutePath(path: string): string {

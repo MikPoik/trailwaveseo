@@ -27,13 +27,13 @@ export const route: RouteDefinition = {
   path: "/how-it-works",
   ssr: true,
   metadata: {
-    title: "How BotTailor Works – Automated SEO Workflows",
+    title: "How TrailWave SEO Works – Automated SEO Workflows",
     description:
-      "See how BotTailor crawls your site, analyzes competitors, and ships AI-assisted SEO fixes across your marketing stack.",
-    ogTitle: "How BotTailor Works",
+      "See how TrailWave SEO crawls your site, analyzes competitors, and ships AI-assisted SEO fixes across your marketing stack.",
+    ogTitle: "How TrailWave SEO Works",
     ogDescription:
-      "Follow the BotTailor workflow that turns raw crawl data into prioritized SEO recommendations and ready-to-ship content.",
-    canonical: "https://bottailor.com/how-it-works",
+      "Follow the TrailWave SEO workflow that turns raw crawl data into prioritized SEO recommendations and ready-to-ship content.",
+    canonical: "https://trailwaveseo.com/how-it-works",
   },
 };
 

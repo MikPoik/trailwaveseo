@@ -23,13 +23,13 @@ export const route: RouteDefinition = {
   path: "/",
   ssr: true,
   metadata: {
-    title: "BotTailor – AI SEO Analysis Platform",
+    title: "TrailWave SEO – AI SEO Analysis Platform",
     description:
-      "Launch comprehensive AI-powered SEO audits, uncover technical issues, and deploy data-backed content fixes with BotTailor.",
-    ogTitle: "BotTailor | AI-Powered SEO Analysis",
+      "Launch comprehensive AI-powered SEO audits, uncover technical issues, and deploy data-backed content fixes with TrailWave SEO.",
+    ogTitle: "TrailWave SEO | AI-Powered Website Analysis",
     ogDescription:
       "Transform your website SEO with intelligent crawling, competitor benchmarking, and automated optimization workflows.",
-    canonical: "https://bottailor.com/",
+    canonical: "https://trailwaveseo.com/",
   },
 };
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image, RefreshCw, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { reanalyzePage } from "@/lib/api";
 
 interface PageAnalysisCardProps {
   page: PageAnalysis;
@@ -33,7 +34,6 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
 
     setIsReanalyzing(true);
     try {
-      const { reanalyzePage } = await import('@/lib/api');
       const result = await reanalyzePage(analysisId, page.url);
       onReanalyze(page.url, result.updatedPage);
     } catch (error) {

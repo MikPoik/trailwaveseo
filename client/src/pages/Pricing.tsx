@@ -25,13 +25,13 @@ export const route: RouteDefinition = {
   path: "/pricing",
   ssr: true,
   metadata: {
-    title: "Pricing – BotTailor SEO Plans",
+    title: "Pricing – TrailWave SEO Plans",
     description:
-      "Choose flexible BotTailor plans to automate SEO analysis, competitor benchmarking, and content recommendations at scale.",
-    ogTitle: "BotTailor Pricing",
+      "Choose flexible TrailWave SEO plans to automate SEO analysis, competitor benchmarking, and content recommendations at scale.",
+    ogTitle: "TrailWave SEO Pricing",
     ogDescription:
-      "Compare BotTailor plans and unlock AI-powered SEO audits that grow with your marketing team.",
-    canonical: "https://bottailor.com/pricing",
+      "Compare TrailWave SEO plans and unlock AI-powered SEO audits that grow with your marketing team.",
+    canonical: "https://trailwaveseo.com/pricing",
   },
 };
 

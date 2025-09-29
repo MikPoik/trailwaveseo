@@ -81,17 +81,17 @@ function getDefaultMetadataForPath(path: string): RouteMetadata {
       description: "Choose flexible TrailWave SEO plans to automate SEO analysis, competitor benchmarking, and content recommendations at scale.",
       ogTitle: "TrailWave SEO Pricing",
       ogDescription: "Compare TrailWave SEO plans and unlock AI-powered SEO audits that grow with your marketing team.",
-      canonical: "https://bottailor.com/pricing",
+      canonical: "https://trailwaveseo.com/pricing",
     },
     "/how-it-works": {
       title: "How It Works – TrailWave SEO Analysis",
       description: "Learn how TrailWave SEO's AI-powered SEO analysis works to improve your website's search engine optimization.",
-      canonical: "https://bottailor.com/how-it-works",
+      canonical: "https://trailwaveseo.com/how-it-works",
     },
     "/dashboard": {
       title: "Dashboard – TrailWave SEO",
       description: "Access your SEO analysis dashboard and manage your website optimization projects.",
-      canonical: "https://bottailor.com/dashboard",
+      canonical: "https://trailwaveseo.com/dashboard",
     },
   };
 

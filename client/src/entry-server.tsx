@@ -103,7 +103,7 @@ function escapeHtml(value?: string): string {
 export function generateMetaTags(url: string): string {
   const normalizedPath = normalizeRoutePath(url);
   const metadata = getRouteMetadata(normalizedPath);
-  const canonicalUrl = metadata.canonical ?? `https://bottailor.com${normalizedPath === "/" ? "" : normalizedPath}`;
+  const canonicalUrl = metadata.canonical ?? `https://trailwaveseo.com${normalizedPath === "/" ? "" : normalizedPath}`;
 
   const lines = [
     `<title>${escapeHtml(metadata.title)}</title>`,
@@ -115,12 +115,12 @@ export function generateMetaTags(url: string): string {
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
     `<meta property="og:title" content="${escapeHtml(metadata.ogTitle ?? metadata.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(metadata.ogDescription ?? metadata.description)}" />`,
-    `<meta property="og:image" content="${escapeHtml(metadata.ogImage ?? "https://bottailor.com/og-image.jpg")}" />`,
+    `<meta property="og:image" content="${escapeHtml(metadata.ogImage ?? "https://trailwaveseo.com/og-image.jpg")}" />`,
     `<meta property="twitter:card" content="summary_large_image" />`,
     `<meta property="twitter:url" content="${escapeHtml(canonicalUrl)}" />`,
     `<meta property="twitter:title" content="${escapeHtml(metadata.ogTitle ?? metadata.title)}" />`,
     `<meta property="twitter:description" content="${escapeHtml(metadata.ogDescription ?? metadata.description)}" />`,
-    `<meta property="twitter:image" content="${escapeHtml(metadata.ogImage ?? "https://bottailor.com/og-image.jpg")}" />`,
+    `<meta property="twitter:image" content="${escapeHtml(metadata.ogImage ?? "https://trailwaveseo.com/og-image.jpg")}" />`,
     `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`,
   ].filter(Boolean);
 
