@@ -534,27 +534,57 @@ function extractContentElements($: cheerio.CheerioAPI, url: string, settings: an
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Enhanced paragraph extraction for modern SSR pages
-  // More comprehensive approach - extract text from meaningful containers
+  // Enhanced content extraction strategies for modern React/Tailwind/SSR pages
+  // Comprehensive approach covering component-based layouts and utility-first frameworks
   const textExtractionStrategy = [
-    // Strategy 1: Traditional semantic elements
+    // Strategy 1: Traditional semantic elements (highest priority)
     { selector: 'p', priority: 1, name: 'traditional_paragraphs' },
-    
-    // Strategy 2: Main content areas
     { selector: 'main p, article p, section p', priority: 1, name: 'semantic_paragraphs' },
     
-    // Strategy 3: Text utility classes (Tailwind/modern CSS frameworks)
-    { selector: '[class*="text-lg"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 2, name: 'large_text' },
-    { selector: '[class*="text-base"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 2, name: 'base_text' },
-    { selector: '[class*="text-muted"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 2, name: 'muted_text' },
+    // Strategy 2: Enhanced semantic content areas
+    { selector: 'main, article, section[class*="content"], [role="main"], [role="article"]', priority: 2, name: 'semantic_content_areas' },
+    { selector: '[class*="prose"] p, [class*="prose"] div:not(:has(p)):not(:has(div))', priority: 2, name: 'prose_content' },
     
-    // Strategy 4: Content containers
-    { selector: '[class*="prose"] div, [class*="content"] div', priority: 3, name: 'content_containers' },
-    { selector: '[class*="description"]:not(meta)', priority: 3, name: 'descriptions' },
-    { selector: '[class*="lead"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)', priority: 3, name: 'lead_text' },
+    // Strategy 3: Tailwind typography and text utility classes
+    { selector: '[class*="text-lg"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not([class*="heading"]):not([class*="title"])', priority: 2, name: 'large_text' },
+    { selector: '[class*="text-base"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not([class*="heading"]):not([class*="title"])', priority: 2, name: 'base_text' },
+    { selector: '[class*="text-sm"], [class*="text-xs"]', priority: 3, name: 'small_text' },
+    { selector: '[class*="text-muted"], [class*="text-gray"], [class*="text-slate"]', priority: 3, name: 'muted_text' },
     
-    // Strategy 5: Generic text containers (last resort)
-    { selector: 'div:not(:has(div)):not(:has(section)):not(:has(article))', priority: 4, name: 'leaf_divs' }
+    // Strategy 4: Content-specific semantic classes
+    { selector: '[class*="description"]:not(meta)', priority: 2, name: 'descriptions' },
+    { selector: '[class*="lead"], [class*="intro"], [class*="excerpt"]', priority: 2, name: 'lead_text' },
+    { selector: '[class*="summary"], [class*="abstract"], [class*="overview"]', priority: 2, name: 'summary_text' },
+    { selector: '[class*="body-text"], [class*="content-text"], [class*="post-content"]', priority: 2, name: 'body_content' },
+    
+    // Strategy 5: Component library and framework patterns
+    { selector: '.MuiTypography-body1, .MuiTypography-body2', priority: 2, name: 'mui_typography' },
+    { selector: '[class*="chakra-text"], [class*="chakra-stack"] p', priority: 2, name: 'chakra_text' },
+    { selector: '[data-testid*="content"], [data-testid*="text"], [data-testid*="body"]', priority: 2, name: 'testid_content' },
+    
+    // Strategy 6: Layout-based content detection (React component patterns)
+    { selector: 'div[class*="container"] p, div[class*="wrapper"] p', priority: 3, name: 'container_paragraphs' },
+    { selector: 'div[class*="grid"] > div:not(:has(div)):not(:has(section)):not(:has(article))', priority: 3, name: 'grid_content' },
+    { selector: 'div[class*="flex"] > div:not(:has(div)):not(:has(section)):not(:has(article))', priority: 3, name: 'flex_content' },
+    { selector: 'div[class*="col-"] > div:not(:has(div)), div[class*="w-full"] > div:not(:has(div))', priority: 3, name: 'column_content' },
+    
+    // Strategy 7: Card and component content
+    { selector: '[class*="card"] p, [class*="card"] div:not(:has(p)):not(:has(div))', priority: 3, name: 'card_content' },
+    { selector: '[class*="item"] div:not(:has(div)), [class*="post"] div:not(:has(div))', priority: 3, name: 'item_content' },
+    { selector: '[class*="feature"] div:not(:has(div)), [class*="benefit"] div:not(:has(div))', priority: 3, name: 'feature_content' },
+    
+    // Strategy 8: Blog/CMS patterns (Next.js, Gatsby, etc.)
+    { selector: '[class*="post-body"], [class*="entry-content"], [class*="article-body"]', priority: 2, name: 'cms_content' },
+    { selector: '[class*="markdown"], [class*="md-content"], [class*="rich-text"]', priority: 2, name: 'markdown_content' },
+    { selector: '[data-mdx], [class*="mdx"]', priority: 2, name: 'mdx_content' },
+    
+    // Strategy 9: Spacing and layout utility patterns (Tailwind-style)
+    { selector: '[class*="space-y-"] > div, [class*="gap-"] > div', priority: 3, name: 'spaced_content' },
+    { selector: '[class*="py-"] div:not(:has(div)), [class*="px-"] div:not(:has(div))', priority: 4, name: 'padded_content' },
+    
+    // Strategy 10: Generic text containers (last resort)
+    { selector: 'div:not(:has(div)):not(:has(section)):not(:has(article)):not(:has(p))', priority: 4, name: 'leaf_divs' },
+    { selector: 'span:not(:has(*)):not([class*="icon"]):not([class*="btn"])', priority: 4, name: 'span_text' }
   ];
 
   const extractedTexts = new Set(); // Track extracted text to avoid duplicates
