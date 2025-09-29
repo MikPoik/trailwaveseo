@@ -299,8 +299,6 @@ export async function reportAnalysisCompletion(
   };
   
   console.log(`[PROGRESS] Emitting completion event for domain: ${context.domain}`);
-  console.log(`[PROGRESS] Completion data keys:`, Object.keys(completionUpdate));
-  console.log(`[PROGRESS] Analysis result keys:`, Object.keys(result));
   console.log(`[PROGRESS] Completion with analysis data - pages: ${result.pages.length}, enhancedInsights:`, !!result.enhancedInsights);
   
   // Emit the completion event
