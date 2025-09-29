@@ -19,6 +19,21 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/pricing",
+  ssr: true,
+  metadata: {
+    title: "Pricing – BotTailor SEO Plans",
+    description:
+      "Choose flexible BotTailor plans to automate SEO analysis, competitor benchmarking, and content recommendations at scale.",
+    ogTitle: "BotTailor Pricing",
+    ogDescription:
+      "Compare BotTailor plans and unlock AI-powered SEO audits that grow with your marketing team.",
+    canonical: "https://bottailor.com/pricing",
+  },
+};
 
 const Pricing = () => {
   const handleGetStarted = () => {

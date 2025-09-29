@@ -21,21 +21,26 @@ import {
   Shield,
   Coins
 } from "lucide-react";
-import { useEffect } from "react";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/how-it-works",
+  ssr: true,
+  metadata: {
+    title: "How BotTailor Works – Automated SEO Workflows",
+    description:
+      "See how BotTailor crawls your site, analyzes competitors, and ships AI-assisted SEO fixes across your marketing stack.",
+    ogTitle: "How BotTailor Works",
+    ogDescription:
+      "Follow the BotTailor workflow that turns raw crawl data into prioritized SEO recommendations and ready-to-ship content.",
+    canonical: "https://bottailor.com/how-it-works",
+  },
+};
 
 const HowItWorks = () => {
   const handleStartAnalysis = () => {
     window.location.href = "/api/login";
   };
-
-  useEffect(() => {
-    // Update meta tags for SEO
-    document.title = "How TrailWave SEO Works - Complete Website Analysis Process";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 'Learn how TrailWave SEO analyzes your website with AI-powered insights, automated crawling, competitor analysis, and comprehensive SEO auditing to boost your search rankings.');
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">

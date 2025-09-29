@@ -17,6 +17,21 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/",
+  ssr: true,
+  metadata: {
+    title: "BotTailor – AI SEO Analysis Platform",
+    description:
+      "Launch comprehensive AI-powered SEO audits, uncover technical issues, and deploy data-backed content fixes with BotTailor.",
+    ogTitle: "BotTailor | AI-Powered SEO Analysis",
+    ogDescription:
+      "Transform your website SEO with intelligent crawling, competitor benchmarking, and automated optimization workflows.",
+    canonical: "https://bottailor.com/",
+  },
+};
 
 const Landing = () => {
   const handleStartAnalysis = () => {
