@@ -381,13 +381,24 @@ async function generateInsights(
     insights.designAnalysis = await captureAndAnalyzeDesign(context, analyzedPages, options);
   }
 
-  // Generate enhanced analysis insights including unified content quality analysis
-  const [technicalAnalysis, contentQualityAnalysisResult, linkArchitectureAnalysis, performanceAnalysis] = await Promise.all([
-    import('./technical-seo.js').then(m => m.analyzeTechnicalSeo(analyzedPages, context.domain)),
-    import('./content-quality-analyzer.js').then(m => m.analyzeUnifiedContentQuality(analyzedPages, context.settings.useAI)),
-    import('./link-architecture.js').then(m => m.analyzeLinkArchitecture(analyzedPages)),
-    import('./performance-analyzer.js').then(m => m.analyzePerformance(analyzedPages))
-  ]);
+  // Generate enhanced analysis insights with progress updates
+  const { emitTechnicalProgress, emitContentQualityProgress, emitLinkArchitectureProgress, emitPerformanceProgress, emitAIExplanationsProgress } = await import('./progress-tracker.js');
+  
+  // Technical SEO Analysis
+  emitTechnicalProgress(context, analyzedPages.length, analyzedPages, 'Running technical SEO analysis...');
+  const technicalAnalysis = await import('./technical-seo.js').then(m => m.analyzeTechnicalSeo(analyzedPages, context.domain));
+  
+  // Content Quality Analysis  
+  emitContentQualityProgress(context, analyzedPages.length, analyzedPages, 'Analyzing content quality...');
+  const contentQualityAnalysisResult = await import('./content-quality-analyzer.js').then(m => m.analyzeUnifiedContentQuality(analyzedPages, context.settings.useAI));
+  
+  // Link Architecture Analysis
+  emitLinkArchitectureProgress(context, analyzedPages.length, analyzedPages, 'Analyzing link architecture...');
+  const linkArchitectureAnalysis = await import('./link-architecture.js').then(m => m.analyzeLinkArchitecture(analyzedPages));
+  
+  // Performance Analysis
+  emitPerformanceProgress(context, analyzedPages.length, analyzedPages, 'Analyzing performance metrics...');
+  const performanceAnalysis = await import('./performance-analyzer.js').then(m => m.analyzePerformance(analyzedPages));
 
   console.log(`Generated comprehensive insights:`);
   console.log(`- Technical SEO Score: ${technicalAnalysis.overallScore}/100`);
@@ -413,6 +424,7 @@ async function generateInsights(
   if (options.useAI && !options.isCompetitorAnalysis && context.settings.useAI) {
     try {
       console.log(`Generating AI explanations for enhanced insights...`);
+      emitAIExplanationsProgress(context, analyzedPages.length, analyzedPages, 'Generating AI explanations...');
       
       const { generateInsightsExplanations } = await import('./insights-explanations.js');
       const explanations = await generateInsightsExplanations(

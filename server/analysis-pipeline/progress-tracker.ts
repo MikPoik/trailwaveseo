@@ -119,6 +119,121 @@ export function emitAIProgress(
 }
 
 /**
+ * Emit content quality analysis progress update
+ */
+export function emitContentQualityProgress(
+  context: AnalysisContext,
+  totalPages: number,
+  analyzedPages: any[],
+  currentOperation: string = 'Analyzing content quality...'
+): void {
+  
+  const update: ProgressUpdate = {
+    status: 'in-progress',
+    domain: context.domain,
+    pagesFound: totalPages,
+    pagesAnalyzed: analyzedPages.length,
+    currentPageUrl: currentOperation,
+    analyzedPages: analyzedPages.map(p => p.url),
+    percentage: 70 // Content quality analysis happens after design
+  };
+  
+  context.events.emit(context.domain, update);
+}
+
+/**
+ * Emit technical analysis progress update
+ */
+export function emitTechnicalProgress(
+  context: AnalysisContext,
+  totalPages: number,
+  analyzedPages: any[],
+  currentOperation: string = 'Running technical SEO analysis...'
+): void {
+  
+  const update: ProgressUpdate = {
+    status: 'in-progress',
+    domain: context.domain,
+    pagesFound: totalPages,
+    pagesAnalyzed: analyzedPages.length,
+    currentPageUrl: currentOperation,
+    analyzedPages: analyzedPages.map(p => p.url),
+    percentage: 75 // Technical analysis
+  };
+  
+  context.events.emit(context.domain, update);
+}
+
+/**
+ * Emit link architecture analysis progress update
+ */
+export function emitLinkArchitectureProgress(
+  context: AnalysisContext,
+  totalPages: number,
+  analyzedPages: any[],
+  currentOperation: string = 'Analyzing link architecture...'
+): void {
+  
+  const update: ProgressUpdate = {
+    status: 'in-progress',
+    domain: context.domain,
+    pagesFound: totalPages,
+    pagesAnalyzed: analyzedPages.length,
+    currentPageUrl: currentOperation,
+    analyzedPages: analyzedPages.map(p => p.url),
+    percentage: 80 // Link architecture analysis
+  };
+  
+  context.events.emit(context.domain, update);
+}
+
+/**
+ * Emit performance analysis progress update
+ */
+export function emitPerformanceProgress(
+  context: AnalysisContext,
+  totalPages: number,
+  analyzedPages: any[],
+  currentOperation: string = 'Analyzing performance metrics...'
+): void {
+  
+  const update: ProgressUpdate = {
+    status: 'in-progress',
+    domain: context.domain,
+    pagesFound: totalPages,
+    pagesAnalyzed: analyzedPages.length,
+    currentPageUrl: currentOperation,
+    analyzedPages: analyzedPages.map(p => p.url),
+    percentage: 85 // Performance analysis
+  };
+  
+  context.events.emit(context.domain, update);
+}
+
+/**
+ * Emit AI explanations generation progress update
+ */
+export function emitAIExplanationsProgress(
+  context: AnalysisContext,
+  totalPages: number,
+  analyzedPages: any[],
+  currentOperation: string = 'Generating AI explanations...'
+): void {
+  
+  const update: ProgressUpdate = {
+    status: 'in-progress',
+    domain: context.domain,
+    pagesFound: totalPages,
+    pagesAnalyzed: analyzedPages.length,
+    currentPageUrl: currentOperation,
+    analyzedPages: analyzedPages.map(p => p.url),
+    percentage: 90 // AI explanations generation
+  };
+  
+  context.events.emit(context.domain, update);
+}
+
+/**
  * Emit design analysis progress update
  */
 export function emitDesignProgress(

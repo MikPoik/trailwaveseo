@@ -58,12 +58,49 @@ const AnalysisProgress = ({
               </span>
             </div>
           )}
+
+          {/* Analysis stages progress indicators */}
+          {percentage >= 10 && (
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              <span className="text-sm text-gray-700">Page analysis completed</span>
+            </div>
+          )}
+          
+          {percentage >= 60 && (
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              <span className="text-sm text-gray-700">Design analysis completed</span>
+            </div>
+          )}
+          
+          {percentage >= 75 && (
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              <span className="text-sm text-gray-700">Technical SEO analysis completed</span>
+            </div>
+          )}
+          
+          {percentage >= 85 && (
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              <span className="text-sm text-gray-700">Performance analysis completed</span>
+            </div>
+          )}
           
           {currentPageUrl && (
             <div className="flex items-center">
               <Loader className="animate-spin h-5 w-5 text-primary-600 mr-2" />
               <span className="text-sm text-gray-700">
-                Analyzing page: <span>{currentPageUrl}</span>
+                {currentPageUrl.includes('Analyzing') || 
+                 currentPageUrl.includes('Running') || 
+                 currentPageUrl.includes('Generating') ||
+                 currentPageUrl.includes('Capturing') ||
+                 currentPageUrl.includes('Starting') ? (
+                  <span>{currentPageUrl}</span>
+                ) : (
+                  <span>Analyzing page: <span>{currentPageUrl}</span></span>
+                )}
               </span>
             </div>
           )}
