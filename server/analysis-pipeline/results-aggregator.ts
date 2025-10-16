@@ -30,12 +30,15 @@ export async function aggregateAnalysisResults(
     const metrics = calculateAggregateMetrics(analyzedPages);
     
     // Prepare analysis data for storage
+    const siteKeywordCloud = buildSiteKeywordCloud(analyzedPages);
+
     const analysisData = {
       userId: context.userId,
       domain: context.domain,
       date: new Date(),
       pagesCount: analyzedPages.length,
       metrics,
+      siteKeywordCloud,
       pages: analyzedPages,
       contentRepetitionAnalysis: null, // Legacy field - keeping for compatibility
       keywordRepetitionAnalysis: null, // Legacy field - keeping for compatibility
@@ -69,6 +72,7 @@ export async function aggregateAnalysisResults(
       analysisId: savedAnalysis.id,
       id: savedAnalysis.id, // Also include id for frontend components
       domain: context.domain,
+      siteKeywordCloud,
       pages: analyzedPages,
       metrics,
       siteOverview: insights?.aiInsights?.siteOverview || insights?.siteOverview,
@@ -97,6 +101,40 @@ export async function aggregateAnalysisResults(
     console.error(`Error aggregating results for ${context.domain}:`, error);
     throw error;
   }
+}
+
+/**
+ * Build a site-level keyword cloud by aggregating page keywordDensity arrays.
+ * Returns top keywords with counts, average density and list of pages where they appear.
+ */
+function buildSiteKeywordCloud(analyzedPages: any[]) {
+  const aggregate = new Map<string, { count: number; totalDensity: number; pages: Set<string> }>();
+  let totalWordsAcrossPages = 0;
+
+  analyzedPages.forEach(page => {
+    const pageTotalWords = page.wordCount || 0;
+    totalWordsAcrossPages += pageTotalWords;
+
+    (page.keywordDensity || []).forEach((kw: any) => {
+      const key = kw.keyword.toLowerCase();
+      const existing = aggregate.get(key) || { count: 0, totalDensity: 0, pages: new Set<string>() };
+      existing.count += kw.count || 0;
+      existing.totalDensity += kw.density || 0;
+      existing.pages.add(page.url);
+      aggregate.set(key, existing);
+    });
+  });
+
+  const keywords = Array.from(aggregate.entries()).map(([keyword, data]) => ({
+    keyword,
+    count: data.count,
+    avgDensity: data.pages.size > 0 ? Math.round((data.totalDensity / data.pages.size) * 100) / 100 : 0,
+    pages: Array.from(data.pages).slice(0, 10)
+  }));
+
+  // Sort by count descending, limit to top 30
+  keywords.sort((a, b) => b.count - a.count);
+  return keywords.slice(0, 30);
 }
 
 /**

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, AlertTriangle, Info, Check, XCircle, Image, RefreshCw, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import KeywordCloud from "@/components/ui/KeywordCloud";
 import { useLocation } from "wouter";
 import { reanalyzePage } from "@/lib/api";
 
@@ -73,6 +74,9 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
       );
     }
   };
+
+  // Per-page keyword density (support both legacy top-level keywordDensity and contentMetrics.keywordDensity)
+  const pageKeywords = (page as any).keywordDensity || page.contentMetrics?.keywordDensity || [];
 
   const renderSeverityIcon = (severity: IssueType) => {
     switch (severity) {
@@ -252,6 +256,12 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
             </div>
             
             <div className="p-4">
+              {/* Per-page Keyword Cloud */}
+              <div className="mb-4">
+                <h5 className="text-sm font-medium text-gray-900 mb-2">Top Keywords</h5>
+                <KeywordCloud keywords={pageKeywords.map((k: any) => ({ keyword: k.keyword, count: k.count, density: k.density }))} maxWords={20} />
+              </div>
+
               {/* Images with missing alt text section */}
               {page.images.filter(img => !img.alt && img.suggestedAlt).length > 0 && (
                 <div className="mb-4 p-4 border rounded-lg bg-blue-50 border-blue-200">

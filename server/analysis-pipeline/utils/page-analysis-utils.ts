@@ -50,12 +50,17 @@ export function countSyllables(word: string): number {
 }
 
 export function extractKeywordDensity(content: string): Array<{keyword: string, count: number, density: number}> {
-  const words = content.toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 3);
+  // Use Unicode-aware matching to preserve non-ASCII letters (e.g. ö, ä)
+  // Match sequences that start with a letter and may contain letters, marks, numbers,
+  // apostrophes or hyphens. The `u` flag enables Unicode property escapes \p{L}.
+  const matches = content.toLowerCase().match(/\p{L}[\p{L}\p{M}\p{N}'-]*/gu) || [];
 
-  const totalWords = words.length;
+  // Keep reasonably short words (>= 3 chars) but allow 3-char words which can be
+  // meaningful in many languages. This prevents over-filtering of short but valid
+  // keywords in Finnish and other languages.
+  const words = matches.filter(w => w.length >= 3);
+
+  const totalWords = words.length || 1; // avoid division by zero
   const wordCount = new Map<string, number>();
 
   words.forEach(word => {
@@ -68,7 +73,9 @@ export function extractKeywordDensity(content: string): Array<{keyword: string, 
       count,
       density: (count / totalWords) * 100
     }))
-    .filter(item => item.count >= 3)
+    // Reduce required frequency to 2 to surface more potential keywords while
+    // still filtering single-occurrence noise.
+    .filter(item => item.count >= 2)
     .sort((a, b) => b.density - a.density)
     .slice(0, 20);
 }
@@ -99,7 +106,8 @@ export function calculateContentDepth(paragraphs: string[], headings: Heading[])
 
 export function extractSemanticKeywords(content: string): string[] {
   const text = content.toLowerCase();
-  const words = text.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(word => word.length > 2);
+  const matches = text.match(/\p{L}[\p{L}\p{M}\p{N}'-]*/gu) || [];
+  const words = matches.filter(w => w.length >= 3);
   const phrases = new Map<string, number>();
 
   // Extract 2-word phrases

@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { WebsiteAnalysis, PageAnalysis } from "@/lib/types";
 import EnhancedInsights from "../EnhancedInsights";
 import PageAnalysisCard from "../PageAnalysisCard";
+import KeywordCloud from "../ui/KeywordCloud";
 
 interface OverviewTabProps {
   analysis: WebsiteAnalysis;
@@ -67,13 +68,6 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <Button 
               variant="outline" 
-              onClick={onExportCSV}
-            >
-              <Download className="h-5 w-5 mr-2" />
-              Export CSV
-            </Button>
-            <Button 
-              variant="outline" 
               onClick={onExportPDF}
             >
               <FileText className="h-5 w-5 mr-2" />
@@ -93,6 +87,29 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
         {analysis.enhancedInsights && (
           <EnhancedInsights insights={analysis.enhancedInsights} />
         )}
+
+        {/* Site-level Keyword Cloud */}
+        <div className="mt-4 mb-6">
+          <h4 className="text-base font-medium text-gray-900 mb-2">Site Keyword Cloud</h4>
+          { (analysis as any).siteKeywordCloud && (analysis as any).siteKeywordCloud.length > 0 ? (
+            <KeywordCloud keywords={(analysis as any).siteKeywordCloud.map((k: any) => ({ keyword: k.keyword, count: k.count, density: k.avgDensity }))} maxWords={40} />
+          ) : (
+            // Fallback: derive from pages client-side
+            <KeywordCloud keywords={(() => {
+              const map = new Map<string, { count: number; density: number }>();
+              (analysis.pages || []).forEach((p: any) => {
+                (p.keywordDensity || []).forEach((kw: any) => {
+                  const key = kw.keyword.toLowerCase();
+                  const ex = map.get(key) || { count: 0, density: 0 };
+                  ex.count += kw.count || 0;
+                  ex.density += kw.density || 0;
+                  map.set(key, ex);
+                });
+              });
+              return Array.from(map.entries()).map(([keyword, v]) => ({ keyword, count: v.count, density: v.density }));
+            })()} maxWords={40} />
+          )}
+        </div>
 
         {/* Business Context Insights - From modular analysis pipeline */}
         {analysis.siteOverview && (

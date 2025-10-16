@@ -16,6 +16,7 @@ import {
   XCircle
 } from "lucide-react";
 import { WebsiteAnalysis } from "@/lib/types";
+import KeywordCloud from "../ui/KeywordCloud";
 
 interface ContentQualityTabProps {
   analysis: WebsiteAnalysis;
@@ -274,6 +275,19 @@ const ContentQualityTab = ({ analysis }: ContentQualityTabProps) => {
             )}
           </div>
         )}
+
+        {/* Site-level Keyword Cloud */}
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Hash className="h-5 w-5 text-blue-600" />
+            Site Keyword Cloud
+          </h4>
+          { (analysis as any).siteKeywordCloud && (analysis as any).siteKeywordCloud.length > 0 ? (
+            <KeywordCloud keywords={(analysis as any).siteKeywordCloud.map((k: any) => ({ keyword: k.keyword, count: k.count, density: k.avgDensity }))} />
+          ) : (
+            <div className="text-sm text-gray-500">Site keyword cloud will appear after analysis completes.</div>
+          )}
+        </div>
 
         {/* Processing Information */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
