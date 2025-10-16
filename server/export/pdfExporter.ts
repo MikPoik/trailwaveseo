@@ -110,28 +110,81 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           </div>
         </div>
 
+        ${(() => {
+          // Generate site keyword cloud data
+          const siteKeywordCloud = (analysis as any).siteKeywordCloud || (() => {
+            const map = new Map<string, { count: number; density: number }>();
+            (analysis.pages || []).forEach((p: any) => {
+              (p.keywordDensity || []).forEach((kw: any) => {
+                const key = kw.keyword.toLowerCase();
+                const ex = map.get(key) || { count: 0, density: 0 };
+                ex.count += kw.count || 0;
+                ex.density += kw.density || 0;
+                map.set(key, ex);
+              });
+            });
+            return Array.from(map.entries())
+              .map(([keyword, v]) => ({ keyword, count: v.count, avgDensity: v.density }))
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 40);
+          })();
+
+          return siteKeywordCloud.length > 0 ? `
+            <h2>🔑 Site Keyword Cloud</h2>
+            <div class="insights-section">
+              <p class="text-sm text-gray-600 mb-4">Top keywords found across your entire website, sized by frequency and density.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                ${siteKeywordCloud.map((kw: any) => {
+                  const fontSize = Math.min(36, Math.max(12, 12 + (kw.count / Math.max(...siteKeywordCloud.map((k: any) => k.count))) * 24));
+                  return `<span style="font-size: ${fontSize}px; color: #2c5aa0; font-weight: 500; padding: 4px 8px;" title="${kw.keyword}: ${kw.count} occurrences, ${(kw.avgDensity || 0).toFixed(2)}% avg density">${kw.keyword}</span>`;
+                }).join('')}
+              </div>
+              <div class="table-responsive" style="margin-top: 20px;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Keyword</th>
+                      <th>Occurrences</th>
+                      <th>Avg Density</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${siteKeywordCloud.slice(0, 15).map((kw: any) => `
+                      <tr>
+                        <td><strong>${kw.keyword}</strong></td>
+                        <td>${kw.count}</td>
+                        <td>${(kw.avgDensity || 0).toFixed(2)}%</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : '';
+        })()}
+
         ${analysis.siteOverview ? `
           <h2>🏢 Site Overview & Business Context</h2>
           <div class="insights-section">
             <h4>Business Type:</h4>
             <p>${(analysis.siteOverview as any)?.businessType || 'Not determined'}</p>
-            
+
             <h4>Target Audience:</h4>
             <p>${(analysis.siteOverview as any)?.targetAudience || 'Not determined'}</p>
-            
+
             <h4>Primary Goals:</h4>
             <p>${(analysis.siteOverview as any)?.primaryGoals || 'Not determined'}</p>
-            
+
             <h4>Content Strategy:</h4>
             <p>${Array.isArray((analysis.siteOverview as any)?.contentStrategy) ? (analysis.siteOverview as any).contentStrategy.join('. ') : (analysis.siteOverview as any)?.contentStrategy || 'Not determined'}</p>
-            
+
             ${(analysis.siteOverview as any)?.keyStrengths ? `
               <h4>Key Strengths:</h4>
               <ul>
                 ${(analysis.siteOverview as any).keyStrengths.map((strength: string) => `<li>${strength}</li>`).join('')}
               </ul>
             ` : ''}
-            
+
             ${(analysis.siteOverview as any)?.improvementAreas ? `
               <h4>Areas for Improvement:</h4>
               <ul>
@@ -164,11 +217,11 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 <div class="metric-label">Uniqueness Score</div>
               </div>
             </div>
-            
+
             ${(analysis.contentQualityAnalysis as any)?.contentUniqueness?.totalDuplicates > 0 ? `
               <h4>⚠️ Content Duplication Issues</h4>
               <p><strong>Total Duplicates Found:</strong> ${(analysis.contentQualityAnalysis as any).contentUniqueness.totalDuplicates} across ${(analysis.contentQualityAnalysis as any).contentUniqueness.pagesAnalyzed} pages</p>
-              
+
               ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.titles?.length > 0 ? `
                 <h5>Duplicate Titles:</h5>
                 ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.titles.map((group: any) => `
@@ -179,7 +232,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                   </div>
                 `).join('')}
               ` : ''}
-              
+
               ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.descriptions?.length > 0 ? `
                 <h5>Duplicate Meta Descriptions:</h5>
                 ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.descriptions.map((group: any) => `
@@ -191,7 +244,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 `).join('')}
               ` : ''}
             ` : '<p>✅ No significant content duplication found.</p>'}
-            
+
             ${(analysis.contentQualityAnalysis as any)?.strategicRecommendations?.length > 0 ? `
               <h4>🎯 Strategic Recommendations</h4>
               ${(analysis.contentQualityAnalysis as any).strategicRecommendations.map((rec: any) => `
@@ -216,7 +269,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
               <div class="technical-details">
                 <h4>Overall Technical Score: ${formatScore((analysis.enhancedInsights as any).technicalAnalysis.overallScore)}</h4>
                 <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).technicalAnalysis.explanation}</p>
-                
+
                 ${(analysis.enhancedInsights as any).technicalAnalysis.coreWebVitals ? `
                   <h4>Core Web Vitals:</h4>
                   <div class="metrics-grid">
@@ -238,7 +291,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     </div>
                   </div>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).technicalAnalysis.recommendations?.length > 0 ? `
                   <h4>Technical Recommendations:</h4>
                   <ul>
@@ -249,14 +302,14 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     `).join('')}
                   </ul>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).technicalAnalysis.securityAnalysis ? `
                   <h4>Security Analysis:</h4>
                   <p><strong>Security Score:</strong> ${formatScore((analysis.enhancedInsights as any).technicalAnalysis.securityAnalysis.securityScore)}</p>
                   <p><strong>HTTPS Enabled:</strong> ${(analysis.enhancedInsights as any).technicalAnalysis.securityAnalysis.httpsEnabled ? '✅ Yes' : '❌ No'}</p>
                   <p><strong>Mixed Content:</strong> ${(analysis.enhancedInsights as any).technicalAnalysis.securityAnalysis.mixedContent ? '⚠️ Detected' : '✅ None detected'}</p>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).technicalAnalysis.mobileOptimization ? `
                   <h4>Mobile Optimization:</h4>
                   <p><strong>Mobile Score:</strong> ${formatScore((analysis.enhancedInsights as any).technicalAnalysis.mobileOptimization.mobileScore)}</p>
@@ -266,13 +319,13 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 ` : ''}
               </div>
             ` : ''}
-            
+
             ${(analysis.enhancedInsights as any)?.performanceAnalysis ? `
               <h3>📈 Performance Analysis</h3>
               <div class="technical-details">
                 <h4>Overall Performance Score: ${formatScore((analysis.enhancedInsights as any).performanceAnalysis.overallScore)}</h4>
                 <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).performanceAnalysis.explanation}</p>
-                
+
                 ${(analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns ? `
                   <h4>Loading Performance:</h4>
                   <div class="metrics-grid">
@@ -290,7 +343,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     </div>
                   </div>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics ? `
                   <h4>User Experience Metrics:</h4>
                   <div class="metrics-grid">
@@ -312,7 +365,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     </div>
                   </div>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).performanceAnalysis.recommendations?.length > 0 ? `
                   <h4>Performance Recommendations:</h4>
                   <ul>
@@ -320,19 +373,19 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                       <li><strong>${rec.title}</strong> (${rec.priority} priority, Impact: ${rec.impact}/10)<br>
                       ${rec.description}<br>
                       <em>Action: ${rec.actionItems?.join(', ') || 'See details'}</em><br>
-                      <strong>Expected:</strong> ${rec.estimatedImprovement}</li>
+                      <strong>Estimated:</strong> ${rec.estimatedImprovement}</li>
                     `).join('')}
                   </ul>
                 ` : ''}
               </div>
             ` : ''}
-            
+
             ${(analysis.enhancedInsights as any)?.contentQualityAnalysis ? `
               <h3>📊 Enhanced Content Quality Analysis</h3>
               <div class="technical-details">
                 <h4>Content Quality Score: ${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.combinedScore)}</h4>
                 <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.explanation}</p>
-                
+
                 <h4>Content Quality Breakdown:</h4>
                 <div class="metrics-grid">
                   <div class="metric-card metric-good">
@@ -348,7 +401,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     <div class="metric-label">Quality Score</div>
                   </div>
                 </div>
-                
+
                 ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality?.overOptimization?.length > 0 ? `
                   <h4>Keyword Over-Optimization Issues:</h4>
                   <ul>
@@ -359,7 +412,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     `).join('')}
                   </ul>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality?.underOptimization?.length > 0 ? `
                   <h4>Keyword Opportunities:</h4>
                   <ul>
@@ -372,13 +425,13 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 ` : ''}
               </div>
             ` : ''}
-            
+
             ${(analysis.enhancedInsights as any)?.linkArchitectureAnalysis ? `
               <h3>🔗 Link Architecture Analysis</h3>
               <div class="technical-details">
                 <h4>Link Architecture Score: ${formatScore((analysis.enhancedInsights as any).linkArchitectureAnalysis.overallScore)}</h4>
                 <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).linkArchitectureAnalysis.explanation}</p>
-                
+
                 ${(analysis.enhancedInsights as any).linkArchitectureAnalysis.internalLinkingHealth ? `
                   <h4>Internal Linking Health:</h4>
                   <div class="metrics-grid">
@@ -396,7 +449,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     </div>
                   </div>
                 ` : ''}
-                
+
                 ${(analysis.enhancedInsights as any).linkArchitectureAnalysis.recommendations?.length > 0 ? `
                   <h4>Link Architecture Recommendations:</h4>
                   <ul>
@@ -418,21 +471,21 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           <div class="insights-section">
             ${(() => {
               const designAnalysis = analysis.designAnalysis || analysis.enhancedInsights?.designAnalysis;
-              
+
               if (!designAnalysis) return '<p>No design analysis available.</p>';
-              
+
               return `
                 <h3>Overall Design Score: ${formatScore(designAnalysis.overallScore)}</h3>
                 <p><strong>Pages Analyzed:</strong> ${designAnalysis.totalPagesAnalyzed || 0}</p>
                 ${designAnalysis.summary ? `<p><strong>Summary:</strong> ${designAnalysis.summary}</p>` : ''}
-                
+
                 ${designAnalysis.error ? `
                   <div class="issue-container issue-critical">
                     <div class="issue-title">Design Analysis Error</div>
                     <div class="issue-description">${designAnalysis.error}</div>
                   </div>
                 ` : ''}
-                
+
                 ${designAnalysis.pageAnalyses && designAnalysis.pageAnalyses.length > 0 ? `
                   <h4>Page-by-Page Design Analysis</h4>
                   ${designAnalysis.pageAnalyses.map((pageAnalysis, pageIndex) => `
@@ -441,28 +494,28 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                         <h4>Page ${pageIndex + 1}: ${pageAnalysis.screenshotData?.url || 'Unknown URL'}</h4>
                         <p><strong>Design Score:</strong> ${formatScore(pageAnalysis.overallScore)}</p>
                       </div>
-                      
+
                       ${pageAnalysis.screenshotData?.error ? `
                         <div class="issue-container issue-warning">
                           <div class="issue-title">Screenshot Error</div>
                           <div class="issue-description">${pageAnalysis.screenshotData.error}</div>
                         </div>
                       ` : ''}
-                      
+
                       ${pageAnalysis.strengths && pageAnalysis.strengths.length > 0 ? `
                         <h5>✅ Design Strengths</h5>
                         <ul>
                           ${pageAnalysis.strengths.slice(0, 5).map(strength => `<li>${strength}</li>`).join('')}
                         </ul>
                       ` : ''}
-                      
+
                       ${pageAnalysis.weaknesses && pageAnalysis.weaknesses.length > 0 ? `
                         <h5>⚠️ Areas for Improvement</h5>
                         <ul>
                           ${pageAnalysis.weaknesses.slice(0, 5).map(weakness => `<li>${weakness}</li>`).join('')}
                         </ul>
                       ` : ''}
-                      
+
                       ${pageAnalysis.recommendations && pageAnalysis.recommendations.length > 0 ? `
                         <h5>🎯 Design Recommendations</h5>
                         ${pageAnalysis.recommendations.map((rec, recIndex) => `
@@ -476,7 +529,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                           </div>
                         `).join('')}
                       ` : ''}
-                      
+
                       ${pageAnalysis.summary ? `
                         <h5>📝 Page Summary</h5>
                         <div class="technical-details">
@@ -524,14 +577,14 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 </table>
               </div>
             ` : '<p>No detailed comparison data available.</p>'}
-            
+
             ${(analysis.competitorAnalysis as any)?.recommendations?.length > 0 ? `
               <h4>Competitive Recommendations:</h4>
               <ul>
                 ${(analysis.competitorAnalysis as any).recommendations.map((rec: string) => `<li>${rec}</li>`).join('')}
               </ul>
             ` : ''}
-            
+
             ${(analysis.competitorAnalysis as any)?.summary ? `
               <h4>Competitive Summary:</h4>
               <div class="technical-details">
@@ -549,7 +602,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
               <h3>Page ${index + 1}: ${page.pageName || 'Unknown Page'}</h3>
               <p>🔗 ${page.url}</p>
             </div>
-            
+
             <div class="meta-info">
               <div class="meta-card">
                 <h4>📋 Basic Information</h4>
@@ -561,7 +614,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 <p><strong>Viewport:</strong> ${page.viewport || 'Not set'}</p>
                 <p><strong>Mobile Optimized:</strong> ${page.mobileOptimized ? '✅ Yes' : '❌ No'}</p>
               </div>
-              
+
               <div class="meta-card">
                 <h4>📊 Content Metrics</h4>
                 ${page.contentMetrics ? `
@@ -579,7 +632,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 `}
               </div>
             </div>
-            
+
             ${page.keywordDensity && page.keywordDensity.length > 0 ? `
               <h4>🔍 Top Keywords</h4>
               <div style="margin: 10px 0;">
@@ -588,12 +641,12 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 `).join('')}
               </div>
             ` : ''}
-            
+
             ${page.semanticKeywords && page.semanticKeywords.length > 0 ? `
               <h4>🎯 Semantic Keywords</h4>
               <p>${page.semanticKeywords.slice(0, 10).join(', ')}</p>
             ` : ''}
-            
+
             ${page.issues && page.issues.length > 0 ? `
               <h4>⚠️ SEO Issues (${page.issues.length})</h4>
               ${page.issues.map((issue: any) => `
@@ -604,7 +657,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 </div>
               `).join('')}
             ` : '<p>✅ No SEO issues found on this page.</p>'}
-            
+
             ${page.suggestions && page.suggestions.length > 0 ? `
               <div class="suggestions-list">
                 <h4>💡 AI-Powered Suggestions</h4>
@@ -613,7 +666,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 </ul>
               </div>
             ` : ''}
-            
+
             ${page.images && page.images.length > 0 ? `
               <h4>🖼️ Image Analysis</h4>
               <div class="table-responsive">
@@ -639,7 +692,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 </table>
               </div>
             ` : ''}
-            
+
             ${page.openGraph ? `
               <h4>📱 Open Graph Data</h4>
               <div class="technical-details">
@@ -649,7 +702,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 <p><strong>Type:</strong> ${(page.openGraph as any).type || 'Not set'}</p>
               </div>
             ` : ''}
-            
+
             ${page.twitterCard ? `
               <h4>🐦 Twitter Card Data</h4>
               <div class="technical-details">
@@ -661,7 +714,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
             ` : ''}
           </div>
         `).join('')}
-        
+
         <div class="print-break"></div>
         <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
           <p><strong>Report Generated:</strong> ${new Date().toLocaleString()}</p>
