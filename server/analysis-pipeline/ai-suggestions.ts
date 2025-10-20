@@ -285,9 +285,7 @@ ${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
     // Debug: Log filtering results
     console.log(`Original CTA elements: ${pageData.ctaElements ? pageData.ctaElements.length : 0}`);
     console.log(`CTA elements with text: ${ctaElementsWithText.length}`);
-    if (ctaElementsWithText.length > 0) {
-      console.log('CTA elements with text:', ctaElementsWithText.map((cta: any) => `${cta.type}: "${cta.text}"`));
-    }
+
 
     // Analyze CTA elements on the page
     const ctaAnalysis = ctaElementsWithText && ctaElementsWithText.length > 0 ? `
