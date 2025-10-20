@@ -167,9 +167,21 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
   const maxTotalLength = 15000;
   const maxParagraphLength = 1000;
 
+  // Cookie banner selectors to exclude from content analysis
+  const cookieBannerSelectors = [
+    '[class*="cookie"]', '[id*="cookie"]',
+    '[class*="gdpr"]', '[id*="gdpr"]',
+    '[class*="consent"]', '[id*="consent"]',
+    '[class*="privacy-banner"]', '[id*="privacy-banner"]',
+    '[class*="notice-banner"]', '[id*="notice-banner"]',
+    '[role="dialog"][aria-label*="cookie"]',
+    '[role="dialog"][aria-label*="consent"]',
+    '[data-testid*="cookie"]', '[data-testid*="consent"]'
+  ].join(', ');
+
   // Enhanced content extraction for SSR React pages
   const allTextContent = $('body').clone()
-    .find('script, style, nav, header, footer, aside, .menu, .navigation, .sidebar, .comments, noscript, [aria-hidden="true"]')
+    .find(`script, style, nav, header, footer, aside, .menu, .navigation, .sidebar, .comments, noscript, [aria-hidden="true"], ${cookieBannerSelectors}`)
     .remove()
     .end()
     .text()
@@ -258,8 +270,18 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
       // Skip if no meaningful text
       if (!elementText || elementText.length < 15) return;
       
-      // Skip navigation, menu, and UI elements
+      // Skip navigation, menu, UI elements, and cookie banner text
       if (elementText.match(/^(menu|nav|navigation|header|footer|sidebar|cookie|privacy|terms|login|signup|register|cart|search|home|about|contact|back to top|skip to|toggle|close|open)$/i)) return;
+      
+      // Skip cookie banner related content
+      const cookieBannerKeywords = [
+        'accept cookies', 'reject cookies', 'cookie consent', 'cookie preferences',
+        'manage cookies', 'cookie settings', 'privacy settings', 'consent preferences',
+        'accept all', 'reject all', 'necessary cookies', 'optional cookies',
+        'we use cookies', 'this site uses cookies', 'cookie policy', 'cookie notice'
+      ];
+      const lowerText = elementText.toLowerCase();
+      if (cookieBannerKeywords.some(keyword => lowerText.includes(keyword))) return;
       
       // Skip if text is very short phrases that are likely UI elements
       if (elementText.length < 30 && elementText.split(' ').length < 5) return;
