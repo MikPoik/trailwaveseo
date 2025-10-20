@@ -13,6 +13,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "wouter";
 import { WebsiteAnalysis } from "@/lib/types";
+import { updateMetadata } from "@/lib/updateMetadata";
 
 export const route: RouteDefinition = {
   path: "/editor/:conversationId",
@@ -32,6 +33,13 @@ const ContentEditor = () => {
   const [pageUrl, setPageUrl] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<number | null>(null);
   const [freshPageData, setFreshPageData] = useState<any>(null);
+
+  // Update metadata on mount
+  useEffect(() => {
+    if (route.metadata) {
+      updateMetadata(route.metadata);
+    }
+  }, []);
 
   // Decode URL parameters
   useEffect(() => {

@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import type { RouteDefinition } from "@shared/route-metadata";
+import { updateMetadata } from "@/lib/updateMetadata";
 
 export const route: RouteDefinition = {
   path: "/history",
@@ -22,6 +23,13 @@ export const route: RouteDefinition = {
 const SiteHistory = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Update metadata on mount
+  useEffect(() => {
+    if (route.metadata) {
+      updateMetadata(route.metadata);
+    }
+  }, []);
   
   const { data: analysisHistory, isLoading, error } = useQuery({
     queryKey: ['/api/analysis/history'],

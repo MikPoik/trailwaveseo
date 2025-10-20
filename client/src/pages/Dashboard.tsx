@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import URLInputForm from "@/components/URLInputForm";
 import AnalysisProgress from "@/components/AnalysisProgress";
@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Coins, AlertTriangle, Link } from "lucide-react";
 import type { RouteDefinition } from "@shared/route-metadata";
+import { updateMetadata } from "@/lib/updateMetadata";
 
 export const route: RouteDefinition = {
   path: "/dashboard",
@@ -33,6 +34,13 @@ interface UserUsage {
 const Dashboard = () => {
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Update metadata on mount
+  useEffect(() => {
+    if (route.metadata) {
+      updateMetadata(route.metadata);
+    }
+  }, []);
   
   const { data: usage } = useQuery<UserUsage>({
     queryKey: ['/api/user/usage'],

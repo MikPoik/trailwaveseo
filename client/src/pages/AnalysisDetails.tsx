@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { RouteDefinition } from "@shared/route-metadata";
+import { updateMetadata } from "@/lib/updateMetadata";
 
 export const route: RouteDefinition = {
   path: "/analysis/:id",
@@ -22,6 +23,13 @@ const AnalysisDetails = () => {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Update metadata on mount
+  useEffect(() => {
+    if (route.metadata) {
+      updateMetadata(route.metadata);
+    }
+  }, []);
 
   const { data: analysis, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/analysis', id],

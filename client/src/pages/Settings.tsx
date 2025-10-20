@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { RouteDefinition } from "@shared/route-metadata";
+import { updateMetadata } from "@/lib/updateMetadata";
 
 export const route: RouteDefinition = {
   path: "/settings",
@@ -39,6 +40,13 @@ const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+
+  // Update metadata on mount
+  useEffect(() => {
+    if (route.metadata) {
+      updateMetadata(route.metadata);
+    }
+  }, []);
 
   // Default values
   const defaultValues: SettingsFormValues = {

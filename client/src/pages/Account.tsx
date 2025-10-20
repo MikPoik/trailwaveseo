@@ -11,6 +11,7 @@ import { User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { RouteDefinition } from "@shared/route-metadata";
+import { updateMetadata } from "@/lib/updateMetadata";
 
 export const route: RouteDefinition = {
   path: "/account",
@@ -48,6 +49,13 @@ const Account = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [processingPackage, setProcessingPackage] = useState<string | null>(null);
+
+  // Update metadata on mount
+  useEffect(() => {
+    if (route.metadata) {
+      updateMetadata(route.metadata);
+    }
+  }, []);
 
   const { data: usage, isLoading, refetch } = useQuery<UserUsage>({
     queryKey: ['/api/user/usage'],
