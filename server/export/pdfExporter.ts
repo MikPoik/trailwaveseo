@@ -194,37 +194,43 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           </div>
         ` : ''}
 
-        ${analysis.contentQualityAnalysis ? `
+        ${(() => {
+          // Get content quality analysis from either location
+          const contentQuality = analysis.contentQualityAnalysis || (analysis.enhancedInsights as any)?.contentQualityAnalysis;
+          
+          if (!contentQuality) return '';
+          
+          return `
           <div class="print-break"></div>
           <h2>📝 Content Quality Analysis</h2>
           <div class="content-analysis">
             <h3>Overall Content Health</h3>
             <div class="metrics-grid">
-              <div class="metric-card ${(analysis.contentQualityAnalysis as any)?.overallHealth?.contentScore >= 80 ? 'metric-excellent' : (analysis.contentQualityAnalysis as any)?.overallHealth?.contentScore >= 60 ? 'metric-good' : 'metric-warning'}">
-                <div class="metric-value">${formatScore((analysis.contentQualityAnalysis as any)?.overallHealth?.contentScore)}</div>
+              <div class="metric-card ${contentQuality.overallHealth?.contentScore >= 80 ? 'metric-excellent' : contentQuality.overallHealth?.contentScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                <div class="metric-value">${formatScore(contentQuality.overallHealth?.contentScore)}</div>
                 <div class="metric-label">Content Score</div>
               </div>
-              <div class="metric-card ${(analysis.contentQualityAnalysis as any)?.overallHealth?.keywordScore >= 80 ? 'metric-excellent' : (analysis.contentQualityAnalysis as any)?.overallHealth?.keywordScore >= 60 ? 'metric-good' : 'metric-warning'}">
-                <div class="metric-value">${formatScore((analysis.contentQualityAnalysis as any)?.overallHealth?.keywordScore)}</div>
+              <div class="metric-card ${contentQuality.overallHealth?.keywordScore >= 80 ? 'metric-excellent' : contentQuality.overallHealth?.keywordScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                <div class="metric-value">${formatScore(contentQuality.overallHealth?.keywordScore)}</div>
                 <div class="metric-label">Keyword Score</div>
               </div>
-              <div class="metric-card ${(analysis.contentQualityAnalysis as any)?.overallHealth?.qualityScore >= 80 ? 'metric-excellent' : (analysis.contentQualityAnalysis as any)?.overallHealth?.qualityScore >= 60 ? 'metric-good' : 'metric-warning'}">
-                <div class="metric-value">${formatScore((analysis.contentQualityAnalysis as any)?.overallHealth?.qualityScore)}</div>
+              <div class="metric-card ${contentQuality.overallHealth?.qualityScore >= 80 ? 'metric-excellent' : contentQuality.overallHealth?.qualityScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                <div class="metric-value">${formatScore(contentQuality.overallHealth?.qualityScore)}</div>
                 <div class="metric-label">Quality Score</div>
               </div>
-              <div class="metric-card ${(analysis.contentQualityAnalysis as any)?.contentUniqueness?.uniquenessScore >= 80 ? 'metric-excellent' : (analysis.contentQualityAnalysis as any)?.contentUniqueness?.uniquenessScore >= 60 ? 'metric-good' : 'metric-warning'}">
-                <div class="metric-value">${formatScore((analysis.contentQualityAnalysis as any)?.contentUniqueness?.uniquenessScore)}</div>
+              <div class="metric-card ${contentQuality.contentUniqueness?.uniquenessScore >= 80 ? 'metric-excellent' : contentQuality.contentUniqueness?.uniquenessScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                <div class="metric-value">${formatScore(contentQuality.contentUniqueness?.uniquenessScore)}</div>
                 <div class="metric-label">Uniqueness Score</div>
               </div>
             </div>
 
-            ${(analysis.contentQualityAnalysis as any)?.contentUniqueness?.totalDuplicates > 0 ? `
+            ${contentQuality.contentUniqueness?.totalDuplicates > 0 ? `
               <h4>⚠️ Content Duplication Issues</h4>
-              <p><strong>Total Duplicates Found:</strong> ${(analysis.contentQualityAnalysis as any).contentUniqueness.totalDuplicates} across ${(analysis.contentQualityAnalysis as any).contentUniqueness.pagesAnalyzed} pages</p>
+              <p><strong>Total Duplicates Found:</strong> ${contentQuality.contentUniqueness.totalDuplicates} across ${contentQuality.contentUniqueness.pagesAnalyzed} pages</p>
 
-              ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.titles?.length > 0 ? `
+              ${contentQuality.contentUniqueness.duplicateContent.titles?.length > 0 ? `
                 <h5>Duplicate Titles:</h5>
-                ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.titles.map((group: any) => `
+                ${contentQuality.contentUniqueness.duplicateContent.titles.map((group: any) => `
                   <div class="issue-container issue-warning">
                     <div class="issue-title">"${group.content}"</div>
                     <div class="issue-description">Found on ${group.urls.length} pages (${group.impactLevel} impact)</div>
@@ -233,9 +239,9 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 `).join('')}
               ` : ''}
 
-              ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.descriptions?.length > 0 ? `
+              ${contentQuality.contentUniqueness.duplicateContent.descriptions?.length > 0 ? `
                 <h5>Duplicate Meta Descriptions:</h5>
-                ${(analysis.contentQualityAnalysis as any).contentUniqueness.duplicateContent.descriptions.map((group: any) => `
+                ${contentQuality.contentUniqueness.duplicateContent.descriptions.map((group: any) => `
                   <div class="issue-container issue-warning">
                     <div class="issue-title">"${group.content}"</div>
                     <div class="issue-description">Found on ${group.urls.length} pages (${group.impactLevel} impact)</div>
@@ -245,9 +251,9 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
               ` : ''}
             ` : '<p>✅ No significant content duplication found.</p>'}
 
-            ${(analysis.contentQualityAnalysis as any)?.strategicRecommendations?.length > 0 ? `
+            ${contentQuality.strategicRecommendations?.length > 0 ? `
               <h4>🎯 Strategic Recommendations</h4>
-              ${(analysis.contentQualityAnalysis as any).strategicRecommendations.map((rec: any) => `
+              ${contentQuality.strategicRecommendations.map((rec: any) => `
                 <div class="issue-container ${rec.priority === 'Critical' ? 'issue-critical' : rec.priority === 'High' ? 'issue-warning' : 'issue-info'}">
                   <div class="issue-title">${rec.title} (${rec.priority} Priority)</div>
                   <div class="issue-description"><strong>Category:</strong> ${rec.category}</div>
@@ -258,7 +264,8 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
               `).join('')}
             ` : ''}
           </div>
-        ` : ''}
+        `;
+        })()}
 
         ${analysis.enhancedInsights ? `
           <div class="print-break"></div>
@@ -458,65 +465,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
               </div>
             ` : ''}
 
-            ${(analysis.enhancedInsights as any)?.performanceAnalysis ? `
-              <h3>📈 Performance Analysis</h3>
-              <div class="technical-details">
-                <h4>Overall Performance Score: ${formatScore((analysis.enhancedInsights as any).performanceAnalysis.overallScore)}</h4>
-                <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).performanceAnalysis.explanation}</p>
-
-                ${(analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns ? `
-                  <h4>Loading Performance:</h4>
-                  <div class="metrics-grid">
-                    <div class="metric-card metric-good">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.loadingScore)}</div>
-                      <div class="metric-label">Loading Score</div>
-                    </div>
-                    <div class="metric-card metric-good">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.asynchronousLoading)}</div>
-                      <div class="metric-label">Async Loading</div>
-                    </div>
-                    <div class="metric-card metric-good">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.criticalResourceLoading)}</div>
-                      <div class="metric-label">Critical Resources</div>
-                    </div>
-                  </div>
-                ` : ''}
-
-                ${(analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics ? `
-                  <h4>User Experience Metrics:</h4>
-                  <div class="metrics-grid">
-                    <div class="metric-card metric-good">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.uxScore)}</div>
-                      <div class="metric-label">UX Score</div>
-                    </div>
-                    <div class="metric-card metric-good">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.mobileExperience)}</div>
-                      <div class="metric-label">Mobile Experience</div>
-                    </div>
-                    <div class="metric-card metric-good">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.contentReadability)}</div>
-                      <div class="metric-label">Readability</div>
-                    </div>
-                    <div class="metric-card metric-excellent">
-                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.contentAccessibility)}</div>
-                      <div class="metric-label">Accessibility</div>
-                    </div>
-                  </div>
-                ` : ''}
-
-                ${(analysis.enhancedInsights as any).performanceAnalysis.recommendations?.length > 0 ? `
-                  <h4>Performance Recommendations:</h4>
-                  <ul>
-                    ${(analysis.enhancedInsights as any).performanceAnalysis.recommendations.map((rec: any) => `
-                      <li><strong>${rec.title}</strong> (${rec.priority} priority, Impact: ${rec.impact}/10)<br>
-                      ${rec.description}<br>
-                      <em>Action: ${rec.actionItems?.join(', ') || 'See details'}</em><br>
-                      <strong>Estimated:</strong> ${rec.estimatedImprovement}</li>
-                    `).join('')}
-                  </ul>
-                ` : ''}
-              </div>
-            ` : ''}
+            
 
             ${(analysis.enhancedInsights as any)?.contentQualityAnalysis ? `
               <h3>📊 Enhanced Content Quality Analysis</h3>
@@ -756,14 +705,16 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
               <div class="meta-card">
                 <h4>📊 Content Metrics</h4>
                 ${page.contentMetrics ? `
-                  <p><strong>Word Count:</strong> ${page.contentMetrics.wordCount || 0}</p>
-                  <p><strong>Readability Score:</strong> ${formatScore(page.contentMetrics.readabilityScore)}</p>
-                  <p><strong>Content Depth:</strong> ${formatScore(page.contentMetrics.contentDepth)}</p>
+                  <p><strong>Word Count:</strong> ${page.contentMetrics.wordCount || page.wordCount || 0}</p>
+                  <p><strong>Readability Score:</strong> ${formatScore(page.contentMetrics.readabilityScore || page.readabilityScore)}</p>
+                  <p><strong>Content Depth:</strong> ${formatScore(page.contentMetrics.contentDepth || page.contentDepthScore)}</p>
                   <p><strong>Headings:</strong> ${(page.headings || []).length} total</p>
                   <p><strong>Images:</strong> ${(page.images || []).length} total</p>
                   <p><strong>Internal Links:</strong> ${(page.internalLinks || []).length}</p>
                   <p><strong>External Links:</strong> ${(page.externalLinks || []).length}</p>
                 ` : `
+                  <p><strong>Word Count:</strong> ${page.wordCount || 0}</p>
+                  <p><strong>Readability Score:</strong> ${formatScore(page.readabilityScore)}</p>
                   <p><strong>Headings:</strong> ${(page.headings || []).length} total</p>
                   <p><strong>Images:</strong> ${(page.images || []).length} total</p>
                   <p><strong>Internal Links:</strong> ${(page.internalLinks || []).length}</p>
