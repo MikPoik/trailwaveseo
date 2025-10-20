@@ -264,6 +264,144 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           <div class="print-break"></div>
           <h2>🚀 Enhanced SEO Insights</h2>
           <div class="insights-section">
+            
+            ${(analysis.enhancedInsights as any)?.contentQualityAnalysis ? `
+              <h3>📝 Content Quality Analysis</h3>
+              <div class="technical-details">
+                <h4>Overall Content Quality Score: ${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth?.combinedScore || (analysis.enhancedInsights as any).contentQualityAnalysis.overallScore || 0)}</h4>
+                <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.explanation || 'Comprehensive analysis of content uniqueness, keyword optimization, and overall quality.'}</p>
+
+                ${(analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth ? `
+                  <h4>Content Health Breakdown:</h4>
+                  <div class="metrics-grid">
+                    <div class="metric-card ${(analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.contentScore >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.contentScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.contentScore)}</div>
+                      <div class="metric-label">Content Score</div>
+                    </div>
+                    <div class="metric-card ${(analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.keywordScore >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.keywordScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.keywordScore)}</div>
+                      <div class="metric-label">Keyword Score</div>
+                    </div>
+                    <div class="metric-card ${(analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.qualityScore >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.qualityScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.overallHealth.qualityScore)}</div>
+                      <div class="metric-label">Quality Score</div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${(analysis.enhancedInsights as any).contentQualityAnalysis.contentUniqueness ? `
+                  <h4>Content Uniqueness:</h4>
+                  <p><strong>Uniqueness Score:</strong> ${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.contentUniqueness.uniquenessScore)}</p>
+                  <p><strong>Total Duplicates:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.contentUniqueness.totalDuplicates}</p>
+                  <p><strong>Pages Analyzed:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.contentUniqueness.pagesAnalyzed}</p>
+                ` : ''}
+
+                ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality ? `
+                  <h4>Keyword Quality:</h4>
+                  <p><strong>Health Score:</strong> ${formatScore((analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality.healthScore)}</p>
+                  <p><strong>Readability Impact:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality.readabilityImpact}</p>
+                  ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality.overOptimization?.length > 0 ? `
+                    <p><strong>Over-optimization Issues:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality.overOptimization.length} keywords need attention</p>
+                  ` : ''}
+                  ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality.underOptimization?.length > 0 ? `
+                    <p><strong>Optimization Opportunities:</strong> ${(analysis.enhancedInsights as any).contentQualityAnalysis.keywordQuality.underOptimization.length} opportunities identified</p>
+                  ` : ''}
+                ` : ''}
+
+                ${(analysis.enhancedInsights as any).contentQualityAnalysis.strategicRecommendations?.length > 0 ? `
+                  <h4>Strategic Recommendations:</h4>
+                  <ul>
+                    ${(analysis.enhancedInsights as any).contentQualityAnalysis.strategicRecommendations.slice(0, 5).map((rec: any) => `
+                      <li><strong>${rec.title}</strong> (${rec.priority} priority)<br>
+                      ${rec.description}<br>
+                      <em>Impact:</em> ${rec.expectedImpact}</li>
+                    `).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            ` : ''}
+
+            ${(analysis.enhancedInsights as any)?.performanceAnalysis ? `
+              <h3>⚡ Performance Analysis</h3>
+              <div class="technical-details">
+                <h4>Overall Performance Score: ${formatScore((analysis.enhancedInsights as any).performanceAnalysis.overallScore)}</h4>
+                <p><strong>Explanation:</strong> ${(analysis.enhancedInsights as any).performanceAnalysis.explanation || 'Analysis of website performance including resource optimization, loading patterns, and user experience.'}</p>
+
+                ${(analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization ? `
+                  <h4>Resource Optimization:</h4>
+                  <div class="metrics-grid">
+                    <div class="metric-card ${(analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.optimizationScore >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.optimizationScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.optimizationScore)}</div>
+                      <div class="metric-label">Optimization Score</div>
+                    </div>
+                    <div class="metric-card ${(analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.imageOptimization >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.imageOptimization >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.imageOptimization)}</div>
+                      <div class="metric-label">Image Optimization</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${(analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.resourceCount?.total || 0}</div>
+                      <div class="metric-label">Total Resources</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${Math.round((analysis.enhancedInsights as any).performanceAnalysis.resourceOptimization.estimatedPageSize || 0)}KB</div>
+                      <div class="metric-label">Est. Page Size</div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${(analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns ? `
+                  <h4>Loading Patterns:</h4>
+                  <div class="metrics-grid">
+                    <div class="metric-card ${(analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.loadingScore >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.loadingScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.loadingScore)}</div>
+                      <div class="metric-label">Loading Score</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.criticalResourceLoading)}</div>
+                      <div class="metric-label">Critical Resources</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.loadingPatterns.asynchronousLoading)}</div>
+                      <div class="metric-label">Async Loading</div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${(analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics ? `
+                  <h4>User Experience Metrics:</h4>
+                  <div class="metrics-grid">
+                    <div class="metric-card ${(analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.uxScore >= 80 ? 'metric-excellent' : (analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.uxScore >= 60 ? 'metric-good' : 'metric-warning'}">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.uxScore)}</div>
+                      <div class="metric-label">UX Score</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.contentAccessibility)}</div>
+                      <div class="metric-label">Accessibility</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.contentReadability)}</div>
+                      <div class="metric-label">Readability</div>
+                    </div>
+                    <div class="metric-card metric-good">
+                      <div class="metric-value">${formatScore((analysis.enhancedInsights as any).performanceAnalysis.userExperienceMetrics.mobileExperience)}</div>
+                      <div class="metric-label">Mobile Experience</div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${(analysis.enhancedInsights as any).performanceAnalysis.recommendations?.length > 0 ? `
+                  <h4>Performance Recommendations:</h4>
+                  <ul>
+                    ${(analysis.enhancedInsights as any).performanceAnalysis.recommendations.map((rec: any) => `
+                      <li><strong>${rec.title}</strong> (${rec.priority} priority, Impact: ${rec.impact}/10)<br>
+                      ${rec.description}<br>
+                      <em>Expected Improvement:</em> ${rec.estimatedImprovement}</li>
+                    `).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            ` : ''}
+
             ${(analysis.enhancedInsights as any)?.technicalAnalysis ? `
               <h3>🔧 Technical SEO Analysis</h3>
               <div class="technical-details">
