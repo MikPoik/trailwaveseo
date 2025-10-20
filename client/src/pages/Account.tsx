@@ -10,6 +10,17 @@ import { useEffect, useState } from "react";
 import { User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/account",
+  ssr: false,
+  metadata: {
+    title: "Account – TrailWave SEO",
+    description: "Manage your TrailWave SEO account, billing, and subscription.",
+    canonical: "https://trailwaveseo.com/account",
+  },
+};
 
 interface UserUsage {
   pagesAnalyzed: number;
@@ -112,7 +123,7 @@ const Account = () => {
 
     // Listen for custom events that might be dispatched when analysis completes
     window.addEventListener('analysisComplete', handleAnalysisComplete);
-    
+
     return () => {
       window.removeEventListener('analysisComplete', handleAnalysisComplete);
     };
@@ -202,8 +213,8 @@ const Account = () => {
                 {getAccountStatusDisplay()}
               </div>
               <p className="text-xs text-muted-foreground">
-                {usage?.accountStatus === "trial" 
-                  ? "Lite scans: 3 pages max, 5 suggestions per page" 
+                {usage?.accountStatus === "trial"
+                  ? "Lite scans: 3 pages max, 5 suggestions per page"
                   : "Full scans: unlimited pages, all suggestions"}
               </p>
             </div>
@@ -223,13 +234,13 @@ const Account = () => {
               </div>
 
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `€{((usage?.chatMessagesInPack || 0) / 10) * 100}%` }}
                 ></div>
               </div>
               <p className="text-xs text-muted-foreground">
-                The number of messages in your rolling pack (1 credit per 10 messages). 
+                The number of messages in your rolling pack (1 credit per 10 messages).
                 The counter resets after every 10 messages used.
               </p>
             </div>
@@ -254,10 +265,10 @@ const Account = () => {
           </CardContent>
         </Card>
 
-        
+
       </div>
 
-      
+
 
       {/* Purchase Credits Section */}
       <Card className="mt-6">
@@ -292,8 +303,8 @@ const Account = () => {
                     {getAccountStatusDisplay()}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {usage?.accountStatus === "trial" 
-                      ? "Lite scans: 3 pages max" 
+                    {usage?.accountStatus === "trial"
+                      ? "Lite scans: 3 pages max"
                       : "Full scans: unlimited"}
                   </p>
                 </div>
@@ -315,7 +326,7 @@ const Account = () => {
                     Best Value
                   </Badge>
                 )}
-                
+
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-2xl">{pkg.name}</CardTitle>
                   <div className="space-y-2">
@@ -328,7 +339,7 @@ const Account = () => {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
@@ -356,7 +367,7 @@ const Account = () => {
                       <span className="text-sm">Chat: 1 credit per 10 messages</span>
                     </div>
                   </div>
-                  
+
                   <Button
                     onClick={() => handlePurchaseClick(pkg)}
                     disabled={processingPackage === pkg.id}

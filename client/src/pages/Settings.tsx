@@ -12,6 +12,17 @@ import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/settings",
+  ssr: false,
+  metadata: {
+    title: "Settings – TrailWave SEO",
+    description: "Manage your TrailWave SEO account settings and preferences.",
+    canonical: "https://trailwaveseo.com/settings",
+  },
+};
 
 const settingsSchema = z.object({
   maxPages: z.number().min(1).max(100),
@@ -43,7 +54,7 @@ const Settings = () => {
     resolver: zodResolver(settingsSchema),
     defaultValues,
   });
-  
+
   // Fetch current settings
   const { data: currentSettings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['/api/settings'],
@@ -55,7 +66,7 @@ const Settings = () => {
       });
     }
   });
-  
+
   // Update form values when settings are loaded
   useEffect(() => {
     if (currentSettings && !isLoadingSettings) {
@@ -75,9 +86,9 @@ const Settings = () => {
       return await apiRequest("POST", "/api/settings", data);
     },
     onSuccess: () => {
-      // Invalidate the settings query to trigger a refetch
+      // Invalidate the settings query to refetch
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
-      
+
       toast({
         title: "Settings updated",
         description: "Your SEO analysis settings have been saved.",
@@ -135,7 +146,7 @@ const Settings = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-gray-900">Crawling Settings</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="maxPages"
@@ -204,7 +215,7 @@ const Settings = () => {
 
                 <div className="space-y-4 pt-4 border-t">
                   <h3 className="text-lg font-medium text-gray-900">Analysis Settings</h3>
-                  
+
                   <FormField
                     control={form.control}
                     name="analyzeImages"

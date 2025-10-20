@@ -6,6 +6,17 @@ import AnalysisSummary from "@/components/AnalysisSummary";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/analysis/:id",
+  ssr: false,
+  metadata: {
+    title: "Analysis Details – TrailWave SEO",
+    description: "View detailed SEO analysis results and recommendations.",
+    canonical: "https://trailwaveseo.com/analysis",
+  },
+};
 
 const AnalysisDetails = () => {
   const { id } = useParams();
@@ -74,9 +85,9 @@ const AnalysisDetails = () => {
 
   return (
     <>
-      <Header 
-        title={analysis ? `Analysis: ${analysis.domain}` : "Analysis Details"} 
-        description={analysis ? `Analyzed on ${new Date(analysis.date).toLocaleDateString()}` : "Loading analysis details..."} 
+      <Header
+        title={analysis ? `Analysis: ${analysis.domain}` : "Analysis Details"}
+        description={analysis ? `Analyzed on ${new Date(analysis.date).toLocaleDateString()}` : "Loading analysis details..."}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -102,7 +113,7 @@ const AnalysisDetails = () => {
             </Button>
           </div>
         ) : analysis && (
-          <AnalysisSummary 
+          <AnalysisSummary
             analysis={analysis}
             onNewAnalysis={() => setLocation("/")}
             onReanalyzePage={handleReanalyzePage} // Pass the reanalyze handler

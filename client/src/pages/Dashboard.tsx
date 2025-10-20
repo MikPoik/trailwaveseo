@@ -10,6 +10,17 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Coins, AlertTriangle, Link } from "lucide-react";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/dashboard",
+  ssr: false,
+  metadata: {
+    title: "Dashboard – TrailWave SEO",
+    description: "Access your SEO analysis dashboard and manage your website optimization projects.",
+    canonical: "https://trailwaveseo.com/dashboard",
+  },
+};
 
 interface UserUsage {
   pagesAnalyzed: number;

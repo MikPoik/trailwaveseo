@@ -7,6 +7,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import type { RouteDefinition } from "@shared/route-metadata";
+
+export const route: RouteDefinition = {
+  path: "/history",
+  ssr: false,
+  metadata: {
+    title: "Analysis History – TrailWave SEO",
+    description: "View your website SEO analysis history and track optimization progress.",
+    canonical: "https://trailwaveseo.com/history",
+  },
+};
 
 const SiteHistory = () => {
   const { toast } = useToast();

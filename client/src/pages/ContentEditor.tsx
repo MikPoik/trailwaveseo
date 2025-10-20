@@ -1,15 +1,28 @@
 import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
-import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import ChatInterface from "@/components/content-editor/ChatInterface";
 import ContextSidebar from "@/components/content-editor/ContextSidebar";
+import { Card } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import type { RouteDefinition } from "@shared/route-metadata";
+import { CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import { useLocation } from "wouter";
 import { WebsiteAnalysis } from "@/lib/types";
+
+export const route: RouteDefinition = {
+  path: "/editor/:conversationId",
+  ssr: false,
+  metadata: {
+    title: "Content Editor – TrailWave SEO",
+    description: "AI-powered content optimization and editing workspace.",
+    canonical: "https://trailwaveseo.com/editor",
+  },
+};
 
 const ContentEditor = () => {
   const [, params] = useRoute("/content-editor/:analysisId/:pageUrl");
@@ -103,7 +116,7 @@ const ContentEditor = () => {
 
   // Find the specific page data
   const pageData = analysis.pages.find(page => page.url === pageUrl);
-  
+
   // Merge fresh content with original analysis data to preserve suggestions
   const displayPageData = freshPageData ? {
     ...pageData, // Keep original analysis data (including suggestions)
@@ -122,7 +135,7 @@ const ContentEditor = () => {
         title="Content Editor" 
         description="AI-powered content editing and optimization" 
       />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 pb-0">
         {/* Header with back button and page info */}
         <div className="mb-1 pb-0">
