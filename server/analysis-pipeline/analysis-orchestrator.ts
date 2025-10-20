@@ -253,7 +253,8 @@ async function captureAndAnalyzeDesign(
     emitDesignProgress(context, analyzedPages.length, analyzedPages, 'Capturing screenshots...');
     
     // Select up to 5 most important pages for design analysis
-    const pagesToAnalyze = selectPagesForDesignAnalysis(analyzedPages).slice(0, 5);
+    // Prioritize first pages which include homepage and important pages from discovery
+    const pagesToAnalyze = analyzedPages.slice(0, 5);
     
     if (pagesToAnalyze.length === 0) {
       console.log('No pages selected for design analysis');
