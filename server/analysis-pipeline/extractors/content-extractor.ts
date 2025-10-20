@@ -174,6 +174,7 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
     '[class*="consent"]', '[id*="consent"]',
     '[class*="privacy-banner"]', '[id*="privacy-banner"]',
     '[class*="notice-banner"]', '[id*="notice-banner"]',
+    '[class*="modal-cacsp"]', '[id*="modal-cacsp"]',
     '[role="dialog"][aria-label*="cookie"]',
     '[role="dialog"][aria-label*="consent"]',
     '[data-testid*="cookie"]', '[data-testid*="consent"]'
