@@ -379,13 +379,13 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           messages: [
             { 
               role: "system", 
-              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. IMPORTANT: Write all suggestions in the EXACT same language as the page content above. Look at the title, headings, and paragraph content to determine the language, then write your suggestions in that same language. Match the language of the page content exactly."
+              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. CRITICAL: Escape all quotes and newlines in your suggestions. IMPORTANT: Write all suggestions in the EXACT same language as the page content above. Look at the title, headings, and paragraph content to determine the language, then write your suggestions in that same language. Match the language of the page content exactly."
             },
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" },
           temperature: 0.4,
-          max_completion_tokens: 1500
+          max_completion_tokens: 2000
         });
 
         // If we get here, the request succeeded
@@ -403,6 +403,11 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
         }
       }
     }
+    
+    // Check if response was truncated
+    if (response && response.choices[0].finish_reason === 'length') {
+      console.warn(`Response was truncated for ${url} - may need to increase max_completion_tokens`);
+    }
 
     if (!response) {
       console.error(`All ${maxRetries} attempts failed for ${url}. Last error:`, lastError);
@@ -415,14 +420,37 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
       return [];
     }
 
-    // Validate that content looks like JSON before parsing
+    // Validate and clean content before parsing
     const trimmedContent = content.trim();
     if (!trimmedContent.startsWith('{')) {
       console.error(`Invalid JSON response for ${url}:`, trimmedContent.substring(0, 200));
       return [];
     }
 
-    const result = JSON.parse(content);
+    let result;
+    try {
+      result = JSON.parse(trimmedContent);
+    } catch (parseError) {
+      // Try to fix common JSON issues
+      console.warn(`Initial JSON parse failed for ${url}, attempting cleanup...`);
+      
+      try {
+        // Remove any trailing commas, fix common escaping issues
+        const cleanedContent = trimmedContent
+          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+          .replace(/\n/g, '\\n') // Escape newlines in strings
+          .replace(/\r/g, '\\r') // Escape carriage returns
+          .replace(/\t/g, '\\t'); // Escape tabs
+        
+        result = JSON.parse(cleanedContent);
+        console.log(`Successfully parsed JSON after cleanup for ${url}`);
+      } catch (cleanupError) {
+        console.error(`Failed to parse JSON even after cleanup for ${url}:`, parseError);
+        console.error(`Content preview (first 500 chars):`, trimmedContent.substring(0, 500));
+        console.error(`Content preview (last 200 chars):`, trimmedContent.substring(Math.max(0, trimmedContent.length - 200)));
+        return [];
+      }
+    }
 
     const suggestions = result.suggestions || [];
     if (!Array.isArray(suggestions)) {
