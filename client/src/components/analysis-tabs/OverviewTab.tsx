@@ -71,7 +71,7 @@ const OverviewTab = ({ analysis, onNewAnalysis, onExportCSV, onExportPDF, onPage
               onClick={onExportPDF}
             >
               <FileText className="h-5 w-5 mr-2" />
-              Export PDF
+              Export HTML Report
             </Button>
             <Button 
               variant="outline" 
