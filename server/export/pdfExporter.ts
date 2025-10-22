@@ -9,8 +9,21 @@ const safeRender = (value: any) => {
   return value || 'None';
 };
 
-const formatScore = (score: number) => {
-  return typeof score === 'number' ? `${Math.round(score)}%` : 'N/A';
+const formatScore = (score: any) => {
+  // Accept numbers in 0-1 range (fraction) or 0-100 range
+  if (score === null || score === undefined) return 'N/A';
+  if (typeof score !== 'number') {
+    const parsed = Number(score);
+    if (isNaN(parsed)) return 'N/A';
+    score = parsed;
+  }
+
+  // If score looks like a fraction (0-1), convert to percent
+  if (score >= 0 && score <= 1) {
+    score = score * 100;
+  }
+
+  return `${Math.round(score)}%`;
 };
 
 export async function exportAnalysisPDF(req: Request, res: Response) {
@@ -38,7 +51,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2c5aa0; padding-bottom: 20px; }
           h1 { color: #2c5aa0; margin-bottom: 10px; font-size: 28px; }
           h2 { color: #34495e; margin-top: 40px; margin-bottom: 20px; font-size: 22px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-          h3 { color: #2c3e50; margin-top: 30px; margin-bottom: 15px; font-size: 18px; }
+          h3 { color: #ffffff; margin-top: 30px; margin-bottom: 15px; font-size: 18px; }
           h4 { color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px; }
           .summary-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
           .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
@@ -104,8 +117,8 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
             <div class="metric-value">${(analysis.metrics as any)?.goodPractices || 0}</div>
             <div class="metric-label">Good Practices</div>
           </div>
-          <div class="metric-card ${(analysis.metrics as any)?.averageContentScore >= 80 ? 'metric-excellent' : (analysis.metrics as any)?.averageContentScore >= 60 ? 'metric-good' : 'metric-warning'}">
-            <div class="metric-value">${formatScore((analysis.metrics as any)?.averageContentScore)}</div>
+          <div class="metric-card ${((analysis.metrics as any)?.averageContentScore ?? (analysis.enhancedInsights as any)?.contentQualityAnalysis?.overallHealth?.combinedScore) >= 80 ? 'metric-excellent' : ((analysis.metrics as any)?.averageContentScore ?? (analysis.enhancedInsights as any)?.contentQualityAnalysis?.overallHealth?.combinedScore) >= 60 ? 'metric-good' : 'metric-warning'}">
+            <div class="metric-value">${formatScore((analysis.metrics as any)?.averageContentScore ?? (analysis.enhancedInsights as any)?.contentQualityAnalysis?.overallHealth?.combinedScore ?? null)}</div>
             <div class="metric-label">Content Quality</div>
           </div>
         </div>
@@ -575,7 +588,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
 
                 ${designAnalysis.pageAnalyses && designAnalysis.pageAnalyses.length > 0 ? `
                   <h4>Page-by-Page Design Analysis</h4>
-                  ${designAnalysis.pageAnalyses.map((pageAnalysis, pageIndex) => `
+                  ${designAnalysis.pageAnalyses.map((pageAnalysis: any, pageIndex: number) => `
                     <div class="page-section">
                       <div class="page-header">
                         <h4>Page ${pageIndex + 1}: ${pageAnalysis.screenshotData?.url || 'Unknown URL'}</h4>
@@ -592,20 +605,20 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                       ${pageAnalysis.strengths && pageAnalysis.strengths.length > 0 ? `
                         <h5>✅ Design Strengths</h5>
                         <ul>
-                          ${pageAnalysis.strengths.slice(0, 5).map(strength => `<li>${strength}</li>`).join('')}
+                          ${pageAnalysis.strengths.slice(0, 5).map((strength: any) => `<li>${strength}</li>`).join('')}
                         </ul>
                       ` : ''}
 
                       ${pageAnalysis.weaknesses && pageAnalysis.weaknesses.length > 0 ? `
                         <h5>⚠️ Areas for Improvement</h5>
                         <ul>
-                          ${pageAnalysis.weaknesses.slice(0, 5).map(weakness => `<li>${weakness}</li>`).join('')}
+                          ${pageAnalysis.weaknesses.slice(0, 5).map((weakness: any) => `<li>${weakness}</li>`).join('')}
                         </ul>
                       ` : ''}
 
                       ${pageAnalysis.recommendations && pageAnalysis.recommendations.length > 0 ? `
                         <h5>🎯 Design Recommendations</h5>
-                        ${pageAnalysis.recommendations.map((rec, recIndex) => `
+                        ${pageAnalysis.recommendations.map((rec: any, recIndex: number) => `
                           <div class="issue-container ${rec.severity === 'critical' ? 'issue-critical' : rec.severity === 'high' ? 'issue-warning' : 'issue-info'}">
                             <div class="issue-title">${rec.title} (${rec.severity} severity)</div>
                             <div class="issue-description"><strong>Category:</strong> ${rec.category.replace('_', ' ').toUpperCase()}</div>
@@ -706,7 +719,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 <h4>📊 Content Metrics</h4>
                 ${page.contentMetrics ? `
                   <p><strong>Word Count:</strong> ${page.contentMetrics.wordCount || page.wordCount || 0}</p>
-                  <p><strong>Readability Score:</strong> ${formatScore(page.contentMetrics.readabilityScore || page.readabilityScore)}</p>
+                  <p><strong>Readability Score:</strong> ${formatScore(page.contentMetrics.readabilityScore ?? page.readabilityScore ?? null)}</p>
                   <p><strong>Content Depth:</strong> ${formatScore(page.contentMetrics.contentDepth || page.contentDepthScore)}</p>
                   <p><strong>Headings:</strong> ${(page.headings || []).length} total</p>
                   <p><strong>Images:</strong> ${(page.images || []).length} total</p>
@@ -714,7 +727,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                   <p><strong>External Links:</strong> ${(page.externalLinks || []).length}</p>
                 ` : `
                   <p><strong>Word Count:</strong> ${page.wordCount || 0}</p>
-                  <p><strong>Readability Score:</strong> ${formatScore(page.readabilityScore)}</p>
+                  <p><strong>Readability Score:</strong> ${formatScore(page.readabilityScore ?? null)}</p>
                   <p><strong>Headings:</strong> ${(page.headings || []).length} total</p>
                   <p><strong>Images:</strong> ${(page.images || []).length} total</p>
                   <p><strong>Internal Links:</strong> ${(page.internalLinks || []).length}</p>
