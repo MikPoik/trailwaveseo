@@ -36,7 +36,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
   ];
 
   // Helper function to check if element is within a cookie banner
-  const isInCookieBanner = ($el: cheerio.Cheerio<cheerio.Element>): boolean => {
+  const isInCookieBanner = ($el: cheerio.Cheering<cheerio.Element>): boolean => {
     // Check if element or any parent matches cookie banner selectors
     for (const selector of cookieBannerSelectors) {
       if ($el.is(selector) || $el.closest(selector).length > 0) {
@@ -270,7 +270,60 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 7: Common CTA text patterns (last resort for untagged CTAs)
+  // Strategy 7: Phone number CTAs (tel: links - language agnostic)
+  $('a[href^="tel:"], a[href^="tel%3A"]').each((_, el) => {
+    const $el = $(el);
+    const href = $el.attr('href') || '';
+    const text = $el.text().trim();
+
+    // Skip cookie banner elements
+    if (isInCookieBanner($el)) {
+      return;
+    }
+
+    if (text) {
+      ctaElements.push({
+        type: 'phone_cta',
+        text: text,
+        element: 'a',
+        attributes: {
+          href: href,
+          class: $el.attr('class') || ''
+        }
+      });
+    }
+  });
+
+  // Detect phone numbers in clickable elements with semantic classes
+  $('[class*="phone"], [class*="tel"], [class*="call"], [class*="contact-number"]').each((_, el) => {
+    const $el = $(el);
+    const text = $el.text().trim();
+
+    // Skip cookie banner elements
+    if (isInCookieBanner($el)) {
+      return;
+    }
+
+    // Skip if already captured
+    if ($el.is('a[href^="tel:"]')) return;
+
+    // Skip if not clickable
+    if (!$el.is('a, button, [onclick], [role="button"]')) return;
+
+    // Only include if text looks like it could be a phone number (contains digits)
+    if (/\d/.test(text)) {
+      ctaElements.push({
+        type: 'phone_cta',
+        text: text,
+        element: $el.get(0)?.tagName?.toLowerCase() || 'span',
+        attributes: {
+          class: $el.attr('class') || ''
+        }
+      });
+    }
+  });
+
+  // Strategy 8: Common CTA text patterns (language agnostic - English only for universal patterns)
   const ctaTextPatterns = /\b(sign up|sign in|log in|log out|register|subscribe|buy now|purchase|order|shop now|get started|learn more|contact us|call now|book now|try free|download|join now|apply now|request|submit|continue|proceed|next|finish|complete)\b/i;
 
   $('span, div').each((_, el) => {
@@ -307,7 +360,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 8: Forms (potential CTAs)
+  // Strategy 9: Forms (potential CTAs)
   $('form').each((_, el) => {
     const $el = $(el);
 
@@ -336,7 +389,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     });
   });
 
-  // Strategy 9: WordPress and general form wrapper blocks
+  // Strategy 10: WordPress and general form wrapper blocks
   $('.wp-block-contact-form, .wpforms-form, .gform_wrapper, .wpcf7, .wpcf7-form, [class*="wp-block-"] form, .wp-block-contact-form-7-contact-form-selector, [class*="form-wrapper"], [class*="contact-form"]').each((_, el) => {
     const $el = $(el);
 
@@ -345,7 +398,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
       return;
     }
 
-    // Skip if this is already a form element (handled in Strategy 8)
+    // Skip if this is already a form element (handled in Strategy 9)
     if ($el.is('form')) return;
 
     // Find the actual form element inside wrapper
@@ -364,7 +417,8 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
 
     if (!submitButton.length) {
-      submitButton = formElement.find('button').first();
+      // Look for any button or input (language agnostic)
+      submitButton = formElement.find('button, input[type="button"]').first();
     }
 
     // Extract form text from multiple sources
