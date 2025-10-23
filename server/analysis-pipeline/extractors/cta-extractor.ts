@@ -192,7 +192,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     '.wp-block-buttons .wp-block-button a',
     '.wp-block-group .wp-block-button__link',
     '.wp-element-button', // WordPress 6.0+ button class
-    
+
     // Tailwind button patterns
     '[class*="bg-blue-"][class*="hover:bg-"], [class*="bg-green-"][class*="hover:bg-"]',
     '[class*="bg-red-"][class*="hover:bg-"], [class*="bg-purple-"][class*="hover:bg-"]',
@@ -317,7 +317,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
 
     const formId = $el.attr('id') || $el.attr('class') || 'form';
-    
+
     // Check for WordPress form buttons and standard submit buttons
     const submitButton = $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link, .wp-element-button').first();
     const formText = submitButton.attr('value') || 
@@ -336,32 +336,85 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     });
   });
 
-  // Strategy 9: WordPress-specific form blocks
-  $('.wp-block-contact-form, .wpforms-form, .gform_wrapper, .wpcf7-form, [class*="wp-block-"] form').each((_, el) => {
+  // Strategy 9: WordPress and general form wrapper blocks
+  $('.wp-block-contact-form, .wpforms-form, .gform_wrapper, .wpcf7, .wpcf7-form, [class*="wp-block-"] form, .wp-block-contact-form-7-contact-form-selector, [class*="form-wrapper"], [class*="contact-form"]').each((_, el) => {
     const $el = $(el);
-    
+
     // Skip cookie banner forms
     if (isInCookieBanner($el)) {
       return;
     }
 
-    // Skip if already captured as a standard form
+    // Skip if this is already a form element (handled in Strategy 8)
     if ($el.is('form')) return;
 
-    const formText = $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link').first().text().trim() || 
-                     $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link').first().attr('value') ||
-                     'WordPress form';
+    // Find the actual form element inside wrapper
+    const formElement = $el.find('form').first();
+    if (!formElement.length) return;
 
-    if (formText && formText !== 'WordPress form') {
-      ctaElements.push({
-        type: 'wp_form',
-        text: formText,
-        element: 'div',
-        attributes: {
-          class: $el.attr('class') || ''
-        }
-      });
+    // Universal submit button detection
+    let submitButton = formElement.find('input[type="submit"]').first();
+
+    if (!submitButton.length) {
+      submitButton = formElement.find('button[type="submit"]').first();
     }
+
+    if (!submitButton.length) {
+      submitButton = formElement.find('.wp-block-button__link, .wp-element-button').first();
+    }
+
+    if (!submitButton.length) {
+      submitButton = formElement.find('button').first();
+    }
+
+    // Extract form text from multiple sources
+    let formText = '';
+
+    // Priority 1: Submit button value/text
+    formText = submitButton.attr('value') || submitButton.text().trim();
+
+    // Priority 2: Form aria-label
+    if (!formText) {
+      formText = formElement.attr('aria-label') || '';
+    }
+
+    // Priority 3: Wrapper aria-label or title
+    if (!formText) {
+      formText = $el.attr('aria-label') || $el.attr('title') || '';
+    }
+
+    // Priority 4: Form legend or heading
+    if (!formText) {
+      const legend = formElement.find('legend, h1, h2, h3, h4').first().text().trim();
+      formText = legend;
+    }
+
+    // Skip if still no meaningful text
+    if (!formText || formText === 'WordPress form') return;
+
+    // Detect form type based on wrapper classes
+    let formType = 'wp_form';
+    if ($el.hasClass('wpcf7') || $el.hasClass('wpcf7-form') || $el.hasClass('wp-block-contact-form-7-contact-form-selector')) {
+      formType = 'contact_form_7';
+    } else if ($el.hasClass('wpforms-form')) {
+      formType = 'wpforms';
+    } else if ($el.hasClass('gform_wrapper')) {
+      formType = 'gravity_forms';
+    }
+
+    // Detect CAPTCHA presence
+    const hasCaptcha = formElement.find('[class*="turnstile"], [class*="recaptcha"], [class*="h-captcha"], [class*="captcha"], [data-sitekey]').length > 0;
+
+    ctaElements.push({
+      type: hasCaptcha ? `${formType}_with_captcha` : formType,
+      text: formText,
+      element: 'div',
+      attributes: {
+        class: $el.attr('class') || '',
+        id: $el.attr('id') || '',
+        captcha: hasCaptcha ? 'detected' : 'none'
+      }
+    });
   });
 
 
