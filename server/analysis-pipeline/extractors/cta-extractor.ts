@@ -126,6 +126,8 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     // Enhanced button class detection for modern frameworks
     const hasButtonClass = classes.includes('button') || 
                           classes.includes('btn') ||
+                          classes.includes('wp-element-button') || // WordPress 6.0+ button
+                          classes.includes('wp-block-button__link') || // WordPress block button
                           role === 'button' ||
                           classes.match(/bg-(blue|green|red|purple|indigo|pink|yellow|orange|emerald|cyan|amber|lime|violet|fuchsia|rose|sky|teal)-\d+/) || // Tailwind button colors
                           classes.includes('rounded') && classes.includes('px-') && classes.includes('py-') || // Tailwind button pattern
@@ -185,14 +187,39 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 5: Tailwind and modern CSS framework button patterns
-  const buttonLikeSelectors = [
-    // WordPress block buttons
-    '.wp-block-button__link, .wp-block-button > a',
-    '.wp-block-buttons .wp-block-button a',
-    '.wp-block-group .wp-block-button__link',
-    '.wp-element-button', // WordPress 6.0+ button class
+  // Strategy 5: WordPress block buttons (dedicated strategy for better detection)
+  $('.wp-block-button a, .wp-block-button__link, .wp-element-button').each((_, el) => {
+    const $el = $(el);
+    
+    // Skip cookie banner elements
+    if (isInCookieBanner($el)) {
+      return;
+    }
 
+    // Skip if already processed
+    if ($el.is('button, input')) return;
+
+    const classes = $el.attr('class') || '';
+    const text = $el.text().trim();
+    const href = $el.attr('href') || '';
+    const ariaLabel = $el.attr('aria-label') || '';
+
+    const finalText = text || ariaLabel;
+    if (finalText && finalText.length > 0) {
+      ctaElements.push({
+        type: 'wp_block_button',
+        text: finalText,
+        element: 'a',
+        attributes: {
+          href: href,
+          class: classes
+        }
+      });
+    }
+  });
+
+  // Strategy 6: Tailwind and modern CSS framework button patterns
+  const buttonLikeSelectors = [
     // Tailwind button patterns
     '[class*="bg-blue-"][class*="hover:bg-"], [class*="bg-green-"][class*="hover:bg-"]',
     '[class*="bg-red-"][class*="hover:bg-"], [class*="bg-purple-"][class*="hover:bg-"]',
@@ -245,7 +272,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     });
   });
 
-  // Strategy 6: Form submission elements and download links
+  // Strategy 7: Form submission elements and download links
   $('a[href*="download"], a[href*=".pdf"], a[href*=".zip"], a[href*=".doc"]').each((_, el) => {
     const $el = $(el);
     const href = $el.attr('href') || '';
@@ -270,7 +297,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 7: Phone number CTAs (tel: links - language agnostic)
+  // Strategy 8: Phone number CTAs (tel: links - language agnostic)
   $('a[href^="tel:"], a[href^="tel%3A"]').each((_, el) => {
     const $el = $(el);
     const href = $el.attr('href') || '';
@@ -323,7 +350,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 8: Common CTA text patterns (language agnostic - English only for universal patterns)
+  // Strategy 9: Common CTA text patterns (language agnostic - English only for universal patterns)
   const ctaTextPatterns = /\b(sign up|sign in|log in|log out|register|subscribe|buy now|purchase|order|shop now|get started|learn more|contact us|call now|book now|try free|download|join now|apply now|request|submit|continue|proceed|next|finish|complete)\b/i;
 
   $('span, div').each((_, el) => {
@@ -360,7 +387,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 9: Forms (potential CTAs)
+  // Strategy 10: Forms (potential CTAs)
   $('form').each((_, el) => {
     const $el = $(el);
 
@@ -389,7 +416,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     });
   });
 
-  // Strategy 10: WordPress and general form wrapper blocks
+  // Strategy 11: WordPress and general form wrapper blocks
   $('.wp-block-contact-form, .wpforms-form, .gform_wrapper, .wpcf7, .wpcf7-form, [class*="wp-block-"] form, .wp-block-contact-form-7-contact-form-selector, [class*="form-wrapper"], [class*="contact-form"]').each((_, el) => {
     const $el = $(el);
 
