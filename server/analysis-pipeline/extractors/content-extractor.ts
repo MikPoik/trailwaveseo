@@ -334,7 +334,7 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
         extractedTexts.add(elementText);
         totalContentLength += finalText.length;
         
-        console.log(`[Content Extraction] Found ${finalText.length} chars via ${strategy.name}: "${finalText.substring(0, 50)}..."`);
+        //console.log(`[Content Extraction] Found ${finalText.length} chars via ${strategy.name}: "${finalText.substring(0, 50)}..."`);
       } else {
         const remainingLength = maxTotalLength - totalContentLength;
         if (remainingLength > 50) { // Only add if we have meaningful space left
@@ -342,7 +342,7 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
           paragraphs.push(truncated);
           extractedTexts.add(elementText);
           totalContentLength += truncated.length;
-          console.log(`[Content Extraction] Added truncated ${truncated.length} chars via ${strategy.name}`);
+          //console.log(`[Content Extraction] Added truncated ${truncated.length} chars via ${strategy.name}`);
         }
         return false;
       }
@@ -376,7 +376,7 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
         if (fallbackContent.trim().length > 100) {
           paragraphs.push(fallbackContent.trim());
           totalContentLength = fallbackContent.length;
-          console.log(`[Content Extraction] Fallback extracted ${fallbackContent.length} chars`);
+          //console.log(`[Content Extraction] Fallback extracted ${fallbackContent.length} chars`);
         }
       }
     }

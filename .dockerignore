@@ -1,4 +1,6 @@
 /.git
+/.config
+/.upm
 /node_modules
 .dockerignore
 .env
