@@ -187,6 +187,12 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
 
   // Strategy 5: Tailwind and modern CSS framework button patterns
   const buttonLikeSelectors = [
+    // WordPress block buttons
+    '.wp-block-button__link, .wp-block-button > a',
+    '.wp-block-buttons .wp-block-button a',
+    '.wp-block-group .wp-block-button__link',
+    '.wp-element-button', // WordPress 6.0+ button class
+    
     // Tailwind button patterns
     '[class*="bg-blue-"][class*="hover:bg-"], [class*="bg-green-"][class*="hover:bg-"]',
     '[class*="bg-red-"][class*="hover:bg-"], [class*="bg-purple-"][class*="hover:bg-"]',
@@ -311,8 +317,11 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
 
     const formId = $el.attr('id') || $el.attr('class') || 'form';
-    const formText = $el.find('input[type="submit"], button[type="submit"]').first().attr('value') || 
-                     $el.find('input[type="submit"], button[type="submit"]').first().text().trim() ||
+    
+    // Check for WordPress form buttons and standard submit buttons
+    const submitButton = $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link, .wp-element-button').first();
+    const formText = submitButton.attr('value') || 
+                     submitButton.text().trim() ||
                      'Form submission';
 
     ctaElements.push({
@@ -325,6 +334,34 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
         action: $el.attr('action') || ''
       }
     });
+  });
+
+  // Strategy 9: WordPress-specific form blocks
+  $('.wp-block-contact-form, .wpforms-form, .gform_wrapper, .wpcf7-form, [class*="wp-block-"] form').each((_, el) => {
+    const $el = $(el);
+    
+    // Skip cookie banner forms
+    if (isInCookieBanner($el)) {
+      return;
+    }
+
+    // Skip if already captured as a standard form
+    if ($el.is('form')) return;
+
+    const formText = $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link').first().text().trim() || 
+                     $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link').first().attr('value') ||
+                     'WordPress form';
+
+    if (formText && formText !== 'WordPress form') {
+      ctaElements.push({
+        type: 'wp_form',
+        text: formText,
+        element: 'div',
+        attributes: {
+          class: $el.attr('class') || ''
+        }
+      });
+    }
   });
 
 
