@@ -82,8 +82,8 @@ export async function parseSitemap(sitemapUrl: string, signal?: AbortSignal, max
       
       // Filter out URLs that might point to image or video resources
       const filteredUrls = urls
-        .map((url: { loc: string }) => url.loc)
-        .filter(url => {
+  .map((url: { loc: string }) => url.loc)
+  .filter((url: string) => {
           const isMediaUrl = url.toLowerCase().includes('image') || 
                             url.toLowerCase().includes('video') || 
                             url.toLowerCase().includes('media') || 

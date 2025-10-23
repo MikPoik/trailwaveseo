@@ -31,8 +31,12 @@ const SiteHistory = () => {
     }
   }, []);
   
-  const { data: analysisHistory, isLoading, error } = useQuery({
+  const { data: analysisHistory, isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/analysis/history'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/analysis/history');
+      return await res.json();
+    }
   });
 
   const { mutate: deleteAnalysis } = useMutation({
@@ -157,7 +161,7 @@ const SiteHistory = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {analysisHistory?.map((analysis) => (
+                      {analysisHistory?.map((analysis: any) => (
                         <tr key={analysis.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <div className="flex items-center">

@@ -54,9 +54,9 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
       title: pageData.title,
       metaDescription: pageData.metaDescription,
       headings: pageData.headings || [],
-      paragraphs: pageData.paragraphs || [],
+      paragraphs: (pageData as any).paragraphs || [],
       images: pageData.images || [],
-      wordCount: pageData.wordCount || pageData.contentMetrics?.wordCount,
+      wordCount: (pageData as any).wordCount || pageData.contentMetrics?.wordCount,
       lastFetched: 'From analysis data (fallback)',
       isFallback: true
     };
@@ -238,10 +238,10 @@ const ChatInterface = ({ analysisId, pageUrl, pageData, analysis, onFreshContent
           </div>
           <p className="text-xs text-gray-500 mt-2">
             The AI has access to your page analysis, SEO suggestions, business context
-            {analysis.designAnalysis?.some((design: any) => 
-              design.screenshotData?.url === pageUrl && 
-              design.screenshotData?.screenshotUrl && 
-              !design.screenshotData?.error
+            {Array.isArray(analysis.designAnalysis) && analysis.designAnalysis.some((design: any) => 
+              design?.screenshotData?.url === pageUrl && 
+              design?.screenshotData?.screenshotUrl && 
+              !design?.screenshotData?.error
             ) && ', and visual screenshot'}
             {freshContentError && fallbackContent && (
               <span className="text-amber-600"> (using cached page data)</span>

@@ -246,15 +246,21 @@ async function captureAndAnalyzeDesign(
   }
 
   try {
+    // Check for cancellation before starting
+    if (context.controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
+
     console.log('Starting screenshot capture and design analysis...');
     
-    // Emit design analysis progress
+    // Emit progress update for design analysis start (60% progress)
     const { emitDesignProgress } = await import('./progress-tracker.js');
     emitDesignProgress(context, analyzedPages.length, analyzedPages, 'Capturing screenshots...');
     
-    // Select up to 5 most important pages for design analysis
-    // Prioritize first pages which include homepage and important pages from discovery
-    const pagesToAnalyze = analyzedPages.slice(0, 5);
+    // Select the most important pages for design analysis
+    // For competitor analysis, analyze all pages. For main analysis, limit to top pages.
+    const maxPagesToAnalyze = 5; // Can be adjusted based on requirements
+    const pagesToAnalyze = selectPagesForDesignAnalysis(analyzedPages).slice(0, maxPagesToAnalyze);
     
     if (pagesToAnalyze.length === 0) {
       console.log('No pages selected for design analysis');
@@ -266,6 +272,11 @@ async function captureAndAnalyzeDesign(
     const screenshots = await captureMultipleScreenshots(
       pagesToAnalyze.map(p => p.url)
     );
+    
+    // Check for cancellation after screenshots
+    if (context.controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
     
     // Update progress after screenshot capture
     emitDesignProgress(context, analyzedPages.length, analyzedPages, 'Analyzing page designs...');
@@ -376,6 +387,11 @@ async function generateInsights(
     insights.aiInsights = await generateComprehensiveInsights(context, analyzedPages, options);
   }
 
+  // Check for cancellation before design analysis
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
+
   // Capture screenshots and analyze design as part of AI insights
   if (options.useAI && !options.isCompetitorAnalysis && context.settings.useAI) {
     console.log('Analyzing Design...');
@@ -385,17 +401,37 @@ async function generateInsights(
   // Generate enhanced analysis insights with progress updates
   const { emitTechnicalProgress, emitContentQualityProgress, emitLinkArchitectureProgress, emitPerformanceProgress, emitAIExplanationsProgress } = await import('./progress-tracker.js');
   
+  // Check for cancellation
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
+  
   // Technical SEO Analysis
   emitTechnicalProgress(context, analyzedPages.length, analyzedPages, 'Running technical SEO analysis...');
   const technicalAnalysis = await import('./technical-seo.js').then(m => m.analyzeTechnicalSeo(analyzedPages, context.domain));
+  
+  // Check for cancellation
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
   
   // Content Quality Analysis  
   emitContentQualityProgress(context, analyzedPages.length, analyzedPages, 'Analyzing content quality...');
   const contentQualityAnalysisResult = await import('./content-quality-analyzer.js').then(m => m.analyzeUnifiedContentQuality(analyzedPages, context.settings.useAI));
   
+  // Check for cancellation
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
+  
   // Link Architecture Analysis
   emitLinkArchitectureProgress(context, analyzedPages.length, analyzedPages, 'Analyzing link architecture...');
   const linkArchitectureAnalysis = await import('./link-architecture.js').then(m => m.analyzeLinkArchitecture(analyzedPages));
+  
+  // Check for cancellation
+  if (context.controller.signal.aborted) {
+    throw new Error('Analysis cancelled by user');
+  }
   
   // Performance Analysis
   emitPerformanceProgress(context, analyzedPages.length, analyzedPages, 'Analyzing performance metrics...');

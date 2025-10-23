@@ -294,7 +294,7 @@ function generatePerformanceRecommendations(
       ],
       impact: 7,
       estimatedImprovement: 'Faster loading times',
-      affectedPages: pages ? pages.filter(p => (p.loadingScore || 0) < 70).map(p => p.url) : []
+  affectedPages: pages ? pages.filter(p => ((p as any).loadingScore || 0) < 70).map(p => p.url) : []
     });
   }
 
@@ -338,7 +338,7 @@ function generatePerformanceRecommendations(
       ],
       impact: 5,
       estimatedImprovement: 'Improved loading time',
-      affectedPages: pages ? pages.filter(p => (p.resourceCount?.total || 0) > 100).map(p => p.url) : []
+  affectedPages: pages ? pages.filter(p => (((p as any).resourceCount?.total) || 0) > 100).map(p => p.url) : []
     });
   }
 

@@ -326,9 +326,11 @@ function calculateKeywordDistribution(pages: PageAnalysisResult[]): number {
     return distribution > 0.3 && distribution < 0.8 ? 100 : distribution > 0 ? 60 : 0;
   });
 
-  return distributionScores.length > 0 
-    ? distributionScores.reduce((a, b) => a + b, 0) / distributionScores.length 
-    : 0;
+  if (distributionScores.length === 0) return 0;
+
+  const numericScores = distributionScores.map(s => Number(s));
+  const sum = numericScores.reduce((a, b) => a + b, 0);
+  return sum / numericScores.length;
 }
 
 /**

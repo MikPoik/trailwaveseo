@@ -19,8 +19,12 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: analysisHistory = [], isLoading } = useQuery({
+  const { data: analysisHistory = [], isLoading } = useQuery<WebsiteAnalysis[]>({
     queryKey: ["/api/analysis/history"],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/analysis/history');
+      return await res.json();
+    },
     enabled: isAuthenticated,
   });
 
@@ -82,13 +86,14 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
   const { mutate: fetchAnalysis, isPending: isLoadingAnalysis } = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("GET", `/api/analysis/${id}`);
-      
+      const data = await response.json();
+
       // Ensure we have all required properties
-      if (!response || !response.pages) {
+      if (!data || !data.pages) {
         throw new Error("Invalid analysis data received");
       }
-      
-      return response as unknown as WebsiteAnalysis;
+
+      return data as WebsiteAnalysis;
     },
     onSuccess: (data) => {
       onSelectAnalysis(data);

@@ -31,6 +31,9 @@ const settingsSchema = z.object({
   followExternalLinks: z.boolean(),
   analyzeImages: z.boolean(),
   analyzeLinkStructure: z.boolean(),
+  analyzePageSpeed: z.boolean(),
+  analyzeStructuredData: z.boolean(),
+  analyzeMobileCompatibility: z.boolean(),
   useAI: z.boolean(),
 });
 
@@ -55,6 +58,9 @@ const Settings = () => {
     followExternalLinks: false,
     analyzeImages: true,
     analyzeLinkStructure: true,
+    analyzePageSpeed: true,
+    analyzeStructuredData: true,
+    analyzeMobileCompatibility: true,
     useAI: true,
   };
 
@@ -64,27 +70,40 @@ const Settings = () => {
   });
 
   // Fetch current settings
-  const { data: currentSettings, isLoading: isLoadingSettings } = useQuery({
+  const queryFn = async () => {
+    const res = await apiRequest('GET', '/api/settings');
+    return await res.json();
+  };
+
+  const { data: currentSettings, isLoading: isLoadingSettings, error: settingsError } = useQuery<any>({
     queryKey: ['/api/settings'],
-    onError: (error) => {
+    queryFn
+  });
+
+  // Show toast on error separately because useQuery options typed overload rejected our onError above
+  useEffect(() => {
+    if (settingsError) {
       toast({
         title: "Failed to load settings",
         description: "Your default settings will be used instead.",
         variant: "destructive",
       });
     }
-  });
+  }, [settingsError, toast]);
 
   // Update form values when settings are loaded
   useEffect(() => {
     if (currentSettings && !isLoadingSettings) {
       form.reset({
-        maxPages: currentSettings.maxPages,
-        crawlDelay: currentSettings.crawlDelay,
-        followExternalLinks: currentSettings.followExternalLinks,
-        analyzeImages: currentSettings.analyzeImages,
-        analyzeLinkStructure: currentSettings.analyzeLinkStructure,
-        useAI: currentSettings.useAI,
+        maxPages: currentSettings.maxPages ?? defaultValues.maxPages,
+        crawlDelay: currentSettings.crawlDelay ?? defaultValues.crawlDelay,
+        followExternalLinks: currentSettings.followExternalLinks ?? defaultValues.followExternalLinks,
+        analyzeImages: currentSettings.analyzeImages ?? defaultValues.analyzeImages,
+        analyzeLinkStructure: currentSettings.analyzeLinkStructure ?? defaultValues.analyzeLinkStructure,
+        analyzePageSpeed: currentSettings.analyzePageSpeed ?? defaultValues.analyzePageSpeed,
+        analyzeStructuredData: currentSettings.analyzeStructuredData ?? defaultValues.analyzeStructuredData,
+        analyzeMobileCompatibility: currentSettings.analyzeMobileCompatibility ?? defaultValues.analyzeMobileCompatibility,
+        useAI: currentSettings.useAI ?? defaultValues.useAI,
       });
     }
   }, [currentSettings, isLoadingSettings, form]);
@@ -254,6 +273,69 @@ const Settings = () => {
                           <FormLabel>Analyze Link Structure</FormLabel>
                           <FormDescription>
                             Check for internal linking patterns and anchor texts
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="analyzePageSpeed"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between space-x-2 rounded-md border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel>Analyze Page Speed</FormLabel>
+                          <FormDescription>
+                            Check page load performance and optimization opportunities
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="analyzeStructuredData"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between space-x-2 rounded-md border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel>Analyze Structured Data</FormLabel>
+                          <FormDescription>
+                            Check for schema.org markup and rich snippets
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="analyzeMobileCompatibility"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between space-x-2 rounded-md border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel>Analyze Mobile Compatibility</FormLabel>
+                          <FormDescription>
+                            Check for mobile-friendly design and viewport configuration
                           </FormDescription>
                         </div>
                         <FormControl>

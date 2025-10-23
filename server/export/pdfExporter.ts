@@ -70,7 +70,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           .issue-description { margin-bottom: 10px; }
           .issue-recommendation { background: rgba(255,255,255,0.8); padding: 10px; border-radius: 4px; font-style: italic; }
           .page-section { background: #fafafa; padding: 20px; margin: 20px 0; border-radius: 8px; border: 1px solid #e1e5e9; }
-          .page-header { background: #2c5aa0; color: white; padding: 15px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0; }
+          .page-header { background: #e3f2fd; color: white; padding: 15px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0; }
           .meta-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0; }
           .meta-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; }
           .suggestions-list { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; }

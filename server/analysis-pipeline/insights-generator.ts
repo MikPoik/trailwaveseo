@@ -119,9 +119,9 @@ async function generateBusinessContext(
     const siteStructure = {
       allPages: analyzedPages.map(page => ({
         url: page.url,
-        title: page.title,
+        title: page.title ?? undefined,
         headings: page.headings,
-        metaDescription: page.metaDescription,
+        metaDescription: page.metaDescription ?? undefined,
         paragraphs: page.paragraphs
       }))
     };
@@ -191,6 +191,11 @@ async function generatePageSuggestions(
   const enhancedPages = [...analyzedPages]; // Copy array to modify
 
   for (let i = 0; i < analyzedPages.length; i += batchSize) {
+    // Check for cancellation before each batch
+    if (context.controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
+
     const batch = analyzedPages.slice(i, i + batchSize);
 
     // Emit progress update for suggestion generation (40-80% progress)
@@ -217,6 +222,11 @@ async function generatePageSuggestions(
     });
 
     const batchResults = await Promise.all(batchPromises);
+    
+    // Check for cancellation after batch completes
+    if (context.controller.signal.aborted) {
+      throw new Error('Analysis cancelled by user');
+    }
     
     // Update statistics
     batchResults.forEach(result => {

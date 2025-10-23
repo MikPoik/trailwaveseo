@@ -73,9 +73,9 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {analysisCategories.map((category) => {
-            const score = category.title === "Content Quality" 
-              ? category.data?.overallHealth?.combinedScore || 0 
-              : category.data?.overallScore || 0;
+          const score = category.title === "Content Quality" 
+                ? (category.data as any)?.overallHealth?.combinedScore || category.data?.overallScore || 0 
+                : category.data?.overallScore || 0;
             return (
               <div key={category.title} className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -106,7 +106,7 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
                 {category.data?.explanation && (
                   <div className="mt-3 p-3 bg-blue-50 rounded border-l-4 border-blue-200">
                     <p className="text-xs text-blue-900 leading-relaxed">
-                      <strong>AI Insights:</strong> {category.data.explanation}
+                      <strong>AI Insights:</strong> {(category.data as any)?.explanation}
                     </p>
                   </div>
                 )}
@@ -117,12 +117,12 @@ const EnhancedInsights = ({ insights }: EnhancedInsightsProps) => {
 
         {/* Detailed findings for each category */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {analysisCategories.filter(cat => cat.data?.findings && cat.data.findings.length > 0).map((category) => (
+          {analysisCategories.filter(cat => (cat.data as any)?.findings && (cat.data as any).findings.length > 0).map((category) => (
             <Card key={category.title} className="border-gray-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center space-x-2">
                   <div className={getScoreColor(category.title === "Content Quality" 
-                    ? category.data?.overallHealth?.combinedScore || 0 
+                    ? (category.data as any)?.overallHealth?.combinedScore || category.data?.overallScore || 0 
                     : category.data?.overallScore || 0)}>
                     {category.icon}
                   </div>

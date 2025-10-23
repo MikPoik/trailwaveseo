@@ -273,7 +273,7 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
       res.json({
         credits: usage.credits || 0,
         accountStatus: usage.accountStatus || "trial",
-        freeScansUsed: usage.freeScansUsed || 0,
+        freeScansUsed: (usage as any).freeScansUsed || 0,
         freeScansResetDate: null // Removed monthly reset
       });
     } catch (error: any) {

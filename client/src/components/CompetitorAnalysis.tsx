@@ -132,12 +132,17 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
   const cacheKey = [`competitor-analysis-${mainAnalysis.id || mainAnalysis.domain}`];
   
   // Fetch cached comparison data if it exists
-  const { data: comparison, isLoading: isQueryLoading } = useQuery<ComparisonResult>({
+  const { data: comparison, isLoading: isQueryLoading } = useQuery<ComparisonResult | undefined>({
     queryKey: cacheKey,
     // Don't actually fetch data, just use the query for caching
     enabled: false,
     staleTime: Infinity,
   });
+
+  // Local non-null alias to simplify JSX nullability checks (we still check for comparison before rendering)
+  const c: any = comparison;
+  // Normalize detailedInsights so JSX can safely map without optional checks
+  const insights: CompetitorInsight[] = comparison?.detailedInsights ?? [];
 
   const form = useForm<CompetitorFormValues>({
     resolver: zodResolver(competitorSchema),
@@ -162,8 +167,8 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
         titles: mainAnalysis.pages.slice(0, 10).map(page => page.title || '').filter(title => title),
         descriptions: mainAnalysis.pages.slice(0, 10).map(page => page.metaDescription || '').filter(desc => desc),
         headings: mainAnalysis.pages.slice(0, 10).flatMap(page => 
-          page.headings.slice(0, 5).map(h => `${h.level}: ${h.text}`)),
-        images: mainAnalysis.pages.reduce((total, page) => total + page.images.length, 0),
+          (page.headings || []).slice(0, 5).map(h => `${h.level}: ${h.text}`)),
+        images: mainAnalysis.pages.reduce((total, page) => total + ((page.images || []).length), 0),
         pages: mainAnalysis.pages.length
       };
       
@@ -454,7 +459,6 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               
               {(comparison as ComparisonResult).details ? (
                 <div className="space-y-6">
-                  {/* Page Count Comparison */}
                   <div className="border rounded-lg p-4 bg-card">
                     <h3 className="text-lg font-semibold mb-2">Page Count</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -630,9 +634,9 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                 )}
               </div>
               
-              {(comparison as ComparisonResult).detailedInsights && (comparison as ComparisonResult).detailedInsights?.length > 0 ? (
+              {insights.length > 0 ? (
                 <div className="space-y-4">
-                  {(comparison as ComparisonResult).detailedInsights.map((insight: CompetitorInsight, index: number) => (
+                  {insights.map((insight: CompetitorInsight, index: number) => (
                     <Card key={index} className="border-l-4 border-l-primary">
                       <CardContent className="pt-4">
                         <div className="flex justify-between items-start mb-2">
@@ -706,7 +710,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
               {(comparison as ComparisonResult).gaps ? (
                 <div className="space-y-6">
                   {/* Missing Topics */}
-                  {(comparison as ComparisonResult).gaps?.missingTopics && (comparison as ComparisonResult).gaps?.missingTopics.length > 0 && (
+                  {comparison?.gaps?.missingTopics && comparison.gaps.missingTopics.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg">Missing Topics</CardTitle>
@@ -726,7 +730,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   )}
                   
                   {/* Under-optimized Areas */}
-                  {(comparison as ComparisonResult).gaps?.underOptimizedAreas && (comparison as ComparisonResult).gaps?.underOptimizedAreas.length > 0 && (
+                  {comparison?.gaps?.underOptimizedAreas && comparison.gaps.underOptimizedAreas.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg">Under-optimized Areas</CardTitle>
@@ -746,7 +750,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                   )}
                   
                   {/* Opportunity Keywords */}
-                  {(comparison as ComparisonResult).gaps?.opportunityKeywords && (comparison as ComparisonResult).gaps?.opportunityKeywords.length > 0 && (
+                  {comparison?.gaps?.opportunityKeywords && comparison.gaps.opportunityKeywords.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg">Opportunity Keywords</CardTitle>
@@ -878,7 +882,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardTitle className="text-lg text-green-700">Your Strengths</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).competitiveSummary?.strengthAreas && (comparison as ComparisonResult).competitiveSummary?.strengthAreas.length > 0 ? (
+                        {comparison?.competitiveSummary?.strengthAreas && comparison.competitiveSummary.strengthAreas.length > 0 ? (
                           <ul className="space-y-2">
                             {(comparison as ComparisonResult).competitiveSummary?.strengthAreas.map((strength: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
@@ -898,7 +902,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardTitle className="text-lg text-red-700">Areas for Improvement</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).competitiveSummary?.weaknessAreas && (comparison as ComparisonResult).competitiveSummary?.weaknessAreas.length > 0 ? (
+                        {comparison?.competitiveSummary?.weaknessAreas && comparison.competitiveSummary.weaknessAreas.length > 0 ? (
                           <ul className="space-y-2">
                             {(comparison as ComparisonResult).competitiveSummary?.weaknessAreas.map((weakness: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
@@ -922,7 +926,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardDescription>Easy improvements you can make right away</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).competitiveSummary?.quickWins && (comparison as ComparisonResult).competitiveSummary?.quickWins.length > 0 ? (
+                        {comparison?.competitiveSummary?.quickWins && comparison.competitiveSummary.quickWins.length > 0 ? (
                           <ul className="space-y-2">
                             {(comparison as ComparisonResult).competitiveSummary?.quickWins.map((win: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
@@ -943,7 +947,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         <CardDescription>Strategic improvements for sustained advantage</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {(comparison as ComparisonResult).competitiveSummary?.longTermOpportunities && (comparison as ComparisonResult).competitiveSummary?.longTermOpportunities.length > 0 ? (
+                        {comparison?.competitiveSummary?.longTermOpportunities && comparison.competitiveSummary.longTermOpportunities.length > 0 ? (
                           <ul className="space-y-2">
                             {(comparison as ComparisonResult).competitiveSummary?.longTermOpportunities.map((opportunity: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">

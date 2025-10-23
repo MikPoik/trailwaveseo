@@ -325,63 +325,15 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
       }
     });
 
-    // Analyze page structure for CTA elements
-    const ctaElements: Array<{ type: string; text: string; }> = [];
+    // Analyze page structure for CTA elements using enhanced extractor
+    const { extractCtaElements } = await import('./analysis-pipeline/extractors/cta-extractor.js');
+    const ctaElementsFull = extractCtaElements($, url);
     
-    // Find button elements
-    $('button').each((_, el) => {
-      const text = $(el).text().trim();
-      if (text) {
-        ctaElements.push({ type: 'button', text });
-      }
-    });
-
-    // Find input buttons (submit, button types)
-    $('input[type="submit"], input[type="button"]').each((_, el) => {
-      const value = $(el).attr('value') || $(el).text().trim();
-      if (value) {
-        ctaElements.push({ type: 'input_button', text: value });
-      }
-    });
-
-    // Find button-like links (common CTA patterns)
-    $('a').each((_, el) => {
-      const $link = $(el);
-      const text = $link.text().trim();
-      const className = $link.attr('class') || '';
-      const href = $link.attr('href') || '';
-
-      // Check for button-like styling or common CTA text patterns
-      if (text && (
-        className.toLowerCase().includes('btn') ||
-        className.toLowerCase().includes('button') ||
-        className.toLowerCase().includes('cta') ||
-        text.toLowerCase().includes('contact') ||
-        text.toLowerCase().includes('get started') ||
-        text.toLowerCase().includes('sign up') ||
-        text.toLowerCase().includes('buy now') ||
-        text.toLowerCase().includes('learn more') ||
-        href.includes('contact') ||
-        href.includes('#contact')
-      )) {
-        ctaElements.push({ type: 'link_button', text });
-      }
-    });
-
-    // Find forms (general CTA elements)
-    $('form').each((_, el) => {
-      const $form = $(el);
-      const action = $form.attr('action') || '';
-      const method = $form.attr('method') || 'GET';
-      const inputs = $form.find('input').length;
-      
-      if (inputs > 0) {
-        ctaElements.push({ 
-          type: 'form', 
-          text: `${method.toUpperCase()} form with ${inputs} input${inputs !== 1 ? 's' : ''} (${action || 'no action'})` 
-        });
-      }
-    });
+    // Convert to simpler format for backward compatibility
+    const ctaElements = ctaElementsFull.map(cta => ({
+      type: cta.type,
+      text: cta.text
+    }));
 
     // Check if page is canonical
     const isCanonical = !canonical || canonical === url;
@@ -441,21 +393,21 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
         title: 'Missing meta description', 
         description: 'Meta descriptions help users understand your page content in search results.', 
         severity: 'warning',
-        category: 'meta'
+        category: 'meta-description'
       });
     } else if (metaDescription.length < 120) {
       issues.push({ 
         title: 'Meta description too short', 
         description: `Meta description is only ${metaDescription.length} characters. Aim for 120-160 characters.`, 
         severity: 'info',
-        category: 'meta'
+        category: 'meta-description'
       });
     } else if (metaDescription.length > 160) {
       issues.push({ 
         title: 'Meta description too long', 
         description: `Meta description is ${metaDescription.length} characters. Keep it under 160 characters.`, 
         severity: 'warning',
-        category: 'meta'
+        category: 'meta-description'
       });
     }
 
@@ -488,13 +440,13 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
       });
     }
 
-    // Content issues
+    // Content issues - using 'links' category as closest match
     if (wordCount < 300) {
       issues.push({ 
         title: 'Thin content', 
         description: `Page has only ${wordCount} words. Aim for at least 300 words for better SEO.`, 
         severity: 'warning',
-        category: 'content'
+        category: 'links'
       });
     }
 
@@ -503,7 +455,7 @@ export async function analyzePage(url: string, settings: any, signal: AbortSigna
         title: 'Poor readability', 
         description: `Readability score is ${Math.round(readabilityScore)}/100. Consider using shorter sentences and simpler words.`, 
         severity: 'info',
-        category: 'content'
+        category: 'links'
       });
     }
 

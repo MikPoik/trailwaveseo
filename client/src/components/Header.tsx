@@ -17,6 +17,8 @@ interface HeaderProps {
 
 const Header = ({ title, description }: HeaderProps) => {
   const { user, isAuthenticated, login, logout } = useAuth();
+  // Narrow user to any to access expected properties from auth hook
+  const currentUser = user as any;
 
   return (
     <div className="bg-white shadow">
@@ -33,11 +35,11 @@ const Header = ({ title, description }: HeaderProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar>
-                      {user.profileImageUrl ? (
-                        <AvatarImage src={user.profileImageUrl} alt={user.email || 'User'} />
+                      {currentUser?.profileImageUrl ? (
+                        <AvatarImage src={currentUser.profileImageUrl} alt={currentUser.email || 'User'} />
                       ) : (
                         <AvatarFallback>
-                          {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                          {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : 'U'}
                         </AvatarFallback>
                       )}
                     </Avatar>
@@ -46,14 +48,14 @@ const Header = ({ title, description }: HeaderProps) => {
                 <DropdownMenuContent className="w-56" align="end">
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      {user.firstName && user.lastName ? (
-                        <p className="font-medium">{`${user.firstName} ${user.lastName}`}</p>
+                      {currentUser?.firstName && currentUser?.lastName ? (
+                        <p className="font-medium">{`${currentUser.firstName} ${currentUser.lastName}`}</p>
                       ) : (
                         <p className="font-medium">My Account</p>
                       )}
-                      {user.email && (
+                      {currentUser?.email && (
                         <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          {user.email}
+                          {currentUser.email}
                         </p>
                       )}
                     </div>

@@ -242,13 +242,26 @@ export async function generateSeoSuggestions(url: string, pageData: any, siteStr
     // Build enhanced prompt with content quality metrics
     const seoIssuesList = pageData.issues.map((issue: any) => `${issue.title} (${issue.severity})`).join(', ') || 'No major issues found';
 
+    // Build detailed keyword analysis from page's keyword density data
+    const keywordAnalysis = pageData.keywordDensity && pageData.keywordDensity.length > 0 ? `
+KEYWORD DENSITY ANALYSIS (Top ${Math.min(15, pageData.keywordDensity.length)} keywords):
+${pageData.keywordDensity.slice(0, 15).map((k: any, idx: number) => 
+  `${idx + 1}. "${k.keyword}" - ${k.count} occurrences (${k.density.toFixed(2)}% density)`
+).join('\n')}
+
+Keyword Distribution:
+- High-density keywords (>2%): ${pageData.keywordDensity.filter((k: any) => k.density > 2).length}
+- Medium-density keywords (1-2%): ${pageData.keywordDensity.filter((k: any) => k.density >= 1 && k.density <= 2).length}
+- Low-density keywords (<1%): ${pageData.keywordDensity.filter((k: any) => k.density < 1).length}
+- Total unique keywords tracked: ${pageData.keywordDensity.length}
+` : 'KEYWORD DENSITY ANALYSIS: No keyword data available';
+
     const contentQuality = pageData.contentMetrics ? `
 CONTENT QUALITY:
 - Words: ${pageData.contentMetrics.wordCount}
 - Readability: ${pageData.contentMetrics.readabilityScore}/100
 - Avg words/sentence: ${pageData.contentMetrics.averageWordsPerSentence}
 - Content depth: ${pageData.contentMetrics.contentDepthScore}/100
-- Top keywords: ${pageData.contentMetrics.keywordDensity?.slice(0, 5).map((k: any) => `${k.keyword}(${k.density.toFixed(1)}%)`).join(', ') || 'None'}
 - Semantic phrases: ${pageData.contentMetrics.semanticKeywords?.slice(0, 5).join(', ') || 'None'}
 ` : '';
 
@@ -282,35 +295,47 @@ ${pageData.paragraphs.slice(0, 10).map((paragraph: string, index: number) => {
     // Filter out CTA elements with empty text
     const ctaElementsWithText = pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.text && cta.text.trim() !== '') : [];
 
-    // Debug: Log filtering results
-    console.log(`Original CTA elements: ${pageData.ctaElements ? pageData.ctaElements.length : 0}`);
-    console.log(`CTA elements with text: ${ctaElementsWithText.length}`);
-
+    // Categorize CTAs by type
+    const formTypes = ['form', 'contact_form_7', 'wpforms', 'gravity_forms', 'elementor_form', 'ninja_forms', 'formidable_forms', 'wp_block_form', 'wp_form'];
+    // Also include forms with _with_captcha suffix
+    const isFormType = (type: string) => formTypes.includes(type) || formTypes.some(ft => type.startsWith(ft + '_with_captcha'));
+    
+    const forms = ctaElementsWithText.filter((cta: any) => isFormType(cta.type));
+    const linkButtons = ctaElementsWithText.filter((cta: any) => cta.type === 'link_button');
+    const inputButtons = ctaElementsWithText.filter((cta: any) => cta.type === 'input_button');
+    const regularButtons = ctaElementsWithText.filter((cta: any) => cta.type === 'button');
+    
+    // Calculate total buttons (excluding forms) - for all CTAs, not just those with text
+    const allForms = pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => isFormType(cta.type)) : [];
+    const allButtons = pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => 
+      cta.type === 'button' || cta.type === 'input_button' || cta.type === 'link_button'
+    ) : [];
 
     // Analyze CTA elements on the page
     const ctaAnalysis = ctaElementsWithText && ctaElementsWithText.length > 0 ? `
 CTA ELEMENTS ANALYSIS:
 Total CTA elements with text: ${ctaElementsWithText.length}
 
-Button-like Links (${ctaElementsWithText.filter((cta: any) => cta.type === 'link_button').length}):
-${ctaElementsWithText.filter((cta: any) => cta.type === 'link_button').map((cta: any) => 
+Button-like Links (${linkButtons.length}):
+${linkButtons.map((cta: any) => 
   `- "${cta.text}"`
 ).join('\n') || '- No button-like links found'}
 
-Input Buttons (${ctaElementsWithText.filter((cta: any) => cta.type === 'input_button').length}):
-${ctaElementsWithText.filter((cta: any) => cta.type === 'input_button').map((cta: any) => 
+Input Buttons (${inputButtons.length}):
+${inputButtons.map((cta: any) => 
   `- "${cta.text}"`
 ).join('\n') || '- No input buttons found'}
 
-Regular Buttons (${ctaElementsWithText.filter((cta: any) => cta.type === 'button').length}):
-${ctaElementsWithText.filter((cta: any) => cta.type === 'button').map((cta: any) => 
+Regular Buttons (${regularButtons.length}):
+${regularButtons.map((cta: any) => 
   `- "${cta.text}"`
 ).join('\n') || '- No buttons with text found'}
 
-Forms (${ctaElementsWithText.filter((cta: any) => cta.type === 'form').length}):
-${ctaElementsWithText.filter((cta: any) => cta.type === 'form').map((cta: any) => 
-  `- ${cta.text}`
-).join('\n') || '- No forms found'}
+Forms (${forms.length}):
+${forms.map((cta: any) => {
+  const hasCaptcha = cta.type.includes('_with_captcha') || (cta.attributes && cta.attributes.captcha === 'detected');
+  return `- ${cta.text}${hasCaptcha ? ' (with CAPTCHA)' : ''}`;
+}).join('\n') || '- No forms found'}
 
 CTA Quality Assessment:
 - Average CTA text length: ${ctaElementsWithText.length > 0 ? Math.round(ctaElementsWithText.reduce((sum: number, cta: any) => sum + cta.text.length, 0) / ctaElementsWithText.length) : 0} characters
@@ -334,9 +359,9 @@ H1: "${pageData.headings.find((h: any) => h.level === 1)?.text || 'MISSING'}"
 Content: ~${pageContent.split(/\s+/).length} words, ${pageData.paragraphs?.length || 0} paragraphs
 Images: ${pageData.images?.length || 0} total (${pageData.images?.filter((img: any) => !img.alt).length || 0} missing alt)
 Links: ${pageData.internalLinks?.length || 0} internal
-Keywords: ${pageData.contentMetrics?.keywordDensity?.slice(0, 5).map((k: any) => k.keyword).join(', ') || 'None'}
-CTAs: ${pageData.ctaElements ? pageData.ctaElements.length : 0} total (${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'button' || cta.type === 'input_button' || cta.type === 'link_button').length : 0} buttons, ${pageData.ctaElements ? pageData.ctaElements.filter((cta: any) => cta.type === 'form').length : 0} forms)
-HEADING STRUCTURE:
+CTAs: ${pageData.ctaElements ? pageData.ctaElements.length : 0} total (${allButtons.length} buttons, ${allForms.length} forms)
+
+${keywordAnalysis}
 ${contentQuality}${headingStructure}
 ISSUES: ${seoIssuesList}
 
@@ -350,15 +375,17 @@ ${ctaAnalysis}
 
 ${paragraphContent}
 Provide specific, actionable improvements focusing on:
+- Keyword optimization based on density analysis (balance high/medium/low density keywords)
+- Semantic keyword variations and related terms to improve topic coverage
 - Content quality optimization (readability, depth, semantic richness)
-- Title/meta optimization with exact character counts
-- Content structure and keyword integration
-- Semantic keyword opportunities and topic clustering
-- Internal linking with semantic relevance
+- Title/meta optimization with exact character counts and target keywords
+- Content structure and keyword integration in headings
+- Internal linking with semantic relevance to identified keywords
 - CTA optimization (button text, placement, conversion opportunities)
 - Business-relevant content gaps and opportunities
 
-Include specific examples, character counts, exact recommendations, and CTA improvements.
+Use the keyword density data to identify over-optimization (>2% density) or under-utilization (<0.5% density) of important terms.
+Include specific examples, character counts, exact recommendations, keyword density targets, and CTA improvements.
 Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
 
     console.log(`Generating SEO suggestions for: ${url}`);
@@ -377,7 +404,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           messages: [
             { 
               role: "system", 
-              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Always include exact character counts for titles/descriptions, specific keywords to target, and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. CRITICAL: Escape all quotes and newlines in your suggestions. IMPORTANT: Write all suggestions in the EXACT same language as the page content above. Look at the title, headings, and paragraph content to determine the language, then write your suggestions in that same language. Match the language of the page content exactly."
+              content: "You are an expert SEO consultant. Provide specific, actionable suggestions with concrete examples. Use the keyword density analysis to identify opportunities for better keyword distribution, semantic variations, and related terms. Suggest specific keywords to add or balance based on the density data. Always include exact character counts for titles/descriptions, specific keywords to target (referencing the density analysis), and exact URLs for internal linking recommendations. Be detailed and specific, not generic. Respond in valid JSON format with proper escaping of quotes and special characters. CRITICAL: Escape all quotes and newlines in your suggestions. IMPORTANT: Write all suggestions in the EXACT same language as the page content above. Look at the title, headings, and paragraph content to determine the language, then write your suggestions in that same language. Match the language of the page content exactly."
             },
             { role: "user", content: prompt }
           ],

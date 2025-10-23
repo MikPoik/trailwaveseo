@@ -13,19 +13,25 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     attributes: Record<string, string>;
   }> = [];
 
-  console.log(`Analyzing CTAs for ${url}`);
-
-  // Cookie banner detection patterns
+  // Cookie banner detection patterns - more specific to avoid false positives
   const cookieBannerSelectors = [
-    '[class*="cookie"]', '[id*="cookie"]',
-    '[class*="gdpr"]', '[id*="gdpr"]',
-    '[class*="consent"]', '[id*="consent"]',
-    '[class*="privacy-banner"]', '[id*="privacy-banner"]',
-    '[class*="notice-banner"]', '[id*="notice-banner"]',
-    '[class*="modal-cacsp"]', '[id*="modal-cacsp"]',
+    // Specific cookie banner containers (not just any element with "cookie" in class)
+    '.cookie-banner', '.cookie-consent', '.cookie-notice', '.cookie-bar', '.cookie-popup',
+    '#cookie-banner', '#cookie-consent', '#cookie-notice', '#cookie-bar', '#cookie-popup',
+    '.gdpr-banner', '.gdpr-consent', '.gdpr-notice',
+    '#gdpr-banner', '#gdpr-consent', '#gdpr-notice',
+    '.consent-banner', '.consent-popup', '.consent-modal',
+    '#consent-banner', '#consent-popup', '#consent-modal',
+    // Common cookie consent library classes
+    '.cc-window', '.cc-banner', '.cc-floating', '.cc-popup', // Cookie Consent library
+    '#cookieConsent', '#cookieBanner', '#gdprConsent',
+    '.CookieConsent', '.CookieBanner', '.GDPRConsent',
+    '.modal-cacsp', '#modal-cacsp', // Cookies and Content Security Policy plugin
+    // Dialog/modal with cookie/consent in aria-label
     '[role="dialog"][aria-label*="cookie"]',
     '[role="dialog"][aria-label*="consent"]',
-    '[data-testid*="cookie"]', '[data-testid*="consent"]'
+    '[role="alertdialog"][aria-label*="cookie"]',
+    '[role="alertdialog"][aria-label*="consent"]'
   ];
 
   const cookieBannerKeywords = [
@@ -36,7 +42,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
   ];
 
   // Helper function to check if element is within a cookie banner
-  const isInCookieBanner = ($el: cheerio.Cheering<cheerio.Element>): boolean => {
+  const isInCookieBanner = ($el: cheerio.Cheerio<any>): boolean => {
     // Check if element or any parent matches cookie banner selectors
     for (const selector of cookieBannerSelectors) {
       if ($el.is(selector) || $el.closest(selector).length > 0) {
@@ -166,8 +172,8 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     const text = $el.text().trim();
     const ariaLabel = $el.attr('aria-label') || '';
     const role = $el.attr('role') || '';
-    const element = $el.get(0) as Element;
-    const tagName = element?.tagName?.toLowerCase() || 'div';
+    const element = $el.get(0);
+    const tagName = (element && 'tagName' in element) ? element.tagName?.toLowerCase() : 'div';
 
     // Skip if likely not a CTA (too long, navigation, etc.)
     if (text.length > 100 || text.match(/^(menu|nav|navigation|header|footer)$/i)) return;
@@ -188,8 +194,16 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
   });
 
   // Strategy 5: WordPress block buttons (dedicated strategy for better detection)
-  $('.wp-block-button a, .wp-block-button__link, .wp-element-button').each((_, el) => {
+  console.log(`[CTA Extractor] Strategy 5: Checking WordPress block buttons...`);
+  const wpButtons = $('.wp-block-button a, .wp-block-button__link, .wp-element-button');
+  console.log(`[CTA Extractor] Found ${wpButtons.length} potential WordPress buttons`);
+  
+  wpButtons.each((_, el) => {
     const $el = $(el);
+    
+    const classes = $el.attr('class') || '';
+    const text = $el.text().trim();
+    const href = $el.attr('href') || '';
     
     // Skip cookie banner elements
     if (isInCookieBanner($el)) {
@@ -197,11 +211,10 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
 
     // Skip if already processed
-    if ($el.is('button, input')) return;
+    if ($el.is('button, input')) {
+      return;
+    }
 
-    const classes = $el.attr('class') || '';
-    const text = $el.text().trim();
-    const href = $el.attr('href') || '';
     const ariaLabel = $el.attr('aria-label') || '';
 
     const finalText = text || ariaLabel;
@@ -215,6 +228,8 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
           class: classes
         }
       });
+    } else {
+      console.log(`[CTA Extractor] Skipping - no text found`);
     }
   });
 
@@ -251,8 +266,8 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
       const text = $el.text().trim();
       const ariaLabel = $el.attr('aria-label') || '';
       const testId = $el.attr('data-testid') || '';
-      const element = $el.get(0) as Element;
-      const tagName = element?.tagName?.toLowerCase() || 'div';
+      const element = $el.get(0);
+      const tagName = (element && 'tagName' in element) ? element.tagName?.toLowerCase() : 'div';
 
       // Skip if likely not a CTA
       if (text.length > 100 || text.match(/^(menu|nav|navigation|header|footer|copyright|privacy)$/i)) return;
@@ -374,8 +389,8 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
          parentClasses.includes('hover:')) &&
         !$el.closest('button, a, [role="button"]').length) { // Not nested in other CTAs
 
-      const element = $el.get(0) as Element;
-      const tagName = element?.tagName?.toLowerCase() || 'span';
+      const element = $el.get(0);
+      const tagName = (element && 'tagName' in element) ? element.tagName?.toLowerCase() : 'span';
       ctaElements.push({
         type: 'text_pattern_cta',
         text: text,
@@ -387,7 +402,7 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
   });
 
-  // Strategy 10: Forms (potential CTAs)
+  // Strategy 10: Forms (potential CTAs) - Enhanced WordPress and captcha detection
   $('form').each((_, el) => {
     const $el = $(el);
 
@@ -397,42 +412,92 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
 
     const formId = $el.attr('id') || $el.attr('class') || 'form';
+    const formClasses = $el.attr('class') || '';
 
-    // Check for WordPress form buttons and standard submit buttons
-    const submitButton = $el.find('input[type="submit"], button[type="submit"], .wp-block-button__link, .wp-element-button').first();
-    const formText = submitButton.attr('value') || 
-                     submitButton.text().trim() ||
-                     'Form submission';
+    // Enhanced WordPress form button detection
+    let submitButton = $el.find('input[type="submit"]').first();
+    
+    if (!submitButton.length) {
+      submitButton = $el.find('button[type="submit"]').first();
+    }
+    
+    if (!submitButton.length) {
+      // WordPress block buttons
+      submitButton = $el.find('.wp-block-button__link, .wp-element-button').first();
+    }
+    
+    if (!submitButton.length) {
+      // WordPress plugin form buttons
+      submitButton = $el.find('.wpcf7-submit, .wpforms-submit, .gform_button, .button, .btn').first();
+    }
+    
+    if (!submitButton.length) {
+      // Any button in form
+      submitButton = $el.find('button').first();
+    }
+
+    // Extract form text from multiple sources
+    let formText = submitButton.attr('value') || 
+                   submitButton.text().trim() ||
+                   $el.attr('aria-label') ||
+                   $el.find('legend, h1, h2, h3, h4').first().text().trim() ||
+                   'Form submission';
+
+    // Detect captcha in form
+    const hasCaptcha = $el.find('[class*="turnstile"], [class*="recaptcha"], [class*="g-recaptcha"], [class*="h-captcha"], [class*="hcaptcha"], [class*="captcha"], [data-sitekey], [data-captcha], .cf-turnstile').length > 0;
+    
+    // Detect form type
+    let formType = 'form';
+    if (formClasses.includes('wpcf7') || formId.includes('wpcf7')) {
+      formType = 'contact_form_7';
+    } else if (formClasses.includes('wpforms') || formId.includes('wpforms')) {
+      formType = 'wpforms';
+    } else if (formClasses.includes('gform') || formId.includes('gform')) {
+      formType = 'gravity_forms';
+    } else if (formClasses.includes('elementor') || formId.includes('elementor')) {
+      formType = 'elementor_form';
+    } else if (formClasses.includes('ninja-forms') || formId.includes('ninja')) {
+      formType = 'ninja_forms';
+    } else if (formClasses.includes('formidable') || formId.includes('frm')) {
+      formType = 'formidable_forms';
+    }
 
     ctaElements.push({
-      type: 'form',
+      type: hasCaptcha ? `${formType}_with_captcha` : formType,
       text: formText,
       element: 'form',
       attributes: {
-        class: $el.attr('class') || '',
+        class: formClasses,
         id: $el.attr('id') || '',
-        action: $el.attr('action') || ''
+        action: $el.attr('action') || '',
+        captcha: hasCaptcha ? 'detected' : 'none'
       }
     });
   });
 
-  // Strategy 11: WordPress and general form wrapper blocks
-  $('.wp-block-contact-form, .wpforms-form, .gform_wrapper, .wpcf7, .wpcf7-form, [class*="wp-block-"] form, .wp-block-contact-form-7-contact-form-selector, [class*="form-wrapper"], [class*="contact-form"]').each((_, el) => {
+  // Strategy 11: WordPress and general form wrapper blocks - Enhanced detection
+  console.log(`[CTA Extractor] Strategy 11: Checking WordPress form wrappers...`);
+  const wpForms = $('.wp-block-contact-form, .wpforms-container, .wpforms-form, .gform_wrapper, .wpcf7, .wpcf7-form, .elementor-form, .nf-form-cont, .frm_forms, [class*="wp-block-"] form, .wp-block-contact-form-7-contact-form-selector, [class*="form-wrapper"], [class*="contact-form"], [id*="contact-form"]');
+  console.log(`[CTA Extractor] Found ${wpForms.length} potential WordPress forms`);
+  
+  wpForms.each((_, el) => {
     const $el = $(el);
 
+    const wrapperClasses = $el.attr('class') || '';
+    const wrapperId = $el.attr('id') || '';
+    
     // Skip cookie banner forms
     if (isInCookieBanner($el)) {
       return;
     }
 
-    // Skip if this is already a form element (handled in Strategy 9)
-    if ($el.is('form')) return;
-
     // Find the actual form element inside wrapper
-    const formElement = $el.find('form').first();
-    if (!formElement.length) return;
-
-    // Universal submit button detection
+    const formElement = $el.is('form') ? $el : $el.find('form').first();
+    if (!formElement.length) {
+      return;
+    }
+    
+    // Universal submit button detection with expanded selectors
     let submitButton = formElement.find('input[type="submit"]').first();
 
     if (!submitButton.length) {
@@ -444,8 +509,13 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
     }
 
     if (!submitButton.length) {
-      // Look for any button or input (language agnostic)
-      submitButton = formElement.find('button, input[type="button"]').first();
+      // WordPress plugin-specific submit buttons
+      submitButton = formElement.find('.wpcf7-submit, .wpforms-submit, .gform_button, .elementor-button, .nf-element-submit, .frm_button_submit').first();
+    }
+
+    if (!submitButton.length) {
+      // Generic button/submit classes
+      submitButton = formElement.find('.button, .btn, [type="button"], button').first();
     }
 
     // Extract form text from multiple sources
@@ -466,53 +536,176 @@ export function extractCtaElements($: cheerio.CheerioAPI, url: string) {
 
     // Priority 4: Form legend or heading
     if (!formText) {
-      const legend = formElement.find('legend, h1, h2, h3, h4').first().text().trim();
+      const legend = formElement.find('legend, h1, h2, h3, h4, h5').first().text().trim();
       formText = legend;
     }
 
-    // Skip if still no meaningful text
-    if (!formText || formText === 'WordPress form') return;
-
-    // Detect form type based on wrapper classes
-    let formType = 'wp_form';
-    if ($el.hasClass('wpcf7') || $el.hasClass('wpcf7-form') || $el.hasClass('wp-block-contact-form-7-contact-form-selector')) {
-      formType = 'contact_form_7';
-    } else if ($el.hasClass('wpforms-form')) {
-      formType = 'wpforms';
-    } else if ($el.hasClass('gform_wrapper')) {
-      formType = 'gravity_forms';
+    // Priority 5: Form name attribute
+    if (!formText) {
+      formText = formElement.attr('name') || '';
     }
 
-    // Detect CAPTCHA presence
-    const hasCaptcha = formElement.find('[class*="turnstile"], [class*="recaptcha"], [class*="h-captcha"], [class*="captcha"], [data-sitekey]').length > 0;
+    // Priority 6: Default based on form type
+    if (!formText) {
+      const tempClasses = $el.attr('class') || '';
+      if (tempClasses.includes('contact')) {
+        formText = 'Contact Form';
+      } else if (tempClasses.includes('subscribe') || tempClasses.includes('newsletter')) {
+        formText = 'Subscribe Form';
+      } else {
+        formText = 'Form';
+      }
+    }
+
+    // Detect form type based on wrapper classes (using variables from top of function)
+    let formType = 'wp_form';
+    
+    if (wrapperClasses.includes('wpcf7') || wrapperId.includes('wpcf7') || wrapperClasses.includes('wp-block-contact-form-7')) {
+      formType = 'contact_form_7';
+    } else if (wrapperClasses.includes('wpforms') || wrapperId.includes('wpforms')) {
+      formType = 'wpforms';
+    } else if (wrapperClasses.includes('gform') || wrapperId.includes('gform')) {
+      formType = 'gravity_forms';
+    } else if (wrapperClasses.includes('elementor-form') || wrapperId.includes('elementor')) {
+      formType = 'elementor_form';
+    } else if (wrapperClasses.includes('nf-form') || wrapperId.includes('ninja-forms')) {
+      formType = 'ninja_forms';
+    } else if (wrapperClasses.includes('frm_forms') || wrapperId.includes('frm') || wrapperClasses.includes('formidable')) {
+      formType = 'formidable_forms';
+    } else if (wrapperClasses.includes('wp-block-contact-form')) {
+      formType = 'wp_block_form';
+    }
+
+    // Enhanced CAPTCHA detection with more providers
+    const hasCaptcha = formElement.find(`
+      [class*="turnstile"], 
+      [class*="recaptcha"], 
+      [class*="g-recaptcha"], 
+      [class*="h-captcha"], 
+      [class*="hcaptcha"], 
+      [class*="captcha"],
+      [class*="cf-turnstile"],
+      [data-sitekey], 
+      [data-captcha],
+      iframe[src*="recaptcha"],
+      iframe[src*="hcaptcha"],
+      iframe[src*="turnstile"],
+      .wpcf7-recaptcha,
+      .wpforms-recaptcha,
+      .gform_captcha
+    `.replace(/\s+/g, ' ').trim()).length > 0;
 
     ctaElements.push({
       type: hasCaptcha ? `${formType}_with_captcha` : formType,
       text: formText,
       element: 'div',
       attributes: {
-        class: $el.attr('class') || '',
-        id: $el.attr('id') || '',
-        captcha: hasCaptcha ? 'detected' : 'none'
+        class: wrapperClasses,
+        id: wrapperId,
+        captcha: hasCaptcha ? 'detected' : 'none',
+        formPlugin: formType
       }
     });
   });
 
 
+  // Strategy 12: Detect embedded forms in iframes (common with third-party forms and captchas)
+  $('iframe[src*="form"], iframe[name*="form"], iframe[title*="form"], iframe[src*="survey"], iframe[src*="typeform"], iframe[src*="google.com/forms"], iframe[src*="jotform"]').each((_, el) => {
+    const $el = $(el);
+    
+    // Skip cookie banner iframes
+    if (isInCookieBanner($el)) {
+      return;
+    }
+    
+    const src = $el.attr('src') || '';
+    const title = $el.attr('title') || $el.attr('name') || 'Embedded Form';
+    
+    ctaElements.push({
+      type: 'iframe_form',
+      text: title,
+      element: 'iframe',
+      attributes: {
+        src: src,
+        title: title
+      }
+    });
+  });
+
+  // Strategy 13: Detect WordPress shortcode comments (forms rendered via shortcodes)
+  // These often appear as HTML comments before the actual form renders
+  const htmlContent = $.html();
+  const shortcodeMatches = htmlContent.match(/\[(?:contact-form-7|wpforms|gravityform|ninja_form|formidable|elementor-template).*?\]/g);
+  
+  if (shortcodeMatches && shortcodeMatches.length > 0) {
+    shortcodeMatches.forEach(shortcode => {
+      let formType = 'wp_shortcode_form';
+      let formText = 'WordPress Form';
+      
+      if (shortcode.includes('contact-form-7')) {
+        formType = 'contact_form_7_shortcode';
+        formText = 'Contact Form 7';
+      } else if (shortcode.includes('wpforms')) {
+        formType = 'wpforms_shortcode';
+        formText = 'WPForms';
+      } else if (shortcode.includes('gravityform')) {
+        formType = 'gravity_forms_shortcode';
+        formText = 'Gravity Forms';
+      } else if (shortcode.includes('ninja_form')) {
+        formType = 'ninja_forms_shortcode';
+        formText = 'Ninja Forms';
+      } else if (shortcode.includes('formidable')) {
+        formType = 'formidable_forms_shortcode';
+        formText = 'Formidable Forms';
+      }
+      
+      // Check if we haven't already detected this form type
+      const alreadyDetected = ctaElements.some(cta => 
+        cta.type.includes(formType.replace('_shortcode', ''))
+      );
+      
+      if (!alreadyDetected) {
+        ctaElements.push({
+          type: formType,
+          text: formText,
+          element: 'shortcode',
+          attributes: {
+            shortcode: shortcode
+          }
+        });
+      }
+    });
+  }
+
   // Remove duplicates based on text and proximity
+  // Prioritize form types over button types when deduplicating
+  const formTypes = ['form', 'contact_form_7', 'wpforms', 'gravity_forms', 'elementor_form', 'ninja_forms', 'formidable_forms', 'wp_block_form', 'wp_form'];
+  const isFormType = (type: string) => formTypes.includes(type) || formTypes.some(ft => type.startsWith(ft + '_with_captcha'));
+  
   const uniqueCtaElements = ctaElements.reduce((unique, current) => {
-    const isDuplicate = unique.some(existing => 
+    const existingIndex = unique.findIndex(existing => 
       existing.text.toLowerCase() === current.text.toLowerCase() &&
       Math.abs(existing.text.length - current.text.length) <= 5
     );
 
-    if (!isDuplicate) {
+    if (existingIndex === -1) {
+      // No duplicate found, add it
       unique.push(current);
+    } else {
+      // Duplicate found - prefer form types over button types
+      const existing = unique[existingIndex];
+      const currentIsForm = isFormType(current.type);
+      const existingIsForm = isFormType(existing.type);
+      
+      if (currentIsForm && !existingIsForm) {
+        // Replace existing button with current form
+        unique[existingIndex] = current;
+      }
+      // Otherwise keep existing (either both are forms, both are buttons, or existing is already a form)
     }
 
     return unique;
   }, [] as typeof ctaElements);
 
-  console.log(`Found ${uniqueCtaElements.length} unique CTA elements on ${url}`);
   return uniqueCtaElements;
 }
