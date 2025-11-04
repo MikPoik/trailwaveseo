@@ -257,9 +257,9 @@ async function captureAndAnalyzeDesign(
     const { emitDesignProgress } = await import('./progress-tracker.js');
     emitDesignProgress(context, analyzedPages.length, analyzedPages, 'Capturing screenshots...');
     
-    // Select the most important pages for design analysis
-    // For competitor analysis, analyze all pages. For main analysis, limit to top pages.
-    const maxPagesToAnalyze = 5; // Can be adjusted based on requirements
+    // Select the top 5 pages from sitemap order for design analysis
+    // This ensures we analyze the most relevant pages as prioritized in the sitemap
+    const maxPagesToAnalyze = 5;
     const pagesToAnalyze = selectPagesForDesignAnalysis(analyzedPages).slice(0, maxPagesToAnalyze);
     
     if (pagesToAnalyze.length === 0) {
@@ -321,23 +321,9 @@ async function captureAndAnalyzeDesign(
  * Select the most important pages for design analysis
  */
 function selectPagesForDesignAnalysis(analyzedPages: any[]): any[] {
-  // Prioritize home page, high word count pages, and pages with fewer issues
-  return analyzedPages
-    .filter(page => page && page.url)
-    .sort((a, b) => {
-      // Home page gets highest priority
-      const aIsHome = a.url.split('/').length <= 4; // Domain + maybe one path segment
-      const bIsHome = b.url.split('/').length <= 4;
-      
-      if (aIsHome && !bIsHome) return -1;
-      if (bIsHome && !aIsHome) return 1;
-      
-      // Then prioritize by content quality (more words, fewer issues)
-      const aScore = (a.wordCount || 0) - (a.issues?.length || 0) * 10;
-      const bScore = (b.wordCount || 0) - (b.issues?.length || 0) * 10;
-      
-      return bScore - aScore;
-    });
+  // Use the top 5 pages from sitemap order (which preserves the order pages were discovered)
+  // This ensures we analyze the most important pages as they appear in the sitemap
+  return analyzedPages.filter(page => page && page.url);
 }
 
 /**
