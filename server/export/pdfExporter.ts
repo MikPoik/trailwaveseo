@@ -168,7 +168,8 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                             24,
                       ),
                     );
-                    return `<span style="font-size: ${fontSize}px; color: #2c5aa0; font-weight: 500; padding: 4px 8px;" title="${kw.keyword}: ${kw.count} occurrences, ${(kw.avgDensity || 0).toFixed(2)}% avg density">${kw.keyword}</span>`;
+                    const density = typeof kw.avgDensity === 'number' ? kw.avgDensity.toFixed(2) : '0.00';
+                    return `<span style="font-size: ${fontSize}px; color: #2c5aa0; font-weight: 500; padding: 4px 8px;" title="${kw.keyword}: ${kw.count} occurrences, ${density}% avg density">${kw.keyword}</span>`;
                   })
                   .join("")}
               </div>
@@ -185,13 +186,16 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                     ${siteKeywordCloud
                       .slice(0, 15)
                       .map(
-                        (kw: any) => `
+                        (kw: any) => {
+                          const density = typeof kw.avgDensity === 'number' ? kw.avgDensity.toFixed(2) : '0.00';
+                          return `
                       <tr>
                         <td><strong>${kw.keyword}</strong></td>
                         <td>${kw.count}</td>
-                        <td>${(kw.avgDensity || 0).toFixed(2)}%</td>
+                        <td>${density}%</td>
                       </tr>
-                    `,
+                    `;
+                        }
                       )
                       .join("")}
                   </tbody>
@@ -356,7 +360,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           <div class="print-break"></div>
           <h2>🚀 Enhanced SEO Insights</h2>
           <div class="insights-section">
-            
+
             ${
               (analysis.enhancedInsights as any)?.contentQualityAnalysis
                 ? `
@@ -552,7 +556,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                         (rec: any) => `
                       <li><strong>${rec.title}</strong> (${rec.priority} priority, Impact: ${rec.impact}/10)<br>
                       ${rec.description}<br>
-                      <em>Expected Improvement:</em> ${rec.estimatedImprovement}</li>
+                      <em>Estimated Improvement:</em> ${rec.estimatedImprovement}</li>
                     `,
                       )
                       .join("")}
@@ -651,7 +655,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 : ""
             }
 
-            
+
 
             ${
               (analysis.enhancedInsights as any)?.contentQualityAnalysis
@@ -997,7 +1001,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
             (page: any, index: number) => `
           <div class="page-section">
             <div class="page-header">
-              <h3>Page ${index + 1}: ${page.pageName || "Unknown Page"}</h3>
+              <h3>Page ${index + 1}: ${page.title || "Unknown Page"}</h3>
               <p>🔗 ${page.url}</p>
             </div>
 
