@@ -55,72 +55,79 @@ export async function analyzeSiteOverview(siteStructure: {
       contentSample: page.paragraphs ? page.paragraphs.slice(0, 2).join(' ').substring(0, 300) : 'No content'
     }));
 
-    const prompt = `Analyze this website's overall structure and content to provide comprehensive business context.
+    // Build a comprehensive prompt with rich context
+    const pagesSummary = siteStructure.allPages.slice(0, 15).map((page, index) => {
+      const headingText = page.headings.map(h => h.text).join(', ').substring(0, 300);
+      const paragraphText = page.paragraphs?.slice(0, 5).join(' ').substring(0, 500) || '';
 
-SITE OVERVIEW (${siteStructure.allPages.length} pages):
-${siteOverview.map(page => `
-URL: ${page.url}
-Title: ${page.title}
-H1: ${page.h1}
-Meta: ${page.metaDescription}
-Content: ${page.contentSample}
----`).join('\n')}
+      return `Page ${index + 1}: ${page.url}
+Title: ${page.title || 'No title'}
+Meta: ${page.metaDescription || 'No description'}
+Headings: ${headingText || 'No headings'}
+Content: ${paragraphText || 'No content'}`;
+    }).join('\n\n');
 
-${additionalInfo ? `Additional Business Context: ${additionalInfo}` : ''}
+    const prompt = `Analyze this website thoroughly and provide detailed business context. You MUST provide specific, meaningful insights - do NOT use "Unknown" or generic placeholders.
 
-Please analyze and provide:
-1. Business type and industry classification
-2. Target audience analysis
-3. Main services/products offered
-4. Geographic location (if any)
-5. Site structure analysis (navigation, content organization)
-6. Content strategy recommendations
-7. Overall SEO improvement priorities
+${additionalInfo ? `USER PROVIDED CONTEXT: ${additionalInfo}\n\n` : ''}
 
-IMPORTANT: Write your analysis in the same language as the website content. Match the website's language exactly.
+WEBSITE DATA (${siteStructure.allPages.length} pages analyzed):
+${pagesSummary}
 
-Respond in JSON format:
+REQUIRED: Analyze the content above and provide a JSON response with specific, actionable insights:
 {
-  "businessType": "string",
-  "industry": "string", 
-  "targetAudience": "string",
-  "mainServices": ["service1", "service2"],
-  "location": "string or null",
-  "siteStructureAnalysis": "detailed analysis string",
-  "contentStrategy": ["strategy1", "strategy2"],
-  "overallRecommendations": ["recommendation1", "recommendation2"]
-}`;
+  "businessType": "Specific business model (e.g., E-commerce Store, SaaS Platform, Digital Agency, Content Publisher, Local Service Business, Portfolio Site, etc.)",
+  "industry": "Specific industry vertical (e.g., Technology, Healthcare, Real Estate, Fashion, Food & Beverage, Professional Services, etc.)",
+  "targetAudience": "Specific target market (e.g., Small Business Owners, Millennials, B2B Enterprise, Local Consumers, etc.)",
+  "mainServices": ["List 3-5 specific services or offerings based on the content"],
+  "location": "If local business, specify location; otherwise null",
+  "siteStructureAnalysis": "2-3 sentence analysis of navigation, page organization, and user journey",
+  "contentStrategy": ["3-4 specific observations about content approach, tone, and focus"],
+  "overallRecommendations": ["3-5 specific, actionable SEO and content recommendations"]
+}
 
+IMPORTANT: Base your analysis on the actual page titles, headings, and content provided. Make informed inferences rather than leaving fields empty or using "Unknown".`;
+
+    // Make the OpenAI API call
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4o-mini",
       messages: [
-        { 
-          role: "system", 
-          content: "You are an expert business analyst and SEO consultant. Analyze website structure and content to provide accurate business context and strategic recommendations. Always respond in JSON format."
+        {
+          role: "system",
+          content: "You are an expert at analyzing websites to detect their business type, industry, target audience, and strategic positioning. Always provide specific, actionable analysis based on the content provided. Never use 'Unknown' - always make an informed inference based on the available data."
         },
-        { role: "user", content: prompt }
+        {
+          role: "user",
+          content: prompt
+        }
       ],
-      response_format: { type: "json_object" },
       temperature: 0.3,
-      max_completion_tokens: 1500
+      response_format: { type: "json_object" }
     });
 
-    const content = response.choices[0].message.content;
+    const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error("No content in response");
+      console.error("No content in OpenAI response for site overview");
+      throw new Error("No content in OpenAI response");
     }
 
+    console.log("Site overview AI response:", content);
     const result = JSON.parse(content);
 
+    // Validate that we got meaningful results
+    if (!result.businessType || result.businessType === 'Unknown') {
+      console.warn("OpenAI returned Unknown business type, response:", result);
+    }
+
     return {
-      businessType: result.businessType || 'Unknown',
-      industry: result.industry || 'Unknown', 
-      targetAudience: result.targetAudience || 'Unknown',
-      mainServices: result.mainServices || [],
+      businessType: result.businessType || 'General Website',
+      industry: result.industry || 'General', 
+      targetAudience: result.targetAudience || 'General Public',
+      mainServices: Array.isArray(result.mainServices) ? result.mainServices : [],
       location: result.location || undefined,
       siteStructureAnalysis: result.siteStructureAnalysis || 'Analysis unavailable',
-      contentStrategy: result.contentStrategy || [],
-      overallRecommendations: result.overallRecommendations || []
+      contentStrategy: Array.isArray(result.contentStrategy) ? result.contentStrategy : [],
+      overallRecommendations: Array.isArray(result.overallRecommendations) ? result.overallRecommendations : []
     };
   } catch (error) {
     console.error("Error analyzing site overview with OpenAI:", error);

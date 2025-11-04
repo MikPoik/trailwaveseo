@@ -53,6 +53,7 @@ export async function generateComprehensiveInsights(
     emitAIProgress(context, analyzedPages.length, analyzedPages, 'Generating AI-powered SEO suggestions...', 0);
 
     console.log(`Analyzing site overview and generating SEO suggestions for ${context.domain}...`);
+    console.log(`Analyzed pages available for context: ${analyzedPages.length}`);
 
     // Check for cancellation
     if (context.controller.signal.aborted) {
@@ -60,11 +61,30 @@ export async function generateComprehensiveInsights(
     }
 
     // Step 1: Generate business context analysis
-    const businessContext = await generateBusinessContext(analyzedPages, options.additionalInfo);
-    siteOverview = businessContext.siteOverview;
-    aiCallsMade += businessContext.aiCallsMade;
+    try {
+      const businessContext = await generateBusinessContext(analyzedPages, options.additionalInfo);
+      siteOverview = businessContext.siteOverview;
+      aiCallsMade += businessContext.aiCallsMade;
 
-    console.log(`Business context detected - Industry: ${siteOverview.industry}, Type: ${siteOverview.businessType}, Target: ${siteOverview.targetAudience}`);
+      console.log(`Business context successfully detected:`);
+      console.log(`  - Industry: ${siteOverview.industry}`);
+      console.log(`  - Business Type: ${siteOverview.businessType}`);
+      console.log(`  - Target Audience: ${siteOverview.targetAudience}`);
+      console.log(`  - Main Services: ${siteOverview.mainServices?.join(', ') || 'None'}`);
+      console.log(`  - Location: ${siteOverview.location || 'Not specified'}`);
+    } catch (error) {
+      console.error('Failed to generate business context:', error);
+      // Set fallback values instead of failing
+      siteOverview = {
+        businessType: 'General Website',
+        industry: 'General',
+        targetAudience: 'General Public',
+        mainServices: [],
+        siteStructureAnalysis: 'Analysis unavailable due to error',
+        contentStrategy: [],
+        overallRecommendations: []
+      };
+    }
 
     // Check for cancellation
     if (context.controller.signal.aborted) {
@@ -115,19 +135,41 @@ async function generateBusinessContext(
 ): Promise<{ siteOverview: any; aiCallsMade: number }> {
   
   try {
-    // Build site structure for analysis
+    if (!analyzedPages || analyzedPages.length === 0) {
+      console.warn('No pages available for business context analysis');
+      throw new Error('No pages to analyze');
+    }
+
+    // Build site structure for analysis with validation
     const siteStructure = {
       allPages: analyzedPages.map(page => ({
-        url: page.url,
-        title: page.title ?? undefined,
-        headings: page.headings,
-        metaDescription: page.metaDescription ?? undefined,
-        paragraphs: page.paragraphs
-      }))
+        url: page.url || 'Unknown URL',
+        title: page.title || undefined,
+        headings: page.headings || [],
+        metaDescription: page.metaDescription || undefined,
+        paragraphs: page.paragraphs || []
+      })).filter(page => {
+        // Filter out pages with no useful content
+        const hasContent = page.title || page.headings.length > 0 || page.paragraphs.length > 0;
+        if (!hasContent) {
+          console.log(`Skipping page ${page.url} - no extractable content`);
+        }
+        return hasContent;
+      })
     };
 
-    console.log(`Generating business context analysis...`);
+    if (siteStructure.allPages.length === 0) {
+      console.warn('No pages with extractable content for business context');
+      throw new Error('No pages with content available');
+    }
+
+    console.log(`Generating business context from ${siteStructure.allPages.length} pages...`);
     const siteOverview = await analyzeSiteOverview(siteStructure, additionalInfo);
+    
+    // Validate the response
+    if (!siteOverview.businessType || siteOverview.businessType === 'Unknown') {
+      console.warn('Received Unknown business type from AI analysis');
+    }
     
     return {
       siteOverview,
@@ -135,14 +177,17 @@ async function generateBusinessContext(
     };
     
   } catch (error) {
-    console.error('Error generating business context:', error);
+    console.error('Error generating business context:', error instanceof Error ? error.message : String(error));
     
     return {
       siteOverview: {
-        businessType: 'Unknown',
-        industry: 'Unknown',
-        targetAudience: 'Unknown',
-        mainServices: []
+        businessType: 'General Website',
+        industry: 'General',
+        targetAudience: 'General Public',
+        mainServices: [],
+        siteStructureAnalysis: 'Unable to analyze - ' + (error instanceof Error ? error.message : 'Unknown error'),
+        contentStrategy: [],
+        overallRecommendations: []
       },
       aiCallsMade: 0
     };
