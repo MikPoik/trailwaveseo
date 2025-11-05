@@ -384,6 +384,37 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
   
   console.log(`[Content Extraction] Final stats: ${paragraphs.length} paragraphs, ${totalContentLength} total chars, ${sentences.length} sentences`);
 
+  // Fallback: If no sentences were extracted but we have content, extract from allTextContent
+  if (sentences.length === 0 && allTextContent.length > 50) {
+    console.log(`[Content Extraction] No sentences extracted, using fallback from allTextContent`);
+    const fallbackSentences = allTextContent.match(/[^\.!?]+[\.!?]+/g) || [];
+    
+    if (fallbackSentences.length > 0) {
+      sentences.push(...fallbackSentences.map(s => s.trim()).filter(s => s.length > 10));
+      console.log(`[Content Extraction] Fallback extracted ${sentences.length} sentences`);
+    } else {
+      // If still no sentences, split by common delimiters or line breaks
+      const splitBySentence = allTextContent.split(/(?<=[.!?])\s+|(?<=\n)\s*/g)
+        .map(s => s.trim())
+        .filter(s => s.length > 10);
+      
+      if (splitBySentence.length > 0) {
+        sentences.push(...splitBySentence);
+        console.log(`[Content Extraction] Fallback split extracted ${sentences.length} sentences`);
+      } else {
+        // Last resort: treat entire content as paragraphs split by line breaks or length
+        const chunkSize = 100;
+        for (let i = 0; i < allTextContent.length; i += chunkSize) {
+          const chunk = allTextContent.substring(i, i + chunkSize).trim();
+          if (chunk.length > 10) {
+            sentences.push(chunk);
+          }
+        }
+        console.log(`[Content Extraction] Last resort chunking created ${sentences.length} sentences`);
+      }
+    }
+  }
+
   return {
     headings,
     images,

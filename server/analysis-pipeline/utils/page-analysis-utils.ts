@@ -6,11 +6,19 @@
 import { Heading } from '../../../client/src/lib/types.js';
 
 export function calculateReadabilityScore(sentences: string[]): number {
-  if (sentences.length === 0) return 0;
+  if (sentences.length === 0) {
+    console.log('[Readability] No sentences provided, returning 0');
+    return 0;
+  }
 
   const totalWords = sentences.reduce((count, sentence) => {
     return count + sentence.split(/\s+/).filter(word => word.length > 0).length;
   }, 0);
+
+  if (totalWords === 0) {
+    console.log('[Readability] No words found in sentences, returning 0');
+    return 0;
+  }
 
   const totalSyllables = sentences.reduce((count, sentence) => {
     const words = sentence.split(/\s+/).filter(word => word.length > 0);
@@ -22,6 +30,8 @@ export function calculateReadabilityScore(sentences: string[]): number {
   const avgWordsPerSentence = totalWords / sentences.length;
   const avgSyllablesPerWord = totalSyllables / totalWords;
   const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
+
+  console.log(`[Readability] Calculated: ${sentences.length} sentences, ${totalWords} words, ${totalSyllables} syllables -> score ${score.toFixed(2)}`);
 
   return Math.max(0, Math.min(100, score));
 }

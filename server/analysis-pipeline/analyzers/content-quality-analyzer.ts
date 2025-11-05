@@ -12,8 +12,12 @@ export function analyzeContentQuality(contentElements: any) {
   // Calculate word count
   const wordCount = allTextContent.split(/\s+/).filter((word: string) => word.length > 0).length;
 
+  console.log(`[Content Quality] Analyzing: ${wordCount} words, ${sentences.length} sentences, ${paragraphs.length} paragraphs`);
+
   // Calculate readability score
   const readabilityScore = calculateReadabilityScore(sentences);
+
+  console.log(`[Content Quality] Readability score: ${readabilityScore.toFixed(2)}`);
 
   // Extract keyword density
   const keywordDensity = extractKeywordDensity(allTextContent);

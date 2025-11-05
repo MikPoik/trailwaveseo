@@ -70,7 +70,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           .issue-description { margin-bottom: 10px; }
           .issue-recommendation { background: rgba(255,255,255,0.8); padding: 10px; border-radius: 4px; font-style: italic; }
           .page-section { background: #fafafa; padding: 20px; margin: 20px 0; border-radius: 8px; border: 1px solid #e1e5e9; }
-          .page-header { background: #e3f2fd; color: white; padding: 15px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0; }
+          .page-header { background: #e3f2fd; color: #666; padding: 15px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0; }
           .meta-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0; }
           .meta-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; }
           .suggestions-list { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; }
@@ -128,13 +128,14 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
           const siteKeywordCloud =
             (analysis as any).siteKeywordCloud ||
             (() => {
-              const map = new Map<string, { count: number; density: number }>();
+              const map = new Map<string, { count: number; density: number; pageCount: number }>();
               (analysis.pages || []).forEach((p: any) => {
                 (p.keywordDensity || []).forEach((kw: any) => {
                   const key = kw.keyword.toLowerCase();
-                  const ex = map.get(key) || { count: 0, density: 0 };
+                  const ex = map.get(key) || { count: 0, density: 0, pageCount: 0 };
                   ex.count += kw.count || 0;
                   ex.density += kw.density || 0;
+                  ex.pageCount += 1;
                   map.set(key, ex);
                 });
               });
@@ -142,7 +143,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 .map(([keyword, v]) => ({
                   keyword,
                   count: v.count,
-                  avgDensity: v.density,
+                  avgDensity: v.pageCount > 0 ? v.density / v.pageCount : 0,
                 }))
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 40);
@@ -1050,7 +1051,7 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                   .slice(0, 10)
                   .map(
                     (kw: any) => `
-                  <span class="keyword-density">${kw.keyword}: ${kw.count} (${(kw.density * 100).toFixed(1)}%)</span>
+                  <span class="keyword-density">${kw.keyword}: ${kw.count} (${kw.density.toFixed(1)}%)</span>
                 `,
                   )
                   .join("")}

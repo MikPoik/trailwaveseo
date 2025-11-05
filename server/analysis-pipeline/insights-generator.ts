@@ -346,10 +346,16 @@ async function generatePageSpecificSuggestions(
       })),
       paragraphs: page.paragraphs ? page.paragraphs.slice(0, 15) : [],
       internalLinks: page.internalLinks,
-      ctaElements: page.ctaElements
+      ctaElements: page.ctaElements,
+      keywordDensity: page.keywordDensity || [], // Include keyword density data for AI analysis
+      wordCount: page.wordCount,
+      readabilityScore: page.readabilityScore,
+      semanticKeywords: page.semanticKeywords || [],
+      contentDepth: page.contentDepth
     };
 
     console.log(`Generating suggestions for page: ${page.url}`);
+    console.log(`Keyword density data available: ${page.keywordDensity?.length || 0} keywords`);
     const suggestions = await generateSeoSuggestions(
       page.url, 
       pageData, 

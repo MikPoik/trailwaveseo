@@ -210,7 +210,7 @@ export async function exportAnalysisCSV(req: Request, res: Response) {
 
       // Extract top keywords
       const topKeywords = page.keywordDensity?.slice(0, 5)?.map((kw: any) => 
-        `${kw.keyword}:${kw.count}(${(kw.density * 100).toFixed(1)}%)`
+        `${kw.keyword}:${kw.count}(${kw.density.toFixed(1)}%)`
       )?.join('; ') || '';
 
       // Extract semantic keywords
