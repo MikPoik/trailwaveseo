@@ -56,22 +56,14 @@ const SiteHistory = () => {
       }
     },
     onMutate: async (deletedId) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: ["/api/analysis/history"] });
-
-      // Snapshot the previous value
       const previousAnalyses = queryClient.getQueryData(["/api/analysis/history"]);
-
-      // Optimistically update to the new value
       queryClient.setQueryData(["/api/analysis/history"], (old: any[]) => {
         return old?.filter((analysis) => analysis.id !== deletedId) || [];
       });
-
-      // Return a context object with the snapshotted value
       return { previousAnalyses };
     },
     onSuccess: () => {
-      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
       toast({
@@ -81,12 +73,9 @@ const SiteHistory = () => {
     },
     onError: (error: any, deletedId, context) => {
       console.error("Delete analysis error:", error);
-      
-      // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(["/api/analysis/history"], context?.previousAnalyses);
       
       if (error.message?.includes("not found")) {
-        // If not found, still remove it from the UI since it's already gone
         queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
         toast({
@@ -103,12 +92,10 @@ const SiteHistory = () => {
       });
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure we have the latest data
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
     },
   });
 
-  // Use useEffect to show error toast only when error changes
   useEffect(() => {
     if (error) {
       toast({
@@ -126,97 +113,101 @@ const SiteHistory = () => {
         description="Review your previous website SEO analyses" 
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Card>
-          <CardContent className="pt-6">
-            {isLoading ? (
-              <div className="flex justify-center py-10">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : !analysisHistory?.length ? (
-              <div className="text-center py-10">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No analysis history yet</h3>
-                <p className="text-gray-500 mb-4">
-                  You haven't analyzed any websites yet. Start by analyzing a website.
-                </p>
-                <Link href="/">
-                  <Button>
-                    Start Analysis
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Your Previous Analyses</h3>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-gray-700">Website</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700">Date</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700">Pages</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700">Issues</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analysisHistory?.map((analysis: any) => (
-                        <tr key={analysis.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              <span className="truncate max-w-xs">{analysis.domain}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center text-sm text-gray-500">
-                              <CalendarIcon className="mr-1 h-4 w-4" />
-                              {new Date(analysis.date).toLocaleDateString()}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            {analysis.pagesCount}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                {analysis.metrics.criticalIssues} Critical
-                              </span>
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                {analysis.metrics.warnings} Warnings
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <Link href={`/analysis/${analysis.id}`}>
-                                <Button variant="outline" size="sm">
-                                  View Details
-                                </Button>
-                              </Link>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => {
-                                  if (window.confirm("Are you sure you want to delete this analysis?")) {
-                                    deleteAnalysis(analysis.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Card className="border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
+            <CardContent className="pt-6">
+              {isLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : !analysisHistory?.length ? (
+                <div className="text-center py-10">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No analysis history yet</h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6">
+                    You haven't analyzed any websites yet. Start by analyzing a website.
+                  </p>
+                  <Link href="/">
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                      Start Analysis
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Your Previous Analyses</h3>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700">
+                          <th className="text-left py-4 px-4 font-bold text-slate-900 dark:text-white">Website</th>
+                          <th className="text-left py-4 px-4 font-bold text-slate-900 dark:text-white">Date</th>
+                          <th className="text-left py-4 px-4 font-bold text-slate-900 dark:text-white">Pages</th>
+                          <th className="text-left py-4 px-4 font-bold text-slate-900 dark:text-white">Issues</th>
+                          <th className="text-left py-4 px-4 font-bold text-slate-900 dark:text-white">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analysisHistory?.map((analysis: any) => (
+                          <tr key={analysis.id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="py-4 px-4">
+                              <span className="font-medium text-slate-900 dark:text-white truncate max-w-xs block">{analysis.domain}</span>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {new Date(analysis.date).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 font-medium text-slate-900 dark:text-white">
+                              {analysis.pagesCount}
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-red-600 to-red-500 text-white shadow-md">
+                                  {analysis.metrics.criticalIssues} Critical
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 text-white shadow-md">
+                                  {analysis.metrics.warnings} Warnings
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-2">
+                                <Link href={`/analysis/${analysis.id}`}>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                                  >
+                                    View Details
+                                  </Button>
+                                </Link>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+                                  onClick={() => {
+                                    if (window.confirm("Are you sure you want to delete this analysis?")) {
+                                      deleteAnalysis(analysis.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </>
   );

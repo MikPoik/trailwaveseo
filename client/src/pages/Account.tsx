@@ -50,7 +50,6 @@ const Account = () => {
   const queryClient = useQueryClient();
   const [processingPackage, setProcessingPackage] = useState<string | null>(null);
 
-  // Update metadata on mount
   useEffect(() => {
     if (route.metadata) {
       updateMetadata(route.metadata);
@@ -62,20 +61,17 @@ const Account = () => {
     enabled: !!typedUser,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    staleTime: 0, // Always consider data stale to ensure fresh data
+    staleTime: 0,
   });
 
-  // Fetch available credit packages
   const { data: packages, isLoading: packagesLoading } = useQuery<CreditPackage[]>({
     queryKey: ['/api/payments/packages'],
   });
 
-  // Fetch user's current credits (for detailed credit info)
   const { data: userCredits, isLoading: creditsLoading } = useQuery<UserCredits>({
     queryKey: ['/api/payments/credits'],
   });
 
-  // Create checkout session mutation
   const createCheckoutMutation = useMutation({
     mutationFn: async (packageType: string) => {
       setProcessingPackage(packageType);
@@ -83,7 +79,6 @@ const Account = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      // Redirect to Stripe checkout
       window.location.href = data.url;
     },
     onError: (error: any) => {
@@ -106,32 +101,25 @@ const Account = () => {
     return usage.accountStatus === "trial" ? "Trial Account" : "Paid Account";
   };
 
-  // Refetch usage when the page becomes visible (user returns to tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && typedUser) {
         refetch();
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [typedUser, refetch]);
 
-  // Listen for analysis completion events to refetch usage
   useEffect(() => {
     const handleAnalysisComplete = () => {
       if (typedUser) {
-        // Small delay to ensure the backend has updated the usage count
         setTimeout(() => {
           refetch();
         }, 1000);
       }
     };
-
-    // Listen for custom events that might be dispatched when analysis completes
     window.addEventListener('analysisComplete', handleAnalysisComplete);
-
     return () => {
       window.removeEventListener('analysisComplete', handleAnalysisComplete);
     };
@@ -139,12 +127,10 @@ const Account = () => {
 
   if (isLoading || packagesLoading || creditsLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your account information...</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading your account information...</p>
         </div>
       </div>
     );
@@ -155,295 +141,287 @@ const Account = () => {
   const remainingPages = usage && !isUnlimited ? Math.max(0, usage.pageLimit - usage.pagesAnalyzed) : Infinity;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Header
-        title="Account Overview"
-        description="View your current usage and account information"
-      />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+      <div className="container mx-auto px-4 py-8">
+        <Header
+          title="Account Overview"
+          description="View your current usage and account information"
+        />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-8">
-        {/* User Profile Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profile</CardTitle>
-            <UserIcon className="h-4 w-4 ml-auto text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {typedUser?.profileImageUrl && (
-                <img
-                  src={typedUser.profileImageUrl}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full mx-auto"
-                />
-              )}
-              <div className="text-center">
-                <p className="text-lg font-semibold">
-                  {typedUser?.firstName && typedUser?.lastName
-                    ? `€{typedUser.firstName} €{typedUser.lastName}`
-                    : typedUser?.email || 'User'}
-                </p>
-                {typedUser?.email && (
-                  <p className="text-sm text-muted-foreground">{typedUser.email}</p>
-                )}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-8">
+          {/* User Profile Card */}
+          <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Profile</CardTitle>
+                <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Credits Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits</CardTitle>
-            <Coins className="h-4 w-4 ml-auto text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-blue-600">
-                {usage?.credits || 0}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Available credits for premium features
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Status Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Account Status</CardTitle>
-            <UserIcon className="h-4 w-4 ml-auto text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className={`text-2xl font-bold €{usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
-                {getAccountStatusDisplay()}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {usage?.accountStatus === "trial"
-                  ? "Lite scans: 3 pages max, 5 suggestions per page"
-                  : "Full scans: unlimited pages, all suggestions"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Chat Pack Status Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chat Pack Status</CardTitle>
-            <Zap className="h-4 w-4 ml-auto text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-indigo-600">
-                {usage?.chatMessagesInPack || 0}/10
-              </div>
-
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `€{((usage?.chatMessagesInPack || 0) / 10) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                The number of messages in your rolling pack (1 credit per 10 messages).
-                The counter resets after every 10 messages used.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Usage Overview Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Page Analysis Usage</CardTitle>
-            <BarChart3 className="h-4 w-4 ml-auto text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-2xl font-bold">
-                {usage?.pagesAnalyzed || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Total pages analyzed
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-
-      </div>
-
-
-
-      {/* Purchase Credits Section */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Purchase Credits
-          </CardTitle>
-          <CardDescription>
-            Purchase credits for website scans, AI suggestions, competitor analysis, and chat features
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Enhanced Current Credits Display */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Coins className="h-5 w-5" />
-                Your Current Balance
-              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">
-                    {userCredits?.credits || usage?.credits || 0}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Available Credits</p>
-                </div>
-                <div className="text-center">
-                  <div className={`text-3xl font-bold €{usage?.accountStatus === "trial" ? "text-purple-600" : "text-green-600"}`}>
-                    {getAccountStatusDisplay()}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {usage?.accountStatus === "trial"
-                      ? "Lite scans: 3 pages max"
-                      : "Full scans: unlimited"}
+              <div className="space-y-3 text-center">
+                {typedUser?.profileImageUrl && (
+                  <img src={typedUser.profileImageUrl} alt="Profile" className="w-16 h-16 rounded-full mx-auto shadow-md" />
+                )}
+                <div>
+                  <p className="font-bold text-slate-900 dark:text-white">
+                    {typedUser?.firstName && typedUser?.lastName
+                      ? `${typedUser.firstName} ${typedUser.lastName}`
+                      : typedUser?.email || 'User'}
                   </p>
+                  {typedUser?.email && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{typedUser.email}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Credit Packages */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            {packages?.map((pkg) => (
-              <Card key={pkg.id} className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                {pkg.id === 'pro' && (
-                  <Badge className="absolute top-4 right-4 bg-blue-600">
-                    Most Popular
-                  </Badge>
-                )}
-                {pkg.id === 'business' && (
-                  <Badge className="absolute top-4 right-4 bg-purple-600">
-                    Best Value
-                  </Badge>
-                )}
+          {/* Credits Card */}
+          <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Credits</CardTitle>
+                <Coins className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-center">
+                <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  {usage?.credits || 0}
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Available credits for premium features
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">{pkg.name}</CardTitle>
-                  <div className="space-y-2">
-                    <div className="text-4xl font-bold">{pkg.priceDisplay}</div>
-                    <div className="text-lg text-muted-foreground">
-                      {pkg.credits} Credits
+          {/* Account Status Card */}
+          <Card className="border-0 bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Account Status</CardTitle>
+                <UserIcon className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-center">
+                <div className={`text-lg font-bold ${usage?.accountStatus === "trial" ? "bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent" : "bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"}`}>
+                  {getAccountStatusDisplay()}
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  {usage?.accountStatus === "trial"
+                    ? "Lite scans: 3 pages max"
+                    : "Full scans: unlimited pages"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chat Pack Status Card */}
+          <Card className="border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Chat Pack</CardTitle>
+                <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-center">
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {usage?.chatMessagesInPack || 0}/10
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-emerald-600 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${((usage?.chatMessagesInPack || 0) / 10) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Purchase Credits Section */}
+        <Card className="mt-8 border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-2xl text-slate-900 dark:text-white">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                <CreditCard className="h-5 w-5" />
+              </div>
+              Purchase Credits
+            </CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">
+              Purchase credits for website scans, AI suggestions, competitor analysis, and chat features
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Current Balance */}
+            <Card className="mb-8 border-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-white">
+                  <Coins className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  Your Current Balance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      {userCredits?.credits || usage?.credits || 0}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      ~€{(Number(pkg.priceDisplay.replace('€', '')) / pkg.credits).toFixed(3)} per credit
-                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Available Credits</p>
                   </div>
-                </CardHeader>
-
-                <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">
-                        {pkg.credits} credits for scans & AI features
-                      </span>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${usage?.accountStatus === "trial" ? "bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent" : "bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"}`}>
+                      {getAccountStatusDisplay()}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">
-                        Scans: {usage?.accountStatus === "trial" ? "5" : "3"} credits each
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">AI suggestions: 1 credit per page</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Competitor analysis: 1 credits</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Chat: 1 credit per 10 messages</span>
-                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                      {usage?.accountStatus === "trial" ? "Lite scans: 3 pages max" : "Full scans: unlimited"}
+                    </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                  <Button
-                    onClick={() => handlePurchaseClick(pkg)}
-                    disabled={processingPackage === pkg.id}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {processingPackage === pkg.id ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Purchase Credits
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            {/* Credit Packages */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {packages?.map((pkg) => (
+                <Card 
+                  key={pkg.id} 
+                  className={`relative overflow-hidden border-0 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
+                    pkg.id === 'pro' 
+                      ? "bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 ring-2 ring-purple-400/50"
+                      : "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50"
+                  }`}
+                >
+                  {pkg.id === 'pro' && (
+                    <Badge className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
+                      Most Popular
+                    </Badge>
+                  )}
+                  {pkg.id === 'business' && (
+                    <Badge className="absolute top-4 right-4 bg-gradient-to-r from-orange-600 to-pink-600 text-white shadow-lg">
+                      Best Value
+                    </Badge>
+                  )}
 
-      {/* How Credits Work Section */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            How Credits Work
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-2">Website Scans</h4>
-              <p className="text-sm text-muted-foreground">
-                Trial users: 5 credits per scan. Paid users: 3 credits per scan (discount for paid customers).
-              </p>
+                  <CardHeader className="text-center pb-4 pt-8">
+                    <CardTitle className="text-2xl text-slate-900 dark:text-white">{pkg.name}</CardTitle>
+                    <div className="space-y-2 mt-4">
+                      <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{pkg.priceDisplay}</div>
+                      <div className="text-lg text-slate-600 dark:text-slate-400 font-medium">
+                        {pkg.credits} Credits
+                      </div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">
+                        ~€{(Number(pkg.priceDisplay.replace('€', '')) / pkg.credits).toFixed(3)} per credit
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">
+                          {pkg.credits} credits for scans & AI features
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">
+                          Scans: {usage?.accountStatus === "trial" ? "5" : "3"} credits each
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">AI suggestions: 1 credit per page</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Competitor analysis: 1 credits</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={() => handlePurchaseClick(pkg)}
+                      disabled={processingPackage === pkg.id}
+                      className={`w-full font-bold ${
+                        pkg.id === 'pro'
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                          : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-lg"
+                      }`}
+                      size="lg"
+                    >
+                      {processingPackage === pkg.id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Purchase Credits
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-            <div>
-              <h4 className="font-semibold mb-0">AI Suggestions</h4>
-              <p className="text-sm text-muted-foreground">
-                AI-powered SEO suggestions cost 1 credit per page analyzed (typically 10-12 suggestions per page). Content duplication analysis costs 1 credit per scan.
-              </p>
+          </CardContent>
+        </Card>
+
+        {/* How Credits Work Section */}
+        <Card className="mt-8 border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-2xl text-slate-900 dark:text-white">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center text-white">
+                <Zap className="h-5 w-5" />
+              </div>
+              How Credits Work
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
+                <h4 className="font-bold text-slate-900 dark:text-white mb-2">Website Scans</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Trial users: 5 credits per scan. Paid users: 3 credits per scan (discount for paid customers).
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 rounded-lg p-4 border border-purple-200/50 dark:border-purple-800/50">
+                <h4 className="font-bold text-slate-900 dark:text-white mb-2">AI Suggestions</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  AI-powered SEO suggestions cost 1 credit per page. Content duplication analysis costs 1 credit per scan.
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 rounded-lg p-4 border border-pink-200/50 dark:border-pink-800/50">
+                <h4 className="font-bold text-slate-900 dark:text-white mb-2">Competitor Analysis</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Competitor analysis costs 1 credit per scan.
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-lg p-4 border border-emerald-200/50 dark:border-emerald-800/50">
+                <h4 className="font-bold text-slate-900 dark:text-white mb-2">Chat Messages</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Chat with AI about your content costs 1 credit per 10 messages. Counter resets after every 10 messages.
+                </p>
+              </div>
+              <div className="md:col-span-2 bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 dark:from-cyan-900/20 dark:to-cyan-900/10 rounded-lg p-4 border border-cyan-200/50 dark:border-cyan-800/50">
+                <h4 className="font-bold text-slate-900 dark:text-white mb-2">No Expiration</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Credits never expire and can be used whenever you need them.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2">Competitor Analysis</h4>
-              <p className="text-sm text-muted-foreground">
-                Competitor analysis costs 1 credits per scan.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Chat Messages</h4>
-              <p className="text-sm text-muted-foreground">
-                Chat with AI about your content costs 1 credit per 10 messages. The counter resets after every 10 messages.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">No Expiration</h4>
-              <p className="text-sm text-muted-foreground">
-                Credits never expire and can be used whenever you need them.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
