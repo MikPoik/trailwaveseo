@@ -63,73 +63,48 @@ const URLInputForm = ({
         additionalInfo: data.additionalInfo
       });
 
-      // Setup event source for real-time progress updates
       const domain = data.websiteUrl;
       const useSitemap = data.crawlMethod === "sitemap";
 
       onAnalyzeStart(domain, useSitemap);
 
-      // Using EventSource for SSE (Server-Sent Events)
       const source = new EventSource(`/api/analyze/progress?domain=${encodeURIComponent(domain)}`);
 
       return new Promise<WebsiteAnalysis>((resolve, reject) => {
-        source.onmessage = (event) => {
-          console.log("[SSE] Received event:", event.data);
-
+        source.addEventListener("progress", (event: any) => {
           try {
             const data = JSON.parse(event.data);
-            console.log("[SSE] Parsed data:", data);
-
-            if (data.status === "in-progress") {
-              onAnalysisUpdate({
-                domain,
-                pagesFound: data.pagesFound,
-                pagesAnalyzed: data.pagesAnalyzed,
-                currentPageUrl: data.currentPageUrl,
-                analyzedPages: data.analyzedPages,
-                percentage: data.percentage || 0
-              });
-            } else if (data.status === "completed") {
-              console.log("[SSE] Analysis completed, closing connection");
-              source.close();
-
-              if (data.analysis) {
-                console.log("[SSE] Analysis data received:", Object.keys(data.analysis));
-                // Dispatch custom event to notify other components that analysis is complete
-                window.dispatchEvent(new CustomEvent('analysisComplete', { detail: data.analysis }));
-                resolve(data.analysis);
-              } else {
-                console.error("[SSE] No analysis data in completion event");
-                reject(new Error("Analysis completed but no analysis data received"));
-              }
-            } else if (data.status === "error") {
-              console.log("[SSE] Analysis error:", data.error);
-              source.close();
-              reject(new Error(data.error || "Analysis failed"));
-            } else if (data.status === "cancelled") {
-              console.log("[SSE] Analysis cancelled");
-              source.close();
-              reject(new Error("Analysis was cancelled"));
-            }
-          } catch (parseError) {
-            console.error("[SSE] Failed to parse event data:", parseError);
-            source.close();
-            reject(new Error("Failed to parse progress data"));
+            onAnalysisUpdate(data);
+          } catch (error) {
+            console.error("Error parsing progress:", error);
           }
-        };
+        });
 
-        source.onerror = (error) => {
-          console.error("[SSE] Connection error:", error);
-          source.close();
-          reject(new Error("Failed to connect to analysis progress stream"));
-        };
+        source.addEventListener("complete", (event: any) => {
+          try {
+            source.close();
+            const result = JSON.parse(event.data);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        });
+
+        source.addEventListener("error", (event: any) => {
+          try {
+            source.close();
+            const error = JSON.parse(event.data);
+            reject(new Error(error.message || "Analysis failed"));
+          } catch {
+            reject(new Error("Analysis failed"));
+          }
+        });
       });
     },
     onSuccess: (data) => {
       onAnalysisComplete(data);
     },
     onError: (error: any) => {
-      // Handle freemium usage limit errors specifically
       if (error.status === 403) {
         if (error.needsCredits || error.message?.includes("Free scan limit")) {
           toast({
@@ -186,49 +161,52 @@ const URLInputForm = ({
   };
 
   return (
-    <Card className="mb-6">
-      <CardContent className="pt-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Analyze Website</h3>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <Card className="border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
+      <CardContent className="p-4 sm:p-6">
+        <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-6">Analyze Website</h3>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
           <div>
-            <Label htmlFor="website-url">Website URL</Label>
-            <div className="mt-1 flex rounded-md shadow-sm">
-              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+            <Label htmlFor="website-url" className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">Website URL</Label>
+            <div className="mt-2 flex rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700">
+              <span className="inline-flex items-center px-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium">
                 https://
               </span>
               <Input
                 id="website-url"
-                className="flex-1 min-w-0 block w-full rounded-none rounded-r-md focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300"
+                className="flex-1 border-0 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
                 placeholder="example.com"
                 {...form.register("websiteUrl")}
                 disabled={isPending || analysisState === "analyzing"}
               />
             </div>
             {form.formState.errors.websiteUrl && (
-              <p className="mt-1 text-sm text-red-600">{form.formState.errors.websiteUrl.message}</p>
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">{form.formState.errors.websiteUrl.message}</p>
             )}
-            <p className="mt-1 text-sm text-gray-500">Enter a website URL without the https:// prefix</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Enter a website URL without https://</p>
           </div>
 
-          <RadioGroup
-            defaultValue="sitemap"
-            className="flex items-center space-x-4"
-            disabled={isPending || analysisState === "analyzing"}
-            onValueChange={(value) => {
-              form.setValue("crawlMethod", value as "sitemap" | "crawl");
-            }}
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="sitemap" id="use-sitemap" />
-              <Label htmlFor="use-sitemap">Use sitemap.xml</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="crawl" id="crawl-site" />
-              <Label htmlFor="crawl-site">Crawl site (fallback)</Label>
-            </div>
-          </RadioGroup>
+          <div>
+            <Label className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mb-3 block">Crawl Method</Label>
+            <RadioGroup
+              defaultValue="sitemap"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+              disabled={isPending || analysisState === "analyzing"}
+              onValueChange={(value) => {
+                form.setValue("crawlMethod", value as "sitemap" | "crawl");
+              }}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="sitemap" id="use-sitemap" />
+                <Label htmlFor="use-sitemap" className="text-xs sm:text-sm cursor-pointer text-slate-900 dark:text-white font-normal">Use sitemap.xml</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="crawl" id="crawl-site" />
+                <Label htmlFor="crawl-site" className="text-xs sm:text-sm cursor-pointer text-slate-900 dark:text-white font-normal">Crawl site (fallback)</Label>
+              </div>
+            </RadioGroup>
+          </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="advanced-options"
@@ -236,33 +214,32 @@ const URLInputForm = ({
                 onCheckedChange={toggleAdvanced}
                 disabled={isPending || analysisState === "analyzing"}
               />
-              <Label htmlFor="advanced-options">Show advanced options</Label>
+              <Label htmlFor="advanced-options" className="text-xs sm:text-sm cursor-pointer text-slate-900 dark:text-white font-normal">Show advanced options</Label>
             </div>
-            <div>
-              <Button
-                type="submit"
-                disabled={isPending || analysisState === "analyzing"}
-              >
-                {isPending || analysisState === "analyzing" ? "Analyzing..." : "Analyze Website"}
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              disabled={isPending || analysisState === "analyzing"}
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-xs sm:text-sm"
+            >
+              {isPending || analysisState === "analyzing" ? "Analyzing..." : "Analyze Website"}
+            </Button>
           </div>
 
           {showAdvanced && (
-            <div className="pt-4 border-t mt-4 space-y-4">
-              <h4 className="text-sm font-medium text-gray-900">Advanced Options</h4>
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Advanced Options</h4>
               <div>
-                <Label htmlFor="additional-info">Additional Information</Label>
+                <Label htmlFor="additional-info" className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">Additional Information</Label>
                 <Textarea
                   id="additional-info"
-                  className="mt-1"
-                  placeholder="Enter additional context for analysis (e.g., Google Search Console keyword data, target keywords, business goals, etc.)"
+                  className="mt-2 text-xs sm:text-sm min-h-20 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+                  placeholder="Enter additional context for analysis"
                   rows={4}
                   {...form.register("additionalInfo")}
                   disabled={isPending || analysisState === "analyzing"}
                 />
-                <p className="mt-1 text-sm text-gray-500">
-                  Provide additional context like keyword statistics, target audience, or business goals to enhance the AI-powered analysis.
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  Provide context like target keywords or business goals to enhance analysis
                 </p>
               </div>
             </div>

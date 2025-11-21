@@ -18,6 +18,7 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const { data: analysisHistory = [], isLoading } = useQuery<WebsiteAnalysis[]>({
     queryKey: ["/api/analysis/history"],
@@ -33,7 +34,6 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
       try {
         const response = await apiRequest("DELETE", `/api/analysis/${id}`);
         
-        // Check if the response status is in the error range
         if (response.status >= 400) {
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to delete analysis");
@@ -56,7 +56,6 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
     onError: (error: any) => {
       console.error("Delete analysis error:", error);
       
-      // If the analysis doesn't exist anymore, treat as success
       if (error.message?.includes("not found")) {
         queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
@@ -67,7 +66,6 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
         return;
       }
       
-      // Revert the optimistic update by invalidating queries
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/recent"] });
       
@@ -77,125 +75,75 @@ const AnalysisHistory = ({ onSelectAnalysis }: AnalysisHistoryProps) => {
         variant: "destructive",
       });
     },
-  });
-
-  // Import useLocation for navigation
-  const [, setLocation] = useLocation();
-  
-  // We'll keep the mutation for backward compatibility
-  const { mutate: fetchAnalysis, isPending: isLoadingAnalysis } = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("GET", `/api/analysis/${id}`);
-      const data = await response.json();
-
-      // Ensure we have all required properties
-      if (!data || !data.pages) {
-        throw new Error("Invalid analysis data received");
-      }
-
-      return data as WebsiteAnalysis;
-    },
-    onSuccess: (data) => {
-      onSelectAnalysis(data);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to load analysis",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/history"] });
     },
   });
 
   if (!isAuthenticated) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Analysis History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500">
-            Log in to view and manage your analysis history.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Analysis History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex justify-between items-center p-3 border rounded">
-                <div>
-                  <Skeleton className="h-4 w-40 mb-2" />
-                  <Skeleton className="h-3 w-28" />
-                </div>
-                <div className="flex gap-2">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
-              </div>
-            ))}
-          </div>
+      <Card className="border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
+        <CardContent className="p-4 sm:p-6 text-center">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Log in to view your analysis history</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Analysis History</CardTitle>
+    <Card className="border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg h-fit">
+      <CardHeader className="pb-3 sm:pb-4">
+        <CardTitle className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Recent Analyses</CardTitle>
       </CardHeader>
-      <CardContent>
-        {analysisHistory && analysisHistory.length > 0 ? (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+      <CardContent className="p-4 sm:p-6">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        ) : !analysisHistory?.length ? (
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">No analyses yet. Start by analyzing a website.</p>
+        ) : (
+          <div className="space-y-2 sm:space-y-3 max-h-96 overflow-y-auto">
             {analysisHistory.slice(0, 5).map((analysis: any) => (
               <div
                 key={analysis.id}
-                className="flex justify-between items-center p-3 border rounded hover:bg-gray-50"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
-                <div>
-                  <h4 className="font-medium">{analysis.domain}</h4>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {formatDistanceToNow(new Date(analysis.date), { addSuffix: true })}
+                <div className="flex-1 min-w-0 w-full sm:w-auto">
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">{analysis.domain}</p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-600 dark:text-slate-400">
+                    <Calendar className="h-3 w-3" />
+                    <span>{formatDistanceToNow(new Date(analysis.date), { addSuffix: true })}</span>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1 w-full sm:w-auto">
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setLocation(`/analysis/${analysis.id}`)}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSelectAnalysis(analysis)}
+                    className="flex-1 sm:flex-none text-xs border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30"
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    <span className="sr-only">View</span>
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    View
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
-                      if (window.confirm("Are you sure you want to delete this analysis?")) {
+                      if (window.confirm("Delete this analysis?")) {
                         deleteAnalysis(analysis.id);
                       }
                     }}
+                    className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete</span>
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-gray-500">No analysis history found. Analyze a website to get started.</p>
         )}
       </CardContent>
     </Card>
