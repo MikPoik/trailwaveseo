@@ -31,46 +31,40 @@ export function extractContentElements($: cheerio.CheerioAPI, url: string, setti
   });
 
   // Enhanced heading selectors for modern React/Tailwind/SSR components
+  // NOTE: These selectors should ONLY match non-semantic elements (div, span, p, etc.)
+  // Actual h1-h6 tags are already processed above and must not be re-examined
   const headingSelectors = [
     // Tailwind typography scale - Extra large (H1 candidates)
-    '[class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"], [class*="text-8xl"], [class*="text-9xl"]',
+    'div[class*="text-4xl"], span[class*="text-4xl"], p[class*="text-4xl"], div[class*="text-5xl"], span[class*="text-5xl"], p[class*="text-5xl"], div[class*="text-6xl"], span[class*="text-6xl"], p[class*="text-6xl"], div[class*="text-7xl"], span[class*="text-7xl"], p[class*="text-7xl"], div[class*="text-8xl"], span[class*="text-8xl"], p[class*="text-8xl"], div[class*="text-9xl"], span[class*="text-9xl"], p[class*="text-9xl"]',
     // Large text (H2 candidates)
-    '[class*="text-3xl"]',
+    'div[class*="text-3xl"], span[class*="text-3xl"], p[class*="text-3xl"]',
     // Medium-large text (H3 candidates) 
-    '[class*="text-2xl"]',
+    'div[class*="text-2xl"], span[class*="text-2xl"], p[class*="text-2xl"]',
     // Medium text (H4/H5/H6 candidates)
-    '[class*="text-xl"], [class*="text-lg"][class*="font-bold"], [class*="text-lg"][class*="font-semibold"]',
+    'div[class*="text-xl"], span[class*="text-xl"], p[class*="text-xl"], div[class*="text-lg"][class*="font-bold"], span[class*="text-lg"][class*="font-bold"], p[class*="text-lg"][class*="font-bold"], div[class*="text-lg"][class*="font-semibold"], span[class*="text-lg"][class*="font-semibold"], p[class*="text-lg"][class*="font-semibold"]',
     
-    // Font weight combinations (often used for headings)
-    '[class*="font-bold"][class*="text-"], [class*="font-extrabold"], [class*="font-black"]',
-    '[class*="font-semibold"][class*="text-lg"], [class*="font-medium"][class*="text-xl"]',
+    // Font weight combinations (often used for headings) - non-semantic elements only
+    'div[class*="font-bold"][class*="text-"], span[class*="font-bold"][class*="text-"], p[class*="font-bold"][class*="text-"], div[class*="font-extrabold"], span[class*="font-extrabold"], p[class*="font-extrabold"], div[class*="font-black"], span[class*="font-black"], p[class*="font-black"]',
+    'div[class*="font-semibold"][class*="text-lg"], span[class*="font-semibold"][class*="text-lg"], p[class*="font-semibold"][class*="text-lg"], div[class*="font-medium"][class*="text-xl"], span[class*="font-medium"][class*="text-xl"], p[class*="font-medium"][class*="text-xl"]',
     
-    // Explicit semantic classes
-    '[class*="heading"], [class*="title"], [class*="headline"]',
-    '[class*="hero-title"], [class*="page-title"], [class*="section-title"]',
-    '[class*="display-"], [class*="lead-"]', // Bootstrap-style classes
-    
-    // ARIA and role-based selectors (accessibility-focused React apps)
-    '[role="heading"], [aria-level]',
+    // ARIA and role-based selectors (accessibility-focused React apps) - non-semantic only
+    'div[role="heading"], span[role="heading"], p[role="heading"], div[aria-level], span[aria-level], p[aria-level]',
     
     // Component library patterns (MUI, Chakra, etc.)
-    '[class*="MuiTypography-h"], [class*="chakra-heading"]',
-    '[class*="Typography--variant-h"], [class*="Heading--"]',
+    '[class*="MuiTypography-h"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6), [class*="chakra-heading"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)',
+    '[class*="Typography--variant-h"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6), [class*="Heading--"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)',
     
-    // Next.js/Gatsby common patterns
-    '[class*="prose"] h1, [class*="prose"] h2, [class*="prose"] h3, [class*="prose"] h4, [class*="prose"] h5, [class*="prose"] h6',
-    '[data-testid*="heading"], [data-testid*="title"]',
+    // Data attributes for headings
+    '[data-testid*="heading"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6), [data-testid*="title"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)',
     
     // Styled-components and CSS-in-JS patterns
-    '[class*="styled__Heading"], [class*="sc-"][class*="heading"]',
+    '[class*="styled__Heading"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6), [class*="sc-"][class*="heading"]:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)',
     
-    // Utility-first framework alternatives to Tailwind
-    '[class*="fs-1"], [class*="fs-2"], [class*="fs-3"]', // Bootstrap font-size
-    '[class*="text-size-"], [class*="font-size-"]', // Generic patterns
+    // Utility-first framework alternatives to Tailwind - non-semantic only
+    'div[class*="fs-1"], span[class*="fs-1"], p[class*="fs-1"], div[class*="fs-2"], span[class*="fs-2"], p[class*="fs-2"], div[class*="fs-3"], span[class*="fs-3"], p[class*="fs-3"]',
     
-    // Modern design system patterns
-    '[class*="typography-h"], [class*="type-h"], [class*="text-h"]',
-    '[class*="scale-"], [class*="level-"]' // Design token patterns
+    // Modern design system patterns - non-semantic only
+    'div[class*="typography-h"], span[class*="typography-h"], p[class*="typography-h"], div[class*="type-h"], span[class*="type-h"], p[class*="type-h"]'
   ];
 
   headingSelectors.forEach((selector, index) => {

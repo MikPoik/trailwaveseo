@@ -7,5 +7,5 @@ Disallow: /dashboard/admin/
 Disallow: /admin/
 Disallow: /dashboard
 
-# Generated on 2025-10-09T19:18:15.475Z
+# Generated on 2025-11-05T11:36:25.859Z
 Sitemap: https://trailwaveseo.com/sitemap.xml

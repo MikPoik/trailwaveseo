@@ -29,9 +29,26 @@ export function calculateReadabilityScore(sentences: string[]): number {
 
   const avgWordsPerSentence = totalWords / sentences.length;
   const avgSyllablesPerWord = totalSyllables / totalWords;
-  const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
-
-  console.log(`[Readability] Calculated: ${sentences.length} sentences, ${totalWords} words, ${totalSyllables} syllables -> score ${score.toFixed(2)}`);
+  
+  // Language-aware readability scoring
+  // The standard Flesch Reading Ease formula is designed for English and can produce
+  // negative scores for languages with longer words (Finnish, German, etc.)
+  // We use a normalized approach that works across languages
+  
+  let score: number;
+  
+  if (avgSyllablesPerWord > 2.2 || avgWordsPerSentence < 8) {
+    // Likely non-English or complex language - use alternative formula
+    // This creates a 0-100 scale based on relative complexity
+    const sentenceComplexity = Math.min(100, (avgWordsPerSentence / 25) * 50); // Max 50 points for sentence length
+    const wordComplexity = Math.max(0, 50 - ((avgSyllablesPerWord - 1) * 20)); // Subtract complexity points
+    score = sentenceComplexity + wordComplexity;
+    console.log(`[Readability] Using language-aware formula: ${sentences.length} sentences, ${totalWords} words, ${totalSyllables} syllables -> score ${score.toFixed(2)}`);
+  } else {
+    // Standard Flesch Reading Ease for English-like languages
+    score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
+    console.log(`[Readability] Using Flesch formula: ${sentences.length} sentences, ${totalWords} words, ${totalSyllables} syllables -> score ${score.toFixed(2)}`);
+  }
 
   return Math.max(0, Math.min(100, score));
 }
