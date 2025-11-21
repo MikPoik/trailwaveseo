@@ -64,26 +64,26 @@ const Dashboard = () => {
         description="Optimize your website's SEO with AI-powered suggestions" 
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Account Status Banner */}
-        {usage && (
-          <Card className={`mb-6 ${usage.accountStatus === "trial" ? "border-purple-200 bg-purple-50" : "border-blue-200 bg-blue-50"}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <Coins className={`h-4 w-4 ${usage.accountStatus === "trial" ? "text-purple-600" : "text-blue-600"}`} />
-                      <span className="text-sm font-medium">{usage.credits || 0} Credits</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-sm px-2 py-1 rounded-full text-xs font-medium ${
-                        usage.accountStatus === "trial" 
-                          ? "bg-purple-100 text-purple-700" 
-                          : "bg-green-100 text-green-700"
-                      }`}>
-                        {usage.accountStatus === "trial" ? "Trial Account" : "Paid Account"}
-                      </span>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Account Status Banner */}
+          {usage && (
+            <Card className={`mb-6 border-0 backdrop-blur-xl shadow-lg ${usage.accountStatus === "trial" ? "bg-gradient-to-r from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10" : "bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10"}`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-3 bg-white dark:bg-slate-800/50 rounded-lg px-4 py-2 backdrop-blur-sm">
+                    <Coins className={`h-5 w-5 ${usage.accountStatus === "trial" ? "text-purple-600" : "text-blue-600"}`} />
+                    <span className="font-semibold text-slate-900 dark:text-white">{usage.credits || 0} Credits</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      usage.accountStatus === "trial" 
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" 
+                        : "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
+                    }`}>
+                      {usage.accountStatus === "trial" ? "Trial Account" : "Paid Account"}
+                    </span>
                       {usage.accountStatus === "trial" && (
                         <>
                           <span className="text-sm text-gray-600">
