@@ -69,14 +69,14 @@ const Dashboard = () => {
           {/* Account Status Banner */}
           {usage && (
             <Card className={`mb-6 border-0 backdrop-blur-xl shadow-lg ${usage.accountStatus === "trial" ? "bg-gradient-to-r from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10" : "bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10"}`}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div className="flex items-center space-x-6">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                     <div className="flex items-center space-x-3 bg-white dark:bg-slate-800/50 rounded-lg px-4 py-2 backdrop-blur-sm">
                       <Coins className={`h-5 w-5 ${usage.accountStatus === "trial" ? "text-purple-600" : "text-blue-600"}`} />
                       <span className="font-semibold text-slate-900 dark:text-white">{usage.credits || 0} Credits</span>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
                       <span className={`px-3 py-1 rounded-full text-sm font-bold ${
                         usage.accountStatus === "trial" 
                           ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" 
@@ -85,30 +85,30 @@ const Dashboard = () => {
                         {usage.accountStatus === "trial" ? "Trial Account" : "Paid Account"}
                       </span>
                       {usage.accountStatus === "trial" && (
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          Lite scans (3 pages max, 5 suggestions per page)
+                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                          Lite scans (3 pages max)
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     {usage.credits < 5 && (
                       <div className="flex items-center space-x-2 text-orange-600">
                         <AlertTriangle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Low credits</span>
+                        <span className="text-sm font-medium">Low</span>
                       </div>
                     )}
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className={`border-2 ${
+                      className={`border-2 flex-1 sm:flex-none ${
                         usage.accountStatus === "trial" 
                           ? "text-purple-600 border-purple-300 hover:bg-purple-100 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900/30" 
                           : "text-blue-600 border-blue-300 hover:bg-blue-100 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900/30"
                       }`}
                     >
                       <Link className="h-3 w-3 mr-1" />
-                      <a href="/account">{usage.accountStatus === "trial" ? "Upgrade Account" : "Get Credits"}</a>
+                      <a href="/account">{usage.accountStatus === "trial" ? "Upgrade" : "Credits"}</a>
                     </Button>
                   </div>
                 </div>

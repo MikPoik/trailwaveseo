@@ -148,7 +148,7 @@ const Account = () => {
           description="View your current usage and account information"
         />
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-8">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-8">
           {/* User Profile Card */}
           <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
             <CardHeader className="pb-4">
@@ -285,7 +285,7 @@ const Account = () => {
             </Card>
 
             {/* Credit Packages */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
               {packages?.map((pkg) => (
                 <Card 
                   key={pkg.id} 
@@ -387,7 +387,7 @@ const Account = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
                 <h4 className="font-bold text-slate-900 dark:text-white mb-2">Website Scans</h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400">

@@ -137,7 +137,7 @@ const SiteHistory = () => {
                 <div className="space-y-4">
                   <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Your Previous Analyses</h3>
                   
-                  <div className="overflow-x-auto">
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-slate-200 dark:border-slate-700">
@@ -202,6 +202,58 @@ const SiteHistory = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  <div className="md:hidden space-y-3">
+                    {analysisHistory?.map((analysis: any) => (
+                      <Card key={analysis.id} className="border-0 bg-white dark:bg-slate-800 shadow-md">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1">
+                                <p className="font-bold text-slate-900 dark:text-white truncate">{analysis.domain}</p>
+                                <div className="flex items-center text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                  <CalendarIcon className="mr-1 h-3 w-3" />
+                                  {new Date(analysis.date).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{analysis.pagesCount} pages</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-red-600 to-red-500 text-white">
+                                {analysis.metrics.criticalIssues} Critical
+                              </span>
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 text-white">
+                                {analysis.metrics.warnings} Warnings
+                              </span>
+                            </div>
+                            <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                              <Link href={`/analysis/${analysis.id}`} className="flex-1">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30 w-full"
+                                >
+                                  View
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+                                onClick={() => {
+                                  if (window.confirm("Delete this analysis?")) {
+                                    deleteAnalysis(analysis.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
               )}
