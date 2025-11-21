@@ -41,22 +41,30 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
       <Navbar onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden py-20">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <Badge variant="secondary" className="mb-6">
+            <Badge variant="secondary" className="mb-6 inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 border-purple-200 dark:border-purple-800">
               <Coins className="w-3 h-3 mr-1" />
               Credit-Based Pricing Packages
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-6 leading-tight">
               Simple, Transparent Pricing
-              <span className="text-primary block">Choose Your Credit Package</span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
+            <p className="text-2xl text-slate-700 dark:text-slate-300 mb-6 font-semibold">
+              Choose Your Credit Package
+            </p>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed">
               Our credit-based system ensures you only pay for the SEO analysis you need. 
               Purchase credit packages that fit your usage and scale with your business growth.
             </p>
@@ -70,40 +78,40 @@ const Pricing = () => {
           <div className="grid md:grid-cols-3 gap-8">
             
             {/* Starter Pack */}
-            <Card className="relative border-2 border-muted">
+            <Card className="relative border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
               <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl">Starter Pack</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">€4.99</span>
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">Starter Pack</CardTitle>
+                <div className="mt-6">
+                  <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">€4.99</span>
                 </div>
-                <p className="text-muted-foreground mt-2">
+                <p className="text-slate-600 dark:text-slate-400 mt-3 font-medium">
                   50 Credits • ~€0.100 per credit
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>50 credits for scans & AI features</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">50 credits for scans & AI features</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Scans: 3 credits each</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Scans: 3 credits each</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>AI suggestions: 1 credit per page</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">AI suggestions: 1 credit per page</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Competitor analysis: 1 credits</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Competitor analysis: 1 credits</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Chat: 1 credit per 10 messages</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} className="w-full">
+                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all">
                   <Coins className="w-4 h-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -111,46 +119,46 @@ const Pricing = () => {
             </Card>
 
             {/* Pro Pack */}
-            <Card className="relative border-2 border-primary shadow-lg">
+            <Card className="relative border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-purple-400/50">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-blue-500 text-white px-3 py-1">
-                  <Star className="w-3 h-3 mr-1" />
+                <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 shadow-lg">
+                  <Star className="w-3 h-3 mr-1.5" />
                   Most Popular
                 </Badge>
               </div>
-              <CardHeader className="text-center pb-8 pt-8">
-                <CardTitle className="text-2xl">Pro Pack</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">€9.99</span>
+              <CardHeader className="text-center pb-8 pt-12">
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">Pro Pack</CardTitle>
+                <div className="mt-6">
+                  <span className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">€9.99</span>
                 </div>
-                <p className="text-muted-foreground mt-2">
+                <p className="text-slate-600 dark:text-slate-400 mt-3 font-medium">
                   120 Credits • ~€0.083 per credit
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>120 credits for scans & AI features</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">120 credits for scans & AI features</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Scans: 3 credits each</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Scans: 3 credits each</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>AI suggestions: 1 credit per page</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">AI suggestions: 1 credit per page</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Competitor analysis: 1 credits</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Competitor analysis: 1 credits</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Chat: 1 credit per 10 messages</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} className="w-full" size="lg">
+                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all" size="lg">
                   <Coins className="w-4 h-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -158,45 +166,45 @@ const Pricing = () => {
             </Card>
 
             {/* Business Pack */}
-            <Card className="relative border-2 border-muted">
+            <Card className="relative border-0 bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-purple-500 text-white px-3 py-1">
+                <Badge className="bg-gradient-to-r from-orange-600 to-pink-600 text-white px-4 py-1.5 shadow-lg">
                   Best Value
                 </Badge>
               </div>
-              <CardHeader className="text-center pb-8 pt-8">
-                <CardTitle className="text-2xl">Business Pack</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">€19.99</span>
+              <CardHeader className="text-center pb-8 pt-12">
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">Business Pack</CardTitle>
+                <div className="mt-6">
+                  <span className="text-5xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">€19.99</span>
                 </div>
-                <p className="text-muted-foreground mt-2">
+                <p className="text-slate-600 dark:text-slate-400 mt-3 font-medium">
                   280 Credits • ~€0.071 per credit
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>280 credits for scans & AI features</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">280 credits for scans & AI features</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Scans: 3 credits each</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Scans: 3 credits each</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>AI suggestions: 1 credit per page</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">AI suggestions: 1 credit per page</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Competitor analysis: 1 credits</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Competitor analysis: 1 credits</span>
                   </div>
                   <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-500 mr-3" />
-                    <span>Chat: 1 credit per 10 messages</span>
+                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} className="w-full">
+                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all">
                   <Coins className="w-4 h-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -207,13 +215,13 @@ const Pricing = () => {
       </section>
 
       {/* Credit System Explanation */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
               How Our Credit System Works
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-slate-600 dark:text-slate-400">
               Simple, transparent pricing that scales with your usage
             </p>
           </div>
@@ -276,10 +284,10 @@ const Pricing = () => {
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
               Package Comparison
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-slate-600 dark:text-slate-400">
               Choose the package that best fits your SEO analysis needs
             </p>
           </div>
@@ -350,10 +358,10 @@ const Pricing = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
               Frequently Asked Questions
             </h2>
           </div>
@@ -405,67 +413,80 @@ const Pricing = () => {
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Ready to improve your SEO?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Choose your credit package and start analyzing your website's SEO performance today
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={handleGetStarted} className="text-lg px-8">
-              Get Started Now
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button variant="outline" size="lg" asChild className="text-lg px-8">
-              <Link href="/how-it-works">Learn More</Link>
-            </Button>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-700 rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
+            {/* Background Elements */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl -ml-32 -mb-32"></div>
+
+            <div className="relative z-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                Ready to improve your SEO?
+              </h2>
+              <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                Choose your credit package and start analyzing your website's SEO performance today
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                  Get Started Now
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  asChild
+                  className="text-lg px-8 border-2 border-white text-white hover:bg-white/10 transition-colors"
+                >
+                  <Link href="/how-it-works">Learn More</Link>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/30 py-12">
+      <footer className="border-t border-slate-800 bg-slate-900 py-12 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-primary-foreground" />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-lg font-bold">TrailWave SEO</span>
               </div>
-              <p className="text-muted-foreground">
-                Professional AI-powered SEO analysis platform for comprehensive website optimization.
+              <p className="text-slate-400 leading-relaxed">
+                AI-powered SEO analysis platform for comprehensive website optimization.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><Link href="/how-it-works" className="hover:text-foreground transition-colors">How It Works</Link></li>
-                <li><Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link></li>
-                <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link></li>
+              <h4 className="font-bold mb-4 text-white">Product</h4>
+              <ul className="space-y-2 text-slate-400">
+                <li><Link href="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Features</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>SEO Analysis</li>
-                <li>AI Recommendations</li>
-                <li>Competitor Analysis</li>
-                <li>Export Reports</li>
+              <h4 className="font-bold mb-4 text-white">Features</h4>
+              <ul className="space-y-2 text-slate-400">
+                <li className="hover:text-white transition-colors cursor-default">SEO Analysis</li>
+                <li className="hover:text-white transition-colors cursor-default">AI Recommendations</li>
+                <li className="hover:text-white transition-colors cursor-default">Competitor Analysis</li>
+                <li className="hover:text-white transition-colors cursor-default">Export Reports</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Platform</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>Built on Replit</li>
-                <li>Powered by OpenAI</li>
+              <h4 className="font-bold mb-4 text-white">Platform</h4>
+              <ul className="space-y-2 text-slate-400">
+                <li className="hover:text-white transition-colors cursor-default">Built on Replit</li>
+                <li className="hover:text-white transition-colors cursor-default">Powered by OpenAI</li>
               </ul>
             </div>
           </div>
-          <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 TrailWave SEO. Built with ❤️ on Replit.</p>
+          <div className="border-t border-slate-800 mt-8 pt-8 text-center text-slate-400">
+            <p>&copy; 2025 TrailWave SEO. Built with ❤️ on Replit.</p>
           </div>
         </div>
       </footer>
