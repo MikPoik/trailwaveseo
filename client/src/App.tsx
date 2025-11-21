@@ -38,9 +38,9 @@ function AuthenticatedApp({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex flex-1 md:flex-row">
+      <div className="flex flex-col md:flex-row flex-1">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto w-full md:w-auto">
           {children}
         </main>
       </div>

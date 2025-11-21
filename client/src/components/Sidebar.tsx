@@ -59,7 +59,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-full md:w-64 bg-white border-r border-gray-200 md:min-h-screen">
+    <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-gray-200 md:min-h-screen">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
         <div className="flex items-center space-x-2">
