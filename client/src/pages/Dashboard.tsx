@@ -63,22 +63,22 @@ const Dashboard = () => {
         description="Optimize your website's SEO with AI-powered suggestions" 
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
           {usage && (
-            <Card className={`mb-4 sm:mb-6 border-0 backdrop-blur-xl shadow-lg ${usage.accountStatus === "trial" ? "bg-gradient-to-r from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10" : "bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10"}`}>
+            <Card className={`mb-4 sm:mb-6 border-0 backdrop-blur-xl shadow-lg ${usage.accountStatus === "trial" ? "bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10" : "bg-gradient-to-r from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10"}`}>
               <CardContent className="p-3 sm:p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                     <div className="flex items-center space-x-2 sm:space-x-3 bg-white dark:bg-slate-800/50 rounded-lg px-3 sm:px-4 py-2 backdrop-blur-sm">
-                      <Coins className={`h-4 w-4 sm:h-5 sm:w-5 ${usage.accountStatus === "trial" ? "text-purple-600" : "text-blue-600"}`} />
+                      <Coins className={`h-4 w-4 sm:h-5 sm:w-5 ${usage.accountStatus === "trial" ? "text-emerald-600" : "text-teal-600"}`} />
                       <span className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white">{usage.credits || 0} Credits</span>
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                       <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-bold ${
                         usage.accountStatus === "trial" 
-                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" 
-                          : "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
+                          ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white" 
+                          : "bg-gradient-to-r from-teal-600 to-cyan-600 text-white"
                       }`}>
                         {usage.accountStatus === "trial" ? "Trial" : "Paid"}
                       </span>
