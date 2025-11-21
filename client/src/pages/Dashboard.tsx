@@ -190,6 +190,7 @@ const Dashboard = () => {
             onNewAnalysis={() => setAnalysisState("idle")}
           />
         )}
+        </div>
       </div>
     </>
   );
