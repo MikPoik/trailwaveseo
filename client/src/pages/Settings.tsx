@@ -138,7 +138,7 @@ const Settings = () => {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-            <p className="text-slate-600 dark:text-slate-400">Loading settings...</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">Loading settings...</p>
           </div>
         </div>
       </>
@@ -152,28 +152,27 @@ const Settings = () => {
         description="Configure your SEO analysis preferences" 
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
-        <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950 w-full">
+        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6 md:space-y-8">
               
-              {/* Crawling Settings Section */}
               <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg">
-                <CardContent className="pt-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center text-white shadow-md">
-                      <Gauge className="h-5 w-5" />
+                <CardContent className="pt-6 sm:pt-8">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                      <Gauge className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Crawling Settings</h3>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Crawling Settings</h3>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <FormField
                       control={form.control}
                       name="maxPages"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-slate-900 dark:text-white font-semibold">Maximum Pages to Analyze</FormLabel>
+                          <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Maximum Pages</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -181,11 +180,11 @@ const Settings = () => {
                               max={100}
                               {...field}
                               onChange={(e) => field.onChange(parseInt(e.target.value))}
-                              className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                              className="text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                             />
                           </FormControl>
-                          <FormDescription className="text-slate-600 dark:text-slate-400">
-                            Limit the number of pages to analyze (1-100)
+                          <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                            Limit pages to analyze (1-100)
                           </FormDescription>
                         </FormItem>
                       )}
@@ -195,9 +194,9 @@ const Settings = () => {
                       control={form.control}
                       name="crawlDelay"
                       render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel className="text-slate-900 dark:text-white font-semibold">Crawl Delay (ms): {field.value}ms</FormLabel>
-                          <div className="pt-2 px-2">
+                        <FormItem className="space-y-2 sm:space-y-3">
+                          <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Crawl Delay: {field.value}ms</FormLabel>
+                          <div className="pt-2 px-1 sm:px-2">
                             <Slider
                               min={100}
                               max={3000}
@@ -207,8 +206,8 @@ const Settings = () => {
                               className="w-full"
                             />
                           </div>
-                          <FormDescription className="text-slate-600 dark:text-slate-400">
-                            Delay between requests (lower values may be blocked by some servers)
+                          <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                            Delay between requests
                           </FormDescription>
                         </FormItem>
                       )}
@@ -218,11 +217,11 @@ const Settings = () => {
                       control={form.control}
                       name="followExternalLinks"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-blue-200/50 dark:border-blue-800/50 p-4">
+                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-blue-200/50 dark:border-blue-800/50 p-3 sm:p-4">
                           <div className="space-y-0.5 flex-1">
-                            <FormLabel className="text-slate-900 dark:text-white font-semibold">Follow External Links</FormLabel>
-                            <FormDescription className="text-slate-600 dark:text-slate-400">
-                              Analyze pages on different domains
+                            <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">External Links</FormLabel>
+                            <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                              Analyze other domains
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -235,26 +234,25 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              {/* Analysis Settings Section */}
               <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-lg">
-                <CardContent className="pt-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-md">
-                      <Database className="h-5 w-5" />
+                <CardContent className="pt-6 sm:pt-8">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                      <Database className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Analysis Settings</h3>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Analysis Settings</h3>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <FormField
                       control={form.control}
                       name="analyzeImages"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-4">
+                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-3 sm:p-4">
                           <div className="space-y-0.5 flex-1">
-                            <FormLabel className="text-slate-900 dark:text-white font-semibold">Analyze Images</FormLabel>
-                            <FormDescription className="text-slate-600 dark:text-slate-400 text-xs">
-                              Check for alt text and image optimization. When AI is enabled, generates suggested alt text.
+                            <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Images</FormLabel>
+                            <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                              Check alt text & optimization
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -268,11 +266,11 @@ const Settings = () => {
                       control={form.control}
                       name="analyzeLinkStructure"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-4">
+                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-3 sm:p-4">
                           <div className="space-y-0.5 flex-1">
-                            <FormLabel className="text-slate-900 dark:text-white font-semibold">Analyze Link Structure</FormLabel>
-                            <FormDescription className="text-slate-600 dark:text-slate-400 text-xs">
-                              Check for internal linking patterns and anchor texts
+                            <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Link Structure</FormLabel>
+                            <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                              Internal linking patterns
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -286,11 +284,11 @@ const Settings = () => {
                       control={form.control}
                       name="analyzePageSpeed"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-4">
+                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-3 sm:p-4">
                           <div className="space-y-0.5 flex-1">
-                            <FormLabel className="text-slate-900 dark:text-white font-semibold">Analyze Page Speed</FormLabel>
-                            <FormDescription className="text-slate-600 dark:text-slate-400 text-xs">
-                              Check page load performance and optimization opportunities
+                            <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Page Speed</FormLabel>
+                            <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                              Load performance
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -304,11 +302,11 @@ const Settings = () => {
                       control={form.control}
                       name="analyzeStructuredData"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-4">
+                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-3 sm:p-4">
                           <div className="space-y-0.5 flex-1">
-                            <FormLabel className="text-slate-900 dark:text-white font-semibold">Analyze Structured Data</FormLabel>
-                            <FormDescription className="text-slate-600 dark:text-slate-400 text-xs">
-                              Check for schema.org markup and rich snippets
+                            <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Structured Data</FormLabel>
+                            <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                              Schema & rich snippets
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -322,11 +320,11 @@ const Settings = () => {
                       control={form.control}
                       name="analyzeMobileCompatibility"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-4">
+                        <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-purple-200/50 dark:border-purple-800/50 p-3 sm:p-4">
                           <div className="space-y-0.5 flex-1">
-                            <FormLabel className="text-slate-900 dark:text-white font-semibold">Analyze Mobile Compatibility</FormLabel>
-                            <FormDescription className="text-slate-600 dark:text-slate-400 text-xs">
-                              Check for mobile-friendly design and viewport configuration
+                            <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">Mobile</FormLabel>
+                            <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                              Mobile-friendly design
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -339,25 +337,24 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              {/* AI Settings Section */}
               <Card className="border-0 bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 backdrop-blur-xl shadow-lg">
-                <CardContent className="pt-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-br from-pink-600 to-pink-500 rounded-lg flex items-center justify-center text-white shadow-md">
-                      <Zap className="h-5 w-5" />
+                <CardContent className="pt-6 sm:pt-8">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-pink-600 to-pink-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                      <Zap className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">AI Settings</h3>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">AI Settings</h3>
                   </div>
 
                   <FormField
                     control={form.control}
                     name="useAI"
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-pink-200/50 dark:border-pink-800/50 p-4">
+                      <FormItem className="flex items-center justify-between space-x-2 bg-white dark:bg-slate-800/50 rounded-lg border border-pink-200/50 dark:border-pink-800/50 p-3 sm:p-4">
                         <div className="space-y-0.5 flex-1">
-                          <FormLabel className="text-slate-900 dark:text-white font-semibold">Use AI for Suggestions</FormLabel>
-                          <FormDescription className="text-slate-600 dark:text-slate-400">
-                            Generate AI-powered SEO improvement suggestions and missing alt text for images (uses OpenAI)
+                          <FormLabel className="text-sm text-slate-900 dark:text-white font-semibold">AI Suggestions</FormLabel>
+                          <FormDescription className="text-xs text-slate-600 dark:text-slate-400">
+                            AI-powered recommendations
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -369,12 +366,11 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              {/* Submit Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-2 sm:pt-4">
                 <Button 
                   type="submit" 
                   disabled={loading || updateSettingsMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-2 font-bold"
+                  className="text-xs sm:text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 sm:px-8 py-2 font-bold"
                 >
                   {(loading || updateSettingsMutation.isPending) ? 
                     "Saving..." : "Save Settings"}
