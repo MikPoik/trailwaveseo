@@ -40,25 +40,25 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950">
       <Navbar onGetStarted={handleStartAnalysis} />
 
       {/* Hero Section with Enhanced Visuals */}
       <section className="relative overflow-hidden py-20 lg:py-40">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-pink-400/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl animate-pulse delay-500"></div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <Badge variant="secondary" className="mb-6 inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border-blue-200 dark:border-blue-800">
+            <Badge variant="secondary" className="mb-6 inline-block bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 border-emerald-200 dark:border-emerald-800">
               <Zap className="w-3 h-3 mr-1" />
               AI-Powered SEO Analysis
             </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-6 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400 bg-clip-text text-transparent mb-6 leading-tight">
               Transform Your Website SEO
             </h1>
             <p className="text-2xl text-slate-700 dark:text-slate-300 mb-6 font-semibold">
@@ -71,7 +71,7 @@ const Landing = () => {
               <Button 
                 size="lg" 
                 onClick={handleStartAnalysis}
-                className="text-lg px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="text-lg px-8 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Start Free Analysis
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -116,10 +116,10 @@ const Landing = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl hover:shadow-xl transition-all duration-300 group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300 -mr-8 -mt-8"></div>
+            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 backdrop-blur-xl hover:shadow-xl transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-400/10 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300 -mr-8 -mt-8"></div>
               <CardContent className="p-8 relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:shadow-xl transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-teal-600 to-teal-500 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:shadow-xl transition-all">
                   <Search className="w-7 h-7" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Website SEO Auditing</h3>
@@ -143,10 +143,10 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl hover:shadow-xl transition-all duration-300 group md:translate-y-4">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-400/10 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300 -mr-8 -mt-8"></div>
+            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 backdrop-blur-xl hover:shadow-xl transition-all duration-300 group md:translate-y-4">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300 -mr-8 -mt-8"></div>
               <CardContent className="p-8 relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-purple-600 to-purple-500 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:shadow-xl transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:shadow-xl transition-all">
                   <Bot className="w-7 h-7" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">AI-Powered Recommendations</h3>
@@ -170,10 +170,10 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 backdrop-blur-xl hover:shadow-xl transition-all duration-300 group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-pink-400/10 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300 -mr-8 -mt-8"></div>
+            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 dark:from-cyan-900/20 dark:to-cyan-900/10 backdrop-blur-xl hover:shadow-xl transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300 -mr-8 -mt-8"></div>
               <CardContent className="p-8 relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-pink-600 to-pink-500 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:shadow-xl transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-cyan-500 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:shadow-xl transition-all">
                   <BarChart3 className="w-7 h-7" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Competitor Analysis</h3>
@@ -214,10 +214,10 @@ const Landing = () => {
 
           <div className="grid md:grid-cols-4 gap-8 relative">
             {/* Connecting Line */}
-            <div className="hidden md:block absolute top-1/3 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 -z-10"></div>
+            <div className="hidden md:block absolute top-1/3 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 -z-10"></div>
 
             <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
+              <div className="w-16 h-16 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
                 <Globe className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">1. Enter URL</h3>
@@ -227,7 +227,7 @@ const Landing = () => {
             </div>
 
             <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-600 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
                 <Bot className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">2. AI Analysis</h3>
@@ -237,7 +237,7 @@ const Landing = () => {
             </div>
 
             <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-600 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
+              <div className="w-16 h-16 bg-gradient-to-br from-cyan-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
                 <Target className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">3. Get Insights</h3>
@@ -260,7 +260,7 @@ const Landing = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 relative overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>

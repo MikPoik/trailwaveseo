@@ -41,24 +41,24 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950">
       <Navbar onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20">
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <Badge variant="secondary" className="mb-6 inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 border-purple-200 dark:border-purple-800">
+            <Badge variant="secondary" className="mb-6 inline-block bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 border-emerald-200 dark:border-emerald-800">
               <Coins className="w-3 h-3 mr-1" />
               Credit-Based Pricing Packages
             </Badge>
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400 bg-clip-text text-transparent mb-6 leading-tight">
               Simple, Transparent Pricing
             </h1>
             <p className="text-2xl text-slate-700 dark:text-slate-300 mb-6 font-semibold">
@@ -78,11 +78,11 @@ const Pricing = () => {
           <div className="grid md:grid-cols-3 gap-8">
             
             {/* Starter Pack */}
-            <Card className="relative border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="relative border-0 bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
               <CardHeader className="text-center pb-8">
                 <CardTitle className="text-2xl text-slate-900 dark:text-white">Starter Pack</CardTitle>
                 <div className="mt-6">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">€4.99</span>
+                  <span className="text-5xl font-bold bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">€4.99</span>
                 </div>
                 <p className="text-slate-600 dark:text-slate-400 mt-3 font-medium">
                   50 Credits • ~€0.100 per credit
@@ -111,7 +111,7 @@ const Pricing = () => {
                     <span className="text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all">
+                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all">
                   <Coins className="w-4 h-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -119,9 +119,9 @@ const Pricing = () => {
             </Card>
 
             {/* Pro Pack */}
-            <Card className="relative border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-purple-400/50">
+            <Card className="relative border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-emerald-400/50">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 shadow-lg">
+                <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-1.5 shadow-lg">
                   <Star className="w-3 h-3 mr-1.5" />
                   Most Popular
                 </Badge>
@@ -129,7 +129,7 @@ const Pricing = () => {
               <CardHeader className="text-center pb-8 pt-12">
                 <CardTitle className="text-2xl text-slate-900 dark:text-white">Pro Pack</CardTitle>
                 <div className="mt-6">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">€9.99</span>
+                  <span className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">€9.99</span>
                 </div>
                 <p className="text-slate-600 dark:text-slate-400 mt-3 font-medium">
                   120 Credits • ~€0.083 per credit
@@ -158,7 +158,7 @@ const Pricing = () => {
                     <span className="text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all" size="lg">
+                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md hover:shadow-lg transition-all" size="lg">
                   <Coins className="w-4 h-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -166,16 +166,16 @@ const Pricing = () => {
             </Card>
 
             {/* Business Pack */}
-            <Card className="relative border-0 bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="relative border-0 bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 dark:from-cyan-900/20 dark:to-cyan-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-orange-600 to-pink-600 text-white px-4 py-1.5 shadow-lg">
+                <Badge className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-4 py-1.5 shadow-lg">
                   Best Value
                 </Badge>
               </div>
               <CardHeader className="text-center pb-8 pt-12">
                 <CardTitle className="text-2xl text-slate-900 dark:text-white">Business Pack</CardTitle>
                 <div className="mt-6">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">€19.99</span>
+                  <span className="text-5xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">€19.99</span>
                 </div>
                 <p className="text-slate-600 dark:text-slate-400 mt-3 font-medium">
                   280 Credits • ~€0.071 per credit
@@ -204,7 +204,7 @@ const Pricing = () => {
                     <span className="text-slate-700 dark:text-slate-300">Chat: 1 credit per 10 messages</span>
                   </div>
                 </div>
-                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all">
+                <Button onClick={handleGetStarted} className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white shadow-md hover:shadow-lg transition-all">
                   <Coins className="w-4 h-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -416,8 +416,8 @@ const Pricing = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-700 rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
             {/* Background Elements */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl -ml-32 -mb-32"></div>
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -ml-32 -mb-32"></div>
 
             <div className="relative z-10">
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -427,7 +427,7 @@ const Pricing = () => {
                 Choose your credit package and start analyzing your website's SEO performance today
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                   Get Started Now
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -451,7 +451,7 @@ const Pricing = () => {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-lg font-bold">TrailWave SEO</span>
