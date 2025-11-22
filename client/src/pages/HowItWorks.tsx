@@ -84,7 +84,7 @@ const HowItWorks = () => {
         <Card className="mb-8 border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl text-slate-900 dark:text-white">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <Search className="h-6 w-6" />
               </div>
               Core SEO Analysis Process
@@ -97,9 +97,9 @@ const HowItWorks = () => {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-blue-200/50 dark:border-blue-800/50">
+              <div className="bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-teal-200/50 dark:border-teal-800/50">
                 <div className="flex items-center mb-4">
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-500 p-3 rounded-lg mr-3 text-white shadow-md">
+                  <div className="bg-gradient-to-br from-teal-600 to-teal-500 p-3 rounded-lg mr-3 text-white shadow-md">
                     <Globe className="h-5 w-5" />
                   </div>
                   <h4 className="font-bold text-slate-900 dark:text-white">1. URL Input & Discovery</h4>
@@ -109,9 +109,9 @@ const HowItWorks = () => {
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-purple-200/50 dark:border-purple-800/50">
+              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-emerald-200/50 dark:border-emerald-800/50">
                 <div className="flex items-center mb-4">
-                  <div className="bg-gradient-to-br from-purple-600 to-purple-500 p-3 rounded-lg mr-3 text-white shadow-md">
+                  <div className="bg-gradient-to-br from-emerald-600 to-emerald-500 p-3 rounded-lg mr-3 text-white shadow-md">
                     <FileText className="h-5 w-5" />
                   </div>
                   <h4 className="font-bold text-slate-900 dark:text-white">2. Content Extraction</h4>
@@ -121,9 +121,9 @@ const HowItWorks = () => {
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-pink-200/50 dark:border-pink-800/50">
+              <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 dark:from-cyan-900/20 dark:to-cyan-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-cyan-200/50 dark:border-cyan-800/50">
                 <div className="flex items-center mb-4">
-                  <div className="bg-gradient-to-br from-pink-600 to-pink-500 p-3 rounded-lg mr-3 text-white shadow-md">
+                  <div className="bg-gradient-to-br from-cyan-600 to-cyan-500 p-3 rounded-lg mr-3 text-white shadow-md">
                     <Code className="h-5 w-5" />
                   </div>
                   <h4 className="font-bold text-slate-900 dark:text-white">3. Technical Analysis</h4>
@@ -145,9 +145,9 @@ const HowItWorks = () => {
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 dark:from-orange-900/20 dark:to-orange-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-orange-200/50 dark:border-orange-800/50">
+              <div className="bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-teal-200/50 dark:border-teal-800/50">
                 <div className="flex items-center mb-4">
-                  <div className="bg-gradient-to-br from-orange-600 to-orange-500 p-3 rounded-lg mr-3 text-white shadow-md">
+                  <div className="bg-gradient-to-br from-teal-600 to-teal-500 p-3 rounded-lg mr-3 text-white shadow-md">
                     <Database className="h-5 w-5" />
                   </div>
                   <h4 className="font-bold text-slate-900 dark:text-white">5. Content Quality Scoring</h4>
@@ -175,10 +175,10 @@ const HowItWorks = () => {
         {/* Advanced Features */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Competitor Analysis */}
-          <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="border-0 bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl text-slate-900 dark:text-white">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center text-white shadow-md">
                   <Target className="h-5 w-5" />
                 </div>
                 Competitor Analysis
@@ -225,10 +225,10 @@ const HowItWorks = () => {
           </Card>
 
           {/* AI Chat Assistant */}
-          <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl text-slate-900 dark:text-white">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-lg flex items-center justify-center text-white shadow-md">
                   <MessageCircle className="h-5 w-5" />
                 </div>
                 AI Chat Assistant
@@ -283,10 +283,10 @@ const HowItWorks = () => {
           <CardContent>
             <div className="grid md:grid-cols-4 gap-6 relative">
               {/* Connecting Line */}
-              <div className="hidden md:block absolute top-1/4 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 -z-10"></div>
+              <div className="hidden md:block absolute top-1/4 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 -z-10"></div>
 
               <div className="text-center relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
                   <Globe className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">1. Enter URL</h3>
@@ -296,7 +296,7 @@ const HowItWorks = () => {
               </div>
               
               <div className="text-center relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
+                <div className="w-16 h-16 bg-gradient-to-br from-teal-600 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
                   <Bot className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">2. AI Analysis</h3>
@@ -306,7 +306,7 @@ const HowItWorks = () => {
               </div>
               
               <div className="text-center relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-600 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
+                <div className="w-16 h-16 bg-gradient-to-br from-cyan-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg hover:shadow-xl transition-shadow z-10">
                   <Target className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">3. Get Insights</h3>

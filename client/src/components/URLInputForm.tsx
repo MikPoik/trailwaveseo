@@ -173,7 +173,7 @@ const URLInputForm = ({
               </span>
               <Input
                 id="website-url"
-                className="flex-1 border-0 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
+                className="flex-1 border-0 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white"
                 placeholder="example.com"
                 {...form.register("websiteUrl")}
                 disabled={isPending || analysisState === "analyzing"}
@@ -219,7 +219,7 @@ const URLInputForm = ({
             <Button
               type="submit"
               disabled={isPending || analysisState === "analyzing"}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-xs sm:text-sm"
+              className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs sm:text-sm"
             >
               {isPending || analysisState === "analyzing" ? "Analyzing..." : "Analyze Website"}
             </Button>
