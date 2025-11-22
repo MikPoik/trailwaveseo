@@ -127,9 +127,9 @@ const Account = () => {
 
   if (isLoading || packagesLoading || creditsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 dark:border-emerald-400 mx-auto mb-4"></div>
           <p className="text-slate-600 dark:text-slate-400">Loading your account information...</p>
         </div>
       </div>
@@ -141,7 +141,7 @@ const Account = () => {
   const remainingPages = usage && !isUnlimited ? Math.max(0, usage.pageLimit - usage.pagesAnalyzed) : Infinity;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-8">
         <Header
           title="Account Overview"
@@ -149,11 +149,11 @@ const Account = () => {
         />
 
         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-6 sm:mt-8">
-          <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+          <Card className="border-0 bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Profile</CardTitle>
-                <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600 dark:text-teal-400" />
               </div>
             </CardHeader>
             <CardContent>
@@ -175,16 +175,16 @@ const Account = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+          <Card className="border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Credits</CardTitle>
-                <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+                <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-center">
-                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   {usage?.credits || 0}
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -194,16 +194,16 @@ const Account = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-gradient-to-br from-pink-500/10 to-pink-500/5 dark:from-pink-900/20 dark:to-pink-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+          <Card className="border-0 bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 dark:from-cyan-900/20 dark:to-cyan-900/10 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Account Status</CardTitle>
-                <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-pink-600 dark:text-pink-400" />
+                <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 dark:text-cyan-400" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-center">
-                <div className={`text-sm sm:text-lg font-bold ${usage?.accountStatus === "trial" ? "bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent" : "bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"}`}>
+                <div className={`text-sm sm:text-lg font-bold ${usage?.accountStatus === "trial" ? "bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent" : "bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent"}`}>
                   {getAccountStatusDisplay()}
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -241,7 +241,7 @@ const Account = () => {
         <Card className="mt-6 sm:mt-8 border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 sm:gap-3 text-xl sm:text-2xl text-slate-900 dark:text-white">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center text-white">
                 <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               Purchase Credits
@@ -257,17 +257,17 @@ const Account = () => {
                   key={pkg.id} 
                   className={`relative overflow-hidden border-0 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
                     pkg.id === 'pro' 
-                      ? "bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 ring-2 ring-purple-400/50"
+                      ? "bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 ring-2 ring-emerald-400/50"
                       : "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50"
                   }`}
                 >
                   {pkg.id === 'pro' && (
-                    <Badge className="absolute top-3 right-3 text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
+                    <Badge className="absolute top-3 right-3 text-xs bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg">
                       Popular
                     </Badge>
                   )}
                   {pkg.id === 'business' && (
-                    <Badge className="absolute top-3 right-3 text-xs bg-gradient-to-r from-orange-600 to-pink-600 text-white shadow-lg">
+                    <Badge className="absolute top-3 right-3 text-xs bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg">
                       Best Value
                     </Badge>
                   )}
@@ -275,7 +275,7 @@ const Account = () => {
                   <CardHeader className="text-center pb-3 pt-6 sm:pt-8">
                     <CardTitle className="text-lg sm:text-2xl text-slate-900 dark:text-white">{pkg.name}</CardTitle>
                     <div className="space-y-2 mt-3">
-                      <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{pkg.priceDisplay}</div>
+                      <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">{pkg.priceDisplay}</div>
                       <div className="text-sm sm:text-lg text-slate-600 dark:text-slate-400 font-medium">
                         {pkg.credits} Credits
                       </div>
@@ -310,8 +310,8 @@ const Account = () => {
                       disabled={processingPackage === pkg.id}
                       className={`w-full font-bold text-xs sm:text-sm ${
                         pkg.id === 'pro'
-                          ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
-                          : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-lg"
+                          ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg"
+                          : "bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg"
                       }`}
                     >
                       {processingPackage === pkg.id ? (

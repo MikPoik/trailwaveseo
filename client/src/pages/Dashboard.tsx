@@ -101,8 +101,8 @@ const Dashboard = () => {
                       size="sm" 
                       className={`border-2 text-xs sm:text-sm flex-1 sm:flex-none ${
                         usage.accountStatus === "trial" 
-                          ? "text-purple-600 border-purple-300 hover:bg-purple-100 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900/30" 
-                          : "text-blue-600 border-blue-300 hover:bg-blue-100 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900/30"
+                          ? "text-emerald-600 border-emerald-300 hover:bg-emerald-100 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-900/30" 
+                          : "text-teal-600 border-teal-300 hover:bg-teal-100 dark:text-teal-400 dark:border-teal-700 dark:hover:bg-teal-900/30"
                       }`}
                     >
                       <Link className="h-3 w-3 mr-1" />

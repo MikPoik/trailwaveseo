@@ -110,7 +110,7 @@ const SiteHistory = () => {
         description="Review your previous website SEO analyses" 
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
           <Card className="border-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 backdrop-blur-xl shadow-lg">
             <CardContent className="p-4 sm:p-6">
@@ -125,7 +125,7 @@ const SiteHistory = () => {
                     You haven't analyzed any websites yet. Start by analyzing a website.
                   </p>
                   <Link href="/">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                    <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white">
                       Start Analysis
                     </Button>
                   </Link>
@@ -176,7 +176,7 @@ const SiteHistory = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30 text-xs"
+                                    className="border-emerald-300 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30 text-xs"
                                   >
                                     View
                                   </Button>

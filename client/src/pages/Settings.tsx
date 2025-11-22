@@ -135,9 +135,9 @@ const Settings = () => {
           title="Settings" 
           description="Configure your SEO analysis preferences" 
         />
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 dark:border-emerald-400 mx-auto mb-4"></div>
             <p className="text-slate-600 dark:text-slate-400 text-sm">Loading settings...</p>
           </div>
         </div>
@@ -152,15 +152,15 @@ const Settings = () => {
         description="Configure your SEO analysis preferences" 
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6 md:space-y-8">
               
-              <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-900/20 dark:to-blue-900/10 backdrop-blur-xl shadow-lg">
+              <Card className="border-0 bg-gradient-to-br from-teal-500/10 to-teal-500/5 dark:from-teal-900/20 dark:to-teal-900/10 backdrop-blur-xl shadow-lg">
                 <CardContent className="pt-6 sm:pt-8">
                   <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center text-white shadow-md">
                       <Gauge className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Crawling Settings</h3>
@@ -234,10 +234,10 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-900/20 dark:to-purple-900/10 backdrop-blur-xl shadow-lg">
+              <Card className="border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-900/20 dark:to-emerald-900/10 backdrop-blur-xl shadow-lg">
                 <CardContent className="pt-6 sm:pt-8">
                   <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-lg flex items-center justify-center text-white shadow-md">
                       <Database className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Analysis Settings</h3>
