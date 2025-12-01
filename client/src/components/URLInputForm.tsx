@@ -71,34 +71,39 @@ const URLInputForm = ({
       const source = new EventSource(`/api/analyze/progress?domain=${encodeURIComponent(domain)}`);
 
       return new Promise<WebsiteAnalysis>((resolve, reject) => {
-        source.addEventListener("progress", (event: any) => {
+        // Server sends plain SSE messages without named events; use onmessage
+        source.onmessage = (event: MessageEvent) => {
           try {
             const data = JSON.parse(event.data);
-            onAnalysisUpdate(data);
-          } catch (error) {
-            console.error("Error parsing progress:", error);
-          }
-        });
+            // Update progress on every message
+            onAnalysisUpdate({
+              domain: data.domain,
+              pagesFound: data.pagesFound ?? 0,
+              pagesAnalyzed: data.pagesAnalyzed ?? 0,
+              currentPageUrl: data.currentPageUrl ?? "",
+              analyzedPages: data.analyzedPages ?? [],
+              percentage: data.percentage ?? 0,
+            });
 
-        source.addEventListener("complete", (event: any) => {
-          try {
-            source.close();
-            const result = JSON.parse(event.data);
-            resolve(result);
+            // Handle terminal states
+            if (data.status === "completed") {
+              source.close();
+              // Server includes full analysis in completion payload
+              resolve(data.analysis ?? data);
+            } else if (data.status === "error" || data.status === "cancelled") {
+              source.close();
+              reject(new Error(data.error || data.status || "Analysis failed"));
+            }
           } catch (error) {
-            reject(error);
+            console.error("Error parsing SSE message:", error);
           }
-        });
+        };
 
-        source.addEventListener("error", (event: any) => {
-          try {
-            source.close();
-            const error = JSON.parse(event.data);
-            reject(new Error(error.message || "Analysis failed"));
-          } catch {
-            reject(new Error("Analysis failed"));
-          }
-        });
+        source.onerror = () => {
+          // Network/SSE error; close and reject to surface to UI
+          try { source.close(); } catch {}
+          reject(new Error("Connection to progress stream failed"));
+        };
       });
     },
     onSuccess: (data) => {

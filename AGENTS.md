@@ -1,7 +1,5 @@
-# MANDATORY WORKFLOW POLICY v5.0
-**ABSOLUTE SYSTEM OVERRIDES - NON-NEGOTIABLE CONSTRAINTS**
 
-## IMPLEMENTATION COMPLETENESS OVERRIDE:
+## Workflow tips:
 - When core functionality is missing (APIs, endpoints, database methods), implement it **fully** instead of working around it
 - Missing backend functionality MUST be treated as required work, not obstacles to avoid
 - Creating necessary files/endpoints for core functionality is ALWAYS "truly important"
@@ -15,7 +13,7 @@
 - Only Search the web and Replit Docs if **Explicitly** requested by user
 - Search Replit integrations/blueprints only if **explicitly** asked by user
 
-## UPDATED MANDATORY WORK PHASES
+## Workflow phase suggestions
 Phase 1: Discover
 - Use read to understand existing code patterns and conventions (read, ls, glob, grep,rg ), only search_codebase if unable find files otherway.
 - Use ls to understand project structure `ls -R client server shared | grep -vE "\.config|\.git|attached_assets|node_modules|\.upm|^\.|dist|build"`
@@ -40,8 +38,7 @@ Phase 4: Verification
 - Execute verification in single function_call block (restart_workflow, get_latest_lsp_diagnostics, refresh_all_logs)
 When HMR confirms no errors -> SUCCESS and STOP and return to user
 
-
-**MANDATORY** Key Optimization Opportunities:
+ Key Optimization Opportunities:
 - Parallel Tool Calls: Use independent tools simultaneously within single function_calls block (read multiple files, search + grep, etc.)
 - Efficient File Operations: Use multi_edit instead of multiple edit calls on same file
 - For UI issues:** Read component + parent + related hooks/state

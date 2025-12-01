@@ -111,7 +111,7 @@ IMPORTANT: Base your analysis on the actual page titles, headings, and content p
       throw new Error("No content in OpenAI response");
     }
 
-    console.log("Site overview AI response:", content);
+    //console.log("Site overview AI response:", content);
     const result = JSON.parse(content);
 
     // Validate that we got meaningful results
