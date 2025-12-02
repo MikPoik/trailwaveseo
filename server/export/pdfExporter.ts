@@ -1093,9 +1093,40 @@ export async function exportAnalysisPDF(req: Request, res: Response) {
                 ? `
               <div class="suggestions-list">
                 <h4>💡 AI-Powered Suggestions</h4>
-                <ul>
-                  ${page.suggestions.map((suggestion: string) => `<li>${suggestion}</li>`).join("")}
-                </ul>
+                ${page.suggestions.map((suggestion: string) => {
+                  // Format suggestion text similar to the frontend
+                  const cleanedText = suggestion
+                    .replace(/\\"/g, '"')  // Unescape quotes
+                    .replace(/\\'/g, "'")  // Unescape single quotes
+                    .replace(/\\\\/g, '\\'); // Fix double backslashes
+                  
+                  // Split by newlines
+                  const lines = cleanedText.split(/\\n|\\n\\n|\n\n|\n/).filter((line: string) => line.trim());
+                  
+                  let formattedContent = '';
+                  lines.forEach((line: string) => {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) return;
+                    
+                    // Check if it's a numbered item
+                    const numberedMatch = trimmedLine.match(/^(\d+)\)\s*(.+)/);
+                    if (numberedMatch) {
+                      formattedContent += `<div style="margin-bottom: 12px;"><strong style="color: #2563eb;">${numberedMatch[1]}.</strong> ${numberedMatch[2]}</div>`;
+                      return;
+                    }
+                    
+                    // Check if it's a bulleted item
+                    if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+                      formattedContent += `<div style="margin-left: 20px; margin-bottom: 6px;">• ${trimmedLine.substring(1).trim()}</div>`;
+                      return;
+                    }
+                    
+                    // Regular paragraph
+                    formattedContent += `<p style="margin-bottom: 8px; line-height: 1.5;">${trimmedLine}</p>`;
+                  });
+                  
+                  return `<div style="margin-bottom: 20px; padding: 15px; background: white; border-left: 4px solid #2563eb; border-radius: 6px;">${formattedContent}</div>`;
+                }).join("")}
               </div>
             `
                 : ""

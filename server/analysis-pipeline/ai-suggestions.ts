@@ -569,7 +569,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           ],
           response_format: { type: "json_object" },
           temperature: 0.4,
-          max_completion_tokens: 3500,
+          max_completion_tokens: 10000,
         });
 
         // If we get here, the request succeeded

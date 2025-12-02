@@ -312,19 +312,70 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
               <h5 className="text-sm font-medium text-gray-900 mb-3">AI Optimization Suggestions</h5>
               <div className="space-y-3">
                 {page.suggestions && page.suggestions.length > 0 ? (
-                  page.suggestions.map((suggestion, idx) => (
-                    <div key={idx} className="flex items-start">
-                      <div className="flex-shrink-0 mt-0.5">
-                        {renderSeverityIcon(page.issues[idx]?.severity || 'info')}
+                  page.suggestions.map((suggestion, idx) => {
+                    // Parse the suggestion text to handle formatting
+                    const formatSuggestion = (text: string) => {
+                      // Clean up escaped characters
+                      let cleanedText = text
+                        .replace(/\\"/g, '"')  // Unescape quotes
+                        .replace(/\\'/g, "'")  // Unescape single quotes
+                        .replace(/\\\\/g, '\\'); // Fix double backslashes
+                      
+                      // Split by actual newlines and escaped newlines
+                      const lines = cleanedText.split(/\\n|\\n\\n|\n\n|\n/).filter(line => line.trim());
+                      
+                      return lines.map((line, i) => {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine) return null;
+                        
+                        // Check if it's a numbered item
+                        const numberedMatch = trimmedLine.match(/^(\d+)\)\s*(.+)/);
+                        if (numberedMatch) {
+                          return (
+                            <div key={i} className="flex items-start gap-2 mb-2">
+                              <span className="font-semibold text-blue-600 flex-shrink-0">{numberedMatch[1]}.</span>
+                              <span className="text-sm text-gray-700 leading-relaxed">{numberedMatch[2]}</span>
+                            </div>
+                          );
+                        }
+                        
+                        // Check if it's a bulleted item
+                        if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+                          return (
+                            <div key={i} className="flex items-start gap-2 mb-1 ml-4">
+                              <span className="text-gray-400 flex-shrink-0">•</span>
+                              <span className="text-sm text-gray-600">{trimmedLine.substring(1).trim()}</span>
+                            </div>
+                          );
+                        }
+                        
+                        // Regular paragraph
+                        return (
+                          <p key={i} className="text-sm text-gray-700 mb-2 leading-relaxed">
+                            {trimmedLine}
+                          </p>
+                        );
+                      });
+                    };
+                    
+                    return (
+                      <div key={idx} className="border-l-4 border-blue-200 pl-4 py-2 bg-blue-50/50 rounded-r">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            {renderSeverityIcon(page.issues[idx]?.severity || 'info')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h6 className="text-sm font-semibold text-gray-900 mb-2">
+                              {page.issues[idx]?.title || `Suggestion ${idx + 1}`}
+                            </h6>
+                            <div className="space-y-1">
+                              {formatSuggestion(suggestion)}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="ml-3">
-                        <h6 className="text-sm font-medium text-gray-900">
-                          {page.issues[idx]?.title || `Suggestion ${idx + 1}`}
-                        </h6>
-                        <p className="mt-1 text-sm text-gray-600">{suggestion}</p>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-sm text-green-600">
                     No issues found. This page is well optimized!

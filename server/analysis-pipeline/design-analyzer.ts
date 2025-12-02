@@ -133,7 +133,7 @@ NOTE: due to automatic screenshot capture, page'stop  navigation menu might be s
           ],
         },
       ],
-      max_completion_tokens: 2000,
+      max_completion_tokens: 3000,
       temperature: 0.3,
     });
 
