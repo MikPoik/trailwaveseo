@@ -508,15 +508,75 @@ function countPagesByArea(pages: any[], area: string): number {
  */
 function identifyMissingTopics(topicalCoverage: TopicalCoverageAnalysis): string[] {
   // Focus on competitor topics that are well-developed
-  return topicalCoverage.uniqueToCompetitor
+  const candidateTopics = topicalCoverage.uniqueToCompetitor
     .map(topic => {
       const competitorTopic = topicalCoverage.competitorTopics.find(ct => ct.topic === topic);
       return { topic, strength: competitorTopic?.strength || 0 };
     })
     .filter(item => item.strength >= 30) // Only well-developed topics
-    .sort((a, b) => b.strength - a.strength)
-    .slice(0, 10)
-    .map(item => item.topic);
+    .sort((a, b) => b.strength - a.strength);
+  
+  // Deduplicate similar topics using fuzzy matching
+  const deduplicatedTopics = deduplicateTopics(candidateTopics.map(item => item.topic));
+  
+  return deduplicatedTopics.slice(0, 10);
+}
+
+/**
+ * Deduplicate topics using similarity scoring
+ */
+function deduplicateTopics(topics: string[]): string[] {
+  if (topics.length === 0) return [];
+  
+  const deduplicated: string[] = [];
+  const seen = new Set<string>();
+  
+  for (const topic of topics) {
+    const normalized = topic.toLowerCase().trim();
+    
+    // Check if this topic is too similar to any already added
+    let isDuplicate = false;
+    for (const existing of deduplicated) {
+      const existingNormalized = existing.toLowerCase().trim();
+      
+      // Check for exact match or substring containment
+      if (normalized === existingNormalized || 
+          normalized.includes(existingNormalized) || 
+          existingNormalized.includes(normalized)) {
+        isDuplicate = true;
+        break;
+      }
+      
+      // Check for high similarity (simple word overlap)
+      const similarity = calculateTopicSimilarity(normalized, existingNormalized);
+      if (similarity > 0.7) { // 70% similarity threshold
+        isDuplicate = true;
+        break;
+      }
+    }
+    
+    if (!isDuplicate && !seen.has(normalized)) {
+      deduplicated.push(topic);
+      seen.add(normalized);
+    }
+  }
+  
+  return deduplicated;
+}
+
+/**
+ * Calculate similarity between two topics based on word overlap
+ */
+function calculateTopicSimilarity(topic1: string, topic2: string): number {
+  const words1 = new Set(topic1.split(/\s+/).filter(w => w.length > 2));
+  const words2 = new Set(topic2.split(/\s+/).filter(w => w.length > 2));
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  const intersection = new Set([...words1].filter(w => words2.has(w)));
+  const union = new Set([...words1, ...words2]);
+  
+  return intersection.size / union.size; // Jaccard similarity
 }
 
 /**

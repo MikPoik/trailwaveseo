@@ -90,7 +90,7 @@ IMPORTANT: Base your analysis on the actual page titles, headings, and content p
 
     // Make the OpenAI API call
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.1",
       messages: [
         {
           role: "system",

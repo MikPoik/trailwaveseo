@@ -96,7 +96,7 @@ Respond in JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-5.1",
       messages: [
         {
           role: "system",

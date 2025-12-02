@@ -314,12 +314,19 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     }
     
     const status = getMetricStatus(metric);
+
+    const meta = metricMeta[title] || { label: title, description: '', higherBetter: true };
+    const isLowerBetter = meta.higherBetter === false;
+    const pointsDiff = metric ? Math.round(metric.main - metric.competitor) : 0; // difference in percentage points
+    const leader = metric?.advantage === 'neutral' ? 'None' : metric?.advantage === 'main' ? 'Your Site' : 'Competitor';
+    const directionalArrow = metric?.advantage === 'neutral' ? '↔' : metric?.advantage === 'main' ? '↑' : '↓';
+    const advantageColor = leader === 'Your Site' ? 'text-green-600' : leader === 'Competitor' ? 'text-red-600' : 'text-yellow-600';
     
     return (
       <div className="space-y-2 mb-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <h4 className="font-medium">{title}</h4>
+            <h4 className="font-medium">{meta.label}</h4>
             <span className={`px-2 py-1 text-xs rounded-full ${
               getSignificanceBadge(metric?.significance)
             }`}>
@@ -328,33 +335,40 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
           </div>
           <div className="flex items-center space-x-2">
             <span className={`inline-block w-3 h-3 rounded-full ${
-              status === 'better' ? 'bg-green-500' : 
-              status === 'worse' ? 'bg-red-500' : 
-              'bg-yellow-500'
-            }`}></span>
-            <span className={`text-sm font-medium ${
-              status === 'better' ? 'text-green-600' : 
-              status === 'worse' ? 'text-red-600' : 
-              'text-yellow-600'
-            }`}>
-              {status === 'better' ? 'Better' : 
-               status === 'worse' ? 'Needs work' : 
-               'Similar'}
+              leader === 'Your Site' ? 'bg-green-500' : leader === 'Competitor' ? 'bg-red-500' : 'bg-yellow-500'
+            }`} />
+            <span className={`text-sm font-medium ${advantageColor}`}>{leader === 'None' ? 'Similar' : `${leader} leads`}</span>
+            <span className="text-xs text-muted-foreground flex items-center space-x-1" title="Difference shown in percentage points (absolute score gap)">
+              <span>{directionalArrow}</span>
+              <span>{pointsDiff > 0 ? '+' : ''}{pointsDiff} pts</span>
             </span>
-            <span className="text-xs text-muted-foreground">({(metric?.percentageDiff || 0) > 0 ? '+' : ''}{metric?.percentageDiff || 0}%)</span>
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
-            <div className="text-sm font-medium">Your Site:</div>
+            <SiteBadge type="main" label="Your Site" />
             <Progress value={metric?.main || 0} className="h-2" />
             <div className="text-sm font-medium">{Math.round(metric?.main || 0)}%</div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="text-sm font-medium">Competitor:</div>
+            <SiteBadge type="competitor" label="Competitor" />
             <Progress value={metric?.competitor || 0} className="h-2" />
             <div className="text-sm font-medium">{Math.round(metric?.competitor || 0)}%</div>
+          </div>
+        </div>
+        <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+          <div className="text-xs text-muted-foreground leading-relaxed">
+            {meta.description}
+            {isLowerBetter && (
+              <span className="ml-1 inline-flex items-center text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Lower is better</span>
+            )}
+          </div>
+          <div className="text-xs font-medium">
+            Advantage: <span className={advantageColor}>{leader === 'None' ? 'Neutral' : leader === 'Your Site' ? 'You' : 'Competitor'}</span>
+            {leader !== 'None' && (
+              <span className="ml-1 text-muted-foreground">{pointsDiff > 0 ? '+' : ''}{Math.abs(pointsDiff)} point{Math.abs(pointsDiff) === 1 ? '' : 's'}</span>
+            )}
           </div>
         </div>
       </div>
@@ -410,21 +424,27 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             </form>
           </Form>
         ) : (
-          <Tabs defaultValue="metrics">
+          <Tabs defaultValue="summary">
             <TabsList className="mb-4 grid grid-cols-2 md:grid-cols-6">
+              <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="metrics">Metrics</TabsTrigger>
               <TabsTrigger value="insights">AI Insights</TabsTrigger>
-              <TabsTrigger value="gaps">Content Gaps</TabsTrigger>
+              <TabsTrigger value="gaps">Gaps & Opportunities</TabsTrigger>
               <TabsTrigger value="strategies">Strategies</TabsTrigger>
-              <TabsTrigger value="detailed">Details</TabsTrigger>
-              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="detailed">Sample Content</TabsTrigger>
             </TabsList>
             
             <TabsContent value="metrics" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
-                <div className="font-bold">{(comparison as ComparisonResult).mainDomain}</div>
+                <div className="flex items-center space-x-2">
+                  <SiteBadge type="main" />
+                  <div className="font-bold truncate max-w-[160px]" title={(comparison as ComparisonResult).mainDomain}>{(comparison as ComparisonResult).mainDomain}</div>
+                </div>
                 <div className="text-sm text-muted-foreground">vs</div>
-                <div className="font-bold">{(comparison as ComparisonResult).competitorDomain}</div>
+                <div className="flex items-center space-x-2">
+                  <SiteBadge type="competitor" />
+                  <div className="font-bold truncate max-w-[160px]" title={(comparison as ComparisonResult).competitorDomain}>{(comparison as ComparisonResult).competitorDomain}</div>
+                </div>
               </div>
               
               {renderMetricComparison('Title Optimization', (comparison as ComparisonResult).metrics.titleOptimization)}
@@ -452,23 +472,35 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
             
             <TabsContent value="detailed" className="space-y-4">
               <div className="flex justify-between items-center mb-6">
-                <div className="font-bold">{(comparison as ComparisonResult).mainDomain}</div>
+                <div className="flex items-center space-x-2">
+                  <SiteBadge type="main" />
+                  <div className="font-bold truncate max-w-[160px]" title={(comparison as ComparisonResult).mainDomain}>{(comparison as ComparisonResult).mainDomain}</div>
+                </div>
                 <div className="text-sm text-muted-foreground">vs</div>
-                <div className="font-bold">{(comparison as ComparisonResult).competitorDomain}</div>
+                <div className="flex items-center space-x-2">
+                  <SiteBadge type="competitor" />
+                  <div className="font-bold truncate max-w-[160px]" title={(comparison as ComparisonResult).competitorDomain}>{(comparison as ComparisonResult).competitorDomain}</div>
+                </div>
               </div>
               
               {(comparison as ComparisonResult).details ? (
                 <div className="space-y-6">
                   <div className="border rounded-lg p-4 bg-card">
-                    <h3 className="text-lg font-semibold mb-2">Page Count</h3>
+                    <h3 className="text-lg font-semibold mb-2">Site Overview</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
-                        <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.main?.pages || 0}</span>
-                        <p className="text-sm text-muted-foreground mt-1">Your Site</p>
+                        <div className="flex justify-center mb-1"><SiteBadge type="main" compact /></div>
+                        <div className="space-y-1">
+                          <div><span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.main?.pages || 0}</span> <span className="text-sm text-muted-foreground">pages</span></div>
+                          <div><span className="text-xl font-semibold">{(comparison as ComparisonResult).details?.main?.images || 0}</span> <span className="text-sm text-muted-foreground">images</span></div>
+                        </div>
                       </div>
                       <div className="text-center">
-                        <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.competitor?.pages || 0}</span>
-                        <p className="text-sm text-muted-foreground mt-1">Competitor Site</p>
+                        <div className="flex justify-center mb-1"><SiteBadge type="competitor" compact /></div>
+                        <div className="space-y-1">
+                          <div><span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.competitor?.pages || 0}</span> <span className="text-sm text-muted-foreground">pages</span></div>
+                          <div><span className="text-xl font-semibold">{(comparison as ComparisonResult).details?.competitor?.images || 0}</span> <span className="text-sm text-muted-foreground">images</span></div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -478,7 +510,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <h3 className="text-lg font-semibold mb-2">Page Titles (Sample)</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Your Titles:</h4>
+                        <div className="flex items-center mb-2 space-x-2">
+                          <h4 className="text-sm font-medium">Your Titles:</h4>
+                          <SiteBadge type="main" compact />
+                        </div>
                         <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.main?.titles?.length ? 
                             (comparison as ComparisonResult).details?.main?.titles.map((title: string, i: number) => (
@@ -489,7 +524,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         </ul>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Competitor Titles:</h4>
+                        <div className="flex items-center mb-2 space-x-2">
+                          <h4 className="text-sm font-medium">Competitor Titles:</h4>
+                          <SiteBadge type="competitor" compact />
+                        </div>
                         <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.competitor?.titles?.length ? 
                             (comparison as ComparisonResult).details?.competitor?.titles.map((title: string, i: number) => (
@@ -507,7 +545,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <h3 className="text-lg font-semibold mb-2">Meta Descriptions (Sample)</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Your Descriptions:</h4>
+                        <div className="flex items-center mb-2 space-x-2">
+                          <h4 className="text-sm font-medium">Your Descriptions:</h4>
+                          <SiteBadge type="main" compact />
+                        </div>
                         <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.main?.descriptions?.length ? 
                             (comparison as ComparisonResult).details?.main?.descriptions.map((desc: string, i: number) => (
@@ -518,7 +559,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         </ul>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Competitor Descriptions:</h4>
+                        <div className="flex items-center mb-2 space-x-2">
+                          <h4 className="text-sm font-medium">Competitor Descriptions:</h4>
+                          <SiteBadge type="competitor" compact />
+                        </div>
                         <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.competitor?.descriptions?.length ? 
                             (comparison as ComparisonResult).details?.competitor?.descriptions.map((desc: string, i: number) => (
@@ -536,7 +580,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <h3 className="text-lg font-semibold mb-2">Heading Structure (Sample)</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Your Headings:</h4>
+                        <div className="flex items-center mb-2 space-x-2">
+                          <h4 className="text-sm font-medium">Your Headings:</h4>
+                          <SiteBadge type="main" compact />
+                        </div>
                         <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.main?.headings?.length ? 
                             (comparison as ComparisonResult).details?.main?.headings.map((heading: string, i: number) => (
@@ -547,7 +594,10 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                         </ul>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Competitor Headings:</h4>
+                        <div className="flex items-center mb-2 space-x-2">
+                          <h4 className="text-sm font-medium">Competitor Headings:</h4>
+                          <SiteBadge type="competitor" compact />
+                        </div>
                         <ul className="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                           {(comparison as ComparisonResult).details?.competitor?.headings?.length ? 
                             (comparison as ComparisonResult).details?.competitor?.headings.map((heading: string, i: number) => (
@@ -565,12 +615,14 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <h3 className="text-lg font-semibold mb-2">Image Count</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
+                        <div className="flex justify-center mb-1"><SiteBadge type="main" compact /></div>
                         <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.main?.images || 0}</span>
-                        <p className="text-sm text-muted-foreground mt-1">Your Site</p>
+                        <p className="text-sm text-muted-foreground mt-1">Images</p>
                       </div>
                       <div className="text-center">
+                        <div className="flex justify-center mb-1"><SiteBadge type="competitor" compact /></div>
                         <span className="text-2xl font-bold">{(comparison as ComparisonResult).details?.competitor?.images || 0}</span>
-                        <p className="text-sm text-muted-foreground mt-1">Competitor Site</p>
+                        <p className="text-sm text-muted-foreground mt-1">Images</p>
                       </div>
                     </div>
                   </div>
@@ -808,11 +860,17 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div>
-                            <h5 className="font-medium text-sm mb-2">Your Approach:</h5>
+                            <div className="flex items-center mb-2 space-x-2">
+                              <h5 className="font-medium text-sm">Your Approach:</h5>
+                              <SiteBadge type="main" compact />
+                            </div>
                             <p className="text-sm text-muted-foreground bg-blue-50 p-3 rounded">{typedStrategy.mainApproach}</p>
                           </div>
                           <div>
-                            <h5 className="font-medium text-sm mb-2">Competitor's Approach:</h5>
+                            <div className="flex items-center mb-2 space-x-2">
+                              <h5 className="font-medium text-sm">Competitor's Approach:</h5>
+                              <SiteBadge type="competitor" compact />
+                            </div>
                             <p className="text-sm text-muted-foreground bg-orange-50 p-3 rounded">{typedStrategy.competitorApproach}</p>
                           </div>
                         </div>
@@ -880,6 +938,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg text-green-700">Your Strengths</CardTitle>
+                        <div><SiteBadge type="main" compact /></div>
                       </CardHeader>
                       <CardContent>
                         {comparison?.competitiveSummary?.strengthAreas && comparison.competitiveSummary.strengthAreas.length > 0 ? (
@@ -900,6 +959,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg text-red-700">Areas for Improvement</CardTitle>
+                        <div><SiteBadge type="main" compact /></div>
                       </CardHeader>
                       <CardContent>
                         {comparison?.competitiveSummary?.weaknessAreas && comparison.competitiveSummary.weaknessAreas.length > 0 ? (
@@ -923,12 +983,13 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg text-blue-700">Quick Wins</CardTitle>
+                        <div><SiteBadge type="main" compact /></div>
                         <CardDescription>Easy improvements you can make right away</CardDescription>
                       </CardHeader>
                       <CardContent>
                         {comparison?.competitiveSummary?.quickWins && comparison.competitiveSummary.quickWins.length > 0 ? (
                           <ul className="space-y-2">
-                            {(comparison as ComparisonResult).competitiveSummary?.quickWins.map((win: string, index: number) => (
+                            {deduplicateRecommendations(comparison.competitiveSummary.quickWins).map((win: string, index: number) => (
                               <li key={index} className="flex items-start text-sm">
                                 <ChevronRight className="h-4 w-4 text-blue-500 mr-2 mt-0.5 shrink-0" />
                                 <span>{win}</span>
@@ -944,6 +1005,7 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg text-purple-700">Long-term Opportunities</CardTitle>
+                        <div className="flex items-center space-x-2"><SiteBadge type="competitor" compact /><span className="text-xs text-muted-foreground">Based on competitor topical advantage</span></div>
                         <CardDescription>Strategic improvements for sustained advantage</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -983,5 +1045,115 @@ const CompetitorAnalysis = ({ mainAnalysis }: CompetitorAnalysisProps) => {
     </Card>
   );
 };
+
+// Metric metadata for improved display
+const metricMeta: Record<string, { label: string; description: string; higherBetter: boolean }> = {
+  'Title Optimization': {
+    label: 'Title Optimization',
+    description: 'Quality and uniqueness of page titles with keyword & brand usage.',
+    higherBetter: true
+  },
+  'Meta Description': {
+    label: 'Meta Description',
+    description: 'Compelling, unique descriptions of optimal length and with CTAs.',
+    higherBetter: true
+  },
+  'Heading Structure': {
+    label: 'Heading Structure',
+    description: 'Proper hierarchy, single H1, balanced heading distribution.',
+    higherBetter: true
+  },
+  'Image Optimization': {
+    label: 'Image Optimization',
+    description: 'Alt text coverage and compression/format indicators.',
+    higherBetter: true
+  },
+  'Critical Issues': {
+    label: 'Critical Issues',
+    description: 'Presence of blocking technical/SEO problems (broken links, duplicates).',
+    higherBetter: false
+  },
+  'Technical SEO': {
+    label: 'Technical SEO',
+    description: 'Speed, mobile optimization, structured data, clean URLs, SSL usage.',
+    higherBetter: true
+  },
+  'Content Quality': {
+    label: 'Content Quality',
+    description: 'Depth, readability, structure, and optimization of page content.',
+    higherBetter: true
+  }
+};
+
+// Reusable site badge component (local to this file for now)
+interface SiteBadgeProps {
+  type: 'main' | 'competitor';
+  label?: string;
+  compact?: boolean;
+}
+
+const SiteBadge: React.FC<SiteBadgeProps> = ({ type, label, compact }) => {
+  const styles = type === 'main'
+    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+    : 'bg-orange-50 text-orange-700 border border-orange-200';
+  const text = label || (type === 'main' ? 'Your Site' : 'Competitor');
+  return (
+    <span className={`inline-flex items-center rounded-full ${compact ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-xs font-medium'} ${styles}`}>{text}</span>
+  );
+};
+
+/**
+ * Deduplicate recommendations by removing near-duplicates
+ */
+function deduplicateRecommendations(recommendations: string[]): string[] {
+  if (!recommendations || recommendations.length === 0) return [];
+  
+  const deduplicated: string[] = [];
+  const seen = new Set<string>();
+  
+  for (const rec of recommendations) {
+    const normalized = rec.toLowerCase().trim();
+    
+    // Check for exact duplicates
+    if (seen.has(normalized)) continue;
+    
+    // Check for substantial similarity with existing recommendations
+    let isDuplicate = false;
+    for (const existing of deduplicated) {
+      const existingNormalized = existing.toLowerCase().trim();
+      
+      // Check if one is a substring of the other
+      if (normalized.includes(existingNormalized) || existingNormalized.includes(normalized)) {
+        // Keep the longer, more detailed one
+        if (rec.length > existing.length) {
+          const idx = deduplicated.indexOf(existing);
+          deduplicated[idx] = rec;
+          seen.delete(existing.toLowerCase().trim());
+          seen.add(normalized);
+        }
+        isDuplicate = true;
+        break;
+      }
+      
+      // Check for high word overlap (simple similarity)
+      const words1 = new Set(normalized.split(/\s+/).filter(w => w.length > 3));
+      const words2 = new Set(existingNormalized.split(/\s+/).filter(w => w.length > 3));
+      const intersection = new Set([...words1].filter(w => words2.has(w)));
+      const similarity = words1.size > 0 ? intersection.size / Math.min(words1.size, words2.size) : 0;
+      
+      if (similarity > 0.6) { // 60% word overlap threshold
+        isDuplicate = true;
+        break;
+      }
+    }
+    
+    if (!isDuplicate) {
+      deduplicated.push(rec);
+      seen.add(normalized);
+    }
+  }
+  
+  return deduplicated;
+}
 
 export default CompetitorAnalysis;

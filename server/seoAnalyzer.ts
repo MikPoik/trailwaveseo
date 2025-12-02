@@ -20,7 +20,7 @@ async function calculateReadabilityScore(text: string, language?: string): Promi
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-5.1",
       messages: [
         {
           role: "system",

@@ -34,7 +34,7 @@ export interface QualityAnalysisOptions {
 }
 
 export const DEFAULT_QUALITY_OPTIONS: QualityAnalysisOptions = {
-  model: "gpt-4.1-mini",
+  model: "gpt-5.1",
   temperature: 0.2,
   maxTokensPerRequest: 2500,
   batchSize: 10,

@@ -127,7 +127,7 @@ Please respond with a JSON object in the following format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
+      model: "gpt-5.1", // the newest OpenAI model is "gpt-4.1" which was released on 14.4.2025. do not change this unless explicitly requested by the user
       messages: [
         { 
           role: "system", 

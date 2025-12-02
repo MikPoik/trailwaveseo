@@ -34,7 +34,7 @@ export async function generateContextualInsights(
     const prompt = createInsightGenerationPrompt(competitiveIntelligence);
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-5.1",
       messages: [
         {
           role: "system",
@@ -55,7 +55,7 @@ export async function generateContextualInsights(
       ],
       response_format: { type: "json_object" },
       temperature: 0.3,
-      max_tokens: Math.min(maxTokens, 2000)
+      max_completion_tokens: Math.min(maxTokens, 2000)
     });
 
     const content = response.choices[0].message.content;

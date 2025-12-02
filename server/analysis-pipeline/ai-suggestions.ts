@@ -558,7 +558,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
         console.log(`Attempt ${attempt}/${maxRetries} for ${url}`);
 
         response = await openai.chat.completions.create({
-          model: "gpt-4.1",
+          model: "gpt-5.1",
           messages: [
             {
               role: "system",

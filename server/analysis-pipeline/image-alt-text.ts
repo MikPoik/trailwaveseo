@@ -77,7 +77,7 @@ Main headings: ${pageContext.headings?.slice(0, 3).map(h => h.text).join(', ') |
 `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Use vision-capable model
+      model: "gpt-4.1-mini", // Use vision-capable model
       messages: [
         {
           role: "user",

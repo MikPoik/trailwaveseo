@@ -191,7 +191,7 @@ Respond in JSON format:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-5.1",
       messages: [
         {
           role: "system",
@@ -288,7 +288,7 @@ Respond in JSON format:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1", 
+      model: "gpt-5.1", 
       messages: [
         {
           role: "system",
@@ -333,7 +333,7 @@ async function analyzeContentQualityScores(pages: Array<any>, openai: OpenAI) {
       'titles',
       openai,
       {
-        model: "gpt-4.1-mini",
+        model: "gpt-5.1-mini",
         temperature: 0.2,
         maxTokensPerRequest: 2000,
         batchSize: 6,

@@ -202,32 +202,29 @@ function describeContentApproach(profile: ContentProfile): string {
   const approaches: string[] = [];
   
   // Content depth approach
-  approaches.push(`${profile.contentDepth} content approach`);
+  approaches.push(`${profile.contentDepth} content`);
   
   // Content type focus
   const dominantType = Object.entries(profile.contentTypes)
     .sort(([,a], [,b]) => b - a)[0];
   
   if (dominantType && dominantType[1] > 0) {
-    approaches.push(`focus on ${dominantType[0].replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+    const typeLabel = dominantType[0].replace(/([A-Z])/g, ' $1').toLowerCase().replace('pages', '').trim();
+    approaches.push(`${typeLabel}-focused`);
   }
   
   // Media strategy
   if (profile.mediaRichness >= 2) {
-    approaches.push('media-rich content');
-  } else if (profile.mediaRichness >= 1) {
-    approaches.push('moderate media usage');
-  } else {
-    approaches.push('text-focused content');
+    approaches.push('media-rich');
+  } else if (profile.mediaRichness < 0.5) {
+    approaches.push('text-only');
   }
   
   // Topical diversity
   if (profile.topicalDiversity >= 20) {
-    approaches.push('broad topical coverage');
-  } else if (profile.topicalDiversity >= 10) {
-    approaches.push('focused topical strategy');
-  } else {
-    approaches.push('narrow topic focus');
+    approaches.push('broad topics');
+  } else if (profile.topicalDiversity < 10) {
+    approaches.push('narrow focus');
   }
   
   return approaches.join(', ');
@@ -389,29 +386,25 @@ function describeKeywordApproach(strategy: KeywordStrategyProfile): string {
   
   // Long-tail strategy
   if (strategy.longTailPercentage >= 60) {
-    approaches.push('long-tail keyword focus');
-  } else if (strategy.longTailPercentage >= 30) {
-    approaches.push('balanced short and long-tail keywords');
+    approaches.push('long-tail focus');
+  } else if (strategy.longTailPercentage < 30) {
+    approaches.push('short-tail focus');
   } else {
-    approaches.push('short-tail keyword focus');
+    approaches.push('balanced keywords');
   }
   
   // Keyword density approach
   if (strategy.averageDensity >= 2.5) {
-    approaches.push('aggressive keyword targeting');
-  } else if (strategy.averageDensity >= 1) {
-    approaches.push('moderate keyword optimization');
-  } else {
-    approaches.push('light keyword usage');
+    approaches.push('high density');
+  } else if (strategy.averageDensity < 1) {
+    approaches.push('light usage');
   }
   
   // Consistency approach
   if (strategy.consistencyScore >= 70) {
-    approaches.push('highly consistent keyword targeting');
-  } else if (strategy.consistencyScore >= 40) {
-    approaches.push('moderate keyword consistency');
-  } else {
-    approaches.push('diverse page-specific targeting');
+    approaches.push('consistent targeting');
+  } else if (strategy.consistencyScore < 40) {
+    approaches.push('diverse targeting');
   }
   
   return approaches.join(', ');
@@ -579,14 +572,14 @@ function isCleanUrl(url: string): boolean {
 function describeTechnicalApproach(profile: TechnicalProfile): string {
   const approaches: string[] = [];
   
-  if (profile.httpsPercentage >= 95) approaches.push('secure HTTPS implementation');
-  if (profile.mobileOptimizationRate >= 80) approaches.push('mobile-first optimization');
-  if (profile.averageLoadTime <= 3) approaches.push('performance-optimized');
-  if (profile.structuredDataUsage >= 50) approaches.push('structured data strategy');
-  if (profile.cleanUrlPercentage >= 80) approaches.push('clean URL architecture');
-  if (profile.imageOptimizationRate >= 70) approaches.push('optimized media strategy');
+  if (profile.httpsPercentage >= 95) approaches.push('HTTPS');
+  if (profile.mobileOptimizationRate >= 80) approaches.push('mobile-first');
+  if (profile.averageLoadTime <= 3) approaches.push('fast');
+  if (profile.structuredDataUsage >= 50) approaches.push('structured data');
+  if (profile.cleanUrlPercentage >= 80) approaches.push('clean URLs');
+  if (profile.imageOptimizationRate >= 70) approaches.push('optimized media');
   
-  return approaches.length > 0 ? approaches.join(', ') : 'basic technical implementation';
+  return approaches.length > 0 ? approaches.join(', ') : 'basic setup';
 }
 
 /**
@@ -764,30 +757,24 @@ function describeUXApproach(profile: UXProfile): string {
   const approaches: string[] = [];
   
   if (profile.readabilityScore >= 80) {
-    approaches.push('high readability focus');
-  } else if (profile.readabilityScore >= 60) {
-    approaches.push('moderate readability optimization');
-  } else {
-    approaches.push('basic content presentation');
+    approaches.push('high readability');
+  } else if (profile.readabilityScore < 60) {
+    approaches.push('basic presentation');
   }
   
   if (profile.averageInternalLinks >= 5) {
-    approaches.push('strong internal linking');
-  } else if (profile.averageInternalLinks >= 2) {
-    approaches.push('moderate internal linking');
-  } else {
-    approaches.push('minimal internal linking');
+    approaches.push('strong linking');
+  } else if (profile.averageInternalLinks < 2) {
+    approaches.push('minimal links');
   }
   
   if (profile.contentStructureScore >= 80) {
-    approaches.push('well-structured content');
-  } else if (profile.contentStructureScore >= 50) {
-    approaches.push('moderately structured content');
-  } else {
-    approaches.push('basic content structure');
+    approaches.push('well-structured');
+  } else if (profile.contentStructureScore < 50) {
+    approaches.push('basic structure');
   }
   
-  return approaches.join(', ');
+  return approaches.length > 0 ? approaches.join(', ') : 'standard UX';
 }
 
 /**

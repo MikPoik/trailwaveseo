@@ -117,7 +117,7 @@ Please analyze this webpage screenshot and provide detailed design recommendatio
 NOTE: due to automatic screenshot capture, page'stop  navigation menu might be showing in wrong position. Respond as the navigation menu is correctly placed on the page. Ignore possible Cookie consent banners or other temporary elements.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-5.1",
       messages: [
         {
           role: "user",
@@ -133,7 +133,7 @@ NOTE: due to automatic screenshot capture, page'stop  navigation menu might be s
           ],
         },
       ],
-      max_tokens: 2000,
+      max_completion_tokens: 2000,
       temperature: 0.3,
     });
 
