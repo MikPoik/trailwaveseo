@@ -37,7 +37,7 @@ export const route: RouteDefinition = {
 
 const Pricing = () => {
   const handleGetStarted = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/handler/sign-in";
   };
 
   return (

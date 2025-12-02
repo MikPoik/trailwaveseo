@@ -1,5 +1,9 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
+import { StackProvider, StackHandler, StackTheme } from '@stackframe/react';
+import { stackClientApp } from '@/lib/stack';
+import { ClientOnly } from "@/components/ClientOnly";
+import { Suspense } from "react";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
@@ -49,10 +53,22 @@ function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   );
 }
 
+function HandlerRoutes() {
+  const [location] = useLocation();
+  // Pass the full location path to StackHandler
+  return <StackHandler app={stackClientApp} fullPage />;
+}
+
 function AppRoutes() {
   return (
     <div className="min-h-screen">
-      <Switch>
+      <Suspense fallback={<div className="p-8 flex justify-center items-center">Loading...</div>}>
+        <Switch>
+        <Route path="/handler/sign-in" component={HandlerRoutes} />
+        <Route path="/handler/sign-up" component={HandlerRoutes} />
+        <Route path="/handler/forgot-password" component={HandlerRoutes} />
+        <Route path="/handler/account-settings" component={HandlerRoutes} />
+        <Route path="/handler/verify-email" component={HandlerRoutes} />
         <Route path="/" component={Landing} />
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/pricing" component={Pricing} />
@@ -97,16 +113,21 @@ function AppRoutes() {
         </Route>
         <Route component={NotFound} />
       </Switch>
+      </Suspense>
     </div>
   );
 }
 
 function App() {
   return (
-    <>
-      <AppRoutes />
-      <Toaster />
-    </>
+      <ClientOnly fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <StackProvider app={stackClientApp}>
+      <StackTheme>
+        <AppRoutes />
+        <Toaster />
+      </StackTheme>
+    </StackProvider>
+      </ClientOnly>
   );
 }
 

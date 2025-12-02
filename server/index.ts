@@ -55,6 +55,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware to extract Neon Auth user ID from Stack Auth headers
+app.use((req, res, next) => {
+  const userId = req.headers['x-stack-user-id'] as string;
+  if (userId) {
+    (req as any).neonUser = { id: userId };
+  }
+  next();
+});
+
 (async () => {
   const server = await registerRoutes(app);
 

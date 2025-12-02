@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { isAuthenticated } from "../replitAuth";
+import { requireAuth } from "../neonAuth";
 
 export function registerAnalysisManagementRoutes(app: Express) {
   // Get analysis history
-  app.get("/api/analysis/history", isAuthenticated, async (req: any, res) => {
+  app.get("/api/analysis/history", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       console.log('Fetching analysis history for user:', userId);
       const history = await storage.getAnalysisHistory(userId);
       console.log('Analysis history retrieved:', history.length, 'analyses');
@@ -20,9 +20,9 @@ export function registerAnalysisManagementRoutes(app: Express) {
   // Get recent analyses (for sidebar)
   app.get("/api/analysis/recent", async (req: any, res) => {
     try {
-      // Only return analyses if user is authenticated
-      if (req.isAuthenticated()) {
-        const userId = req.user.claims.sub;
+      // Only return analyses if user has Neon Auth ID
+      const userId = req.neonUser?.id;
+      if (userId) {
         const recentAnalyses = await storage.getRecentAnalyses(5, userId);
         res.json(recentAnalyses);
       } else {
@@ -35,9 +35,9 @@ export function registerAnalysisManagementRoutes(app: Express) {
   });
 
   // Get specific analysis by ID
-  app.get("/api/analysis/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/analysis/:id", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
@@ -61,9 +61,9 @@ export function registerAnalysisManagementRoutes(app: Express) {
   });
 
   // Delete analysis by ID
-  app.delete("/api/analysis/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/analysis/:id", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });

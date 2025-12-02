@@ -6,7 +6,7 @@ import { generateSeoSuggestions } from "../analysis-pipeline/ai-suggestions";
 import { generateCompetitorInsights } from "../analysis-pipeline/competitor-insights";
 import { analyzeCompetitor } from "../competitive-analysis/competitive-analyzer";
 import OpenAI from "openai";
-import { isAuthenticated } from "../replitAuth";
+import { requireAuth } from "../neonAuth";
 import { analysisEvents, apiLimiter } from "./index";
 import { exportAnalysisPDF } from "../export/pdfExporter.js";
 import { exportAnalysisCSV } from "../export/csvExporter.js";
@@ -69,15 +69,15 @@ function generateBasicCompetitorRecommendations(metrics: any): string[] {
 
 export function registerAnalysisFeaturesRoutes(app: Express) {
   // Export analysis as PDF
-  app.get("/api/analysis/:id/export/pdf", isAuthenticated, exportAnalysisPDF);
+  app.get("/api/analysis/:id/export/pdf", requireAuth, exportAnalysisPDF);
 
   // Export analysis as CSV
-  app.get("/api/analysis/:id/export/csv", isAuthenticated, exportAnalysisCSV);
+  app.get("/api/analysis/:id/export/csv", requireAuth, exportAnalysisCSV);
 
   // Export analysis as JSON
-  app.get("/api/analysis/:id/export/json", isAuthenticated, async (req: any, res) => {
+  app.get("/api/analysis/:id/export/json", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid analysis ID" });
@@ -119,8 +119,8 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
       try {
         // Check if user is authenticated and get their usage
         let userId: string | undefined;
-        if (req.isAuthenticated && req.isAuthenticated()) {
-          userId = (req.user as any).claims.sub;
+        userId = (req as any).neonUser?.id;
+        if (userId) {
           const usage = await storage.getUserUsage(userId!);
           if (usage && usage.pageLimit !== -1 && usage.pagesAnalyzed >= usage.pageLimit) {
             return res.status(403).json({ 
@@ -281,9 +281,9 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
   });
 
   // Save competitor analysis to an existing analysis
-  app.post("/api/analysis/:id/save-competitor", isAuthenticated, async (req: any, res) => {
+  app.post("/api/analysis/:id/save-competitor", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const analysisId = parseInt(req.params.id);
       const competitorData = req.body;
 
@@ -331,9 +331,9 @@ export function registerAnalysisFeaturesRoutes(app: Express) {
   // and available in the unified content quality analysis
 
   // Reanalyze a single page from an existing analysis
-  app.post("/api/analysis/:id/reanalyze-page", isAuthenticated, async (req: any, res) => {
+  app.post("/api/analysis/:id/reanalyze-page", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const analysisId = parseInt(req.params.id);
       const { pageUrl } = req.body;
 

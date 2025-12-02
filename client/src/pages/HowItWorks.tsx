@@ -39,7 +39,7 @@ export const route: RouteDefinition = {
 
 const HowItWorks = () => {
   const handleStartAnalysis = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/handler/sign-in";
   };
 
   return (

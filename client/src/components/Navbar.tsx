@@ -14,7 +14,7 @@ const Navbar = ({ onGetStarted, showGetStarted = true }: NavbarProps) => {
   const { isAuthenticated, user, logout } = useAuth();
 
   const defaultGetStarted = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/handler/sign-in";
   };
 
   const handleGetStarted = onGetStarted || defaultGetStarted;

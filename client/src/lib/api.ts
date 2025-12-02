@@ -1,5 +1,20 @@
 import { apiRequest } from './queryClient';
 import type { AnalyzeRequestBody, WebsiteAnalysis, SettingsData } from './types';
+import { stackClientApp } from './stack';
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const user = await stackClientApp.getUser();
+    if (user) {
+      return {
+        'x-stack-user-id': user.id,
+      };
+    }
+  } catch (error) {
+    // User not authenticated
+  }
+  return {};
+}
 
 // Analysis related API functions
 export async function analyzeWebsite(data: AnalyzeRequestBody): Promise<Response> {
@@ -77,10 +92,12 @@ export async function saveCompetitorAnalysis(analysisId: number, competitorData:
 }
 
 export const runContentDuplicationAnalysis = async (analysisId: number) => {
+  const authHeaders = await getAuthHeaders();
   const response = await fetch(`/api/analysis/${analysisId}/content-duplication`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
     },
   });
 
@@ -93,10 +110,12 @@ export const runContentDuplicationAnalysis = async (analysisId: number) => {
 };
 
 export const reanalyzePage = async (analysisId: number, pageUrl: string) => {
+  const authHeaders = await getAuthHeaders();
   const response = await fetch(`/api/analysis/${analysisId}/reanalyze-page`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
     },
     body: JSON.stringify({ pageUrl }),
   });

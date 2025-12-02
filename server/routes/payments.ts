@@ -43,11 +43,10 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
   // Create Stripe checkout session for credit purchase
   app.post("/api/payments/create-checkout-session", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
+      const userId = (req as any).neonUser?.id;
+      if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-
-      const userId = (req.user as any).claims.sub;
       const validation = createCheckoutSessionSchema.safeParse(req.body);
       
       if (!validation.success) {
@@ -174,11 +173,10 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
   // Legacy endpoint - now redirects to checkout
   app.post("/api/payments/create-intent", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
+      const userId = (req as any).neonUser?.id;
+      if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-
-      const userId = (req.user as any).claims.sub;
       const validation = createCheckoutSessionSchema.safeParse(req.body);
       
       if (!validation.success) {
@@ -259,11 +257,10 @@ export async function registerPaymentRoutes(app: Express): Promise<void> {
   // Get user's credit balance
   app.get("/api/payments/credits", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
+      const userId = (req as any).neonUser?.id;
+      if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-
-      const userId = (req.user as any).claims.sub;
       const usage = await storage.getUserUsage(userId);
       
       if (!usage) {

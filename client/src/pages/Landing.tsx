@@ -36,7 +36,7 @@ export const route: RouteDefinition = {
 const Landing = () => {
   const handleStartAnalysis = () => {
     // Redirect to login endpoint which will handle authentication
-    window.location.href = "/api/login";
+    window.location.href = "/handler/sign-in";
   };
 
   return (

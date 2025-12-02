@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { EventEmitter } from "events";
-import { setupAuth } from "../replitAuth";
 
 // Import route modules
 import { registerAuthRoutes } from "./auth";
@@ -33,9 +32,6 @@ export const crawlLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up Replit Auth
-  await setupAuth(app);
-
   // Basic rate limiting for all API routes (skip in development)
   if (process.env.NODE_ENV !== 'development') {
     app.use("/api", apiLimiter);

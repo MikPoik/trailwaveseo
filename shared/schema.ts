@@ -1,6 +1,19 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, index, pgSchema } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Reference to Neon Auth's managed schema
+export const neonAuthSchema = pgSchema("neon_auth");
+
+export const neonAuthUsers = neonAuthSchema.table("users_sync", {
+  id: text("id").primaryKey(),
+  rawJson: jsonb("raw_json"),
+  name: text("name"),
+  email: text("email"),
+  createdAt: timestamp("created_at"),
+  deletedAt: timestamp("deleted_at"),
+  updatedAt: timestamp("updated_at"),
+});
 
 // Session storage table for Replit Auth
 export const sessions = pgTable(

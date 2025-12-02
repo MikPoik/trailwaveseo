@@ -2,16 +2,16 @@ import type { Express } from "express";
 import { storage } from "../storage";
 import { cancelAnalysis } from "../seoAnalyzer";
 import { orchestrateAnalysis } from "../analysis-pipeline/analysis-orchestrator";
-import { isAuthenticated } from "../replitAuth";
+import { requireAuth } from "../neonAuth";
 import { analysisEvents, crawlLimiter } from "./index";
 import { analyzeRequestSchema } from "./schemas";
 import { z } from "zod";
 
 export function registerAnalysisRoutes(app: Express) {
   // Analyze website endpoint
-  app.post("/api/analyze", isAuthenticated, process.env.NODE_ENV !== 'development' ? crawlLimiter : (req: any, res: any, next: any) => next(), async (req: any, res) => {
+  app.post("/api/analyze", requireAuth, process.env.NODE_ENV !== 'development' ? crawlLimiter : (req: any, res: any, next: any) => next(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const { domain, useSitemap, additionalInfo } = analyzeRequestSchema.parse(req.body);
 
       // Check user's usage limits before starting analysis

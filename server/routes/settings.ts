@@ -1,14 +1,14 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { isAuthenticated } from "../replitAuth";
+import { requireAuth } from "../neonAuth";
 import { z } from "zod";
 import { flexibleSettingsSchema } from "./schemas";
 
 export function registerSettingsRoutes(app: Express) {
   // Default settings endpoint
-  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
+  app.get("/api/settings", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const settings = await storage.getSettings(userId);
       res.json(settings);
     } catch (error) {
@@ -17,9 +17,9 @@ export function registerSettingsRoutes(app: Express) {
   });
 
   // Update settings endpoint
-  app.post("/api/settings", isAuthenticated, async (req: any, res) => {
+  app.post("/api/settings", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       console.log("Updating settings for user:", userId);
       console.log("Settings payload:", JSON.stringify(req.body));
 

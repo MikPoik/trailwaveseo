@@ -1,13 +1,13 @@
 import type { Express } from 'express';
 import { storage } from '../storage.js';
-import { isAuthenticated } from '../replitAuth.js';
+import { requireAuth } from '../neonAuth.js';
 import { deductChatCredits } from '../analysis-pipeline/quota-manager.js';
 
 export function registerContentConversationRoutes(app: Express) {
   // Get conversation history for a specific page
-  app.get('/api/content-conversations/:analysisId/:pageUrl', isAuthenticated, async (req: any, res) => {
+  app.get('/api/content-conversations/:analysisId/:pageUrl', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const analysisId = parseInt(req.params.analysisId);
       const pageUrl = decodeURIComponent(req.params.pageUrl);
 
@@ -37,9 +37,9 @@ export function registerContentConversationRoutes(app: Express) {
   });
 
   // Send a message and get AI response
-  app.post('/api/content-conversations/:analysisId/:pageUrl/message', isAuthenticated, async (req: any, res) => {
+  app.post('/api/content-conversations/:analysisId/:pageUrl/message', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const analysisId = parseInt(req.params.analysisId);
       const pageUrl = decodeURIComponent(req.params.pageUrl);
       const { message, freshContent } = req.body;
@@ -112,9 +112,9 @@ export function registerContentConversationRoutes(app: Express) {
   });
 
   // Dynamic content fetching endpoint
-  app.post('/api/content-conversations/:analysisId/:pageUrl/fetch-content', isAuthenticated, async (req: any, res) => {
+  app.post('/api/content-conversations/:analysisId/:pageUrl/fetch-content', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.neonUser.id;
       const analysisId = parseInt(req.params.analysisId);
       const pageUrl = decodeURIComponent(req.params.pageUrl);
 
