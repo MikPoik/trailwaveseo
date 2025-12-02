@@ -311,7 +311,7 @@ const PageAnalysisCard = ({ page, analysisId, onReanalyze }: PageAnalysisCardPro
               
               <h5 className="text-sm font-medium text-gray-900 mb-3">AI Optimization Suggestions</h5>
               <div className="space-y-3">
-                {page.suggestions.length > 0 ? (
+                {page.suggestions && page.suggestions.length > 0 ? (
                   page.suggestions.map((suggestion, idx) => (
                     <div key={idx} className="flex items-start">
                       <div className="flex-shrink-0 mt-0.5">
