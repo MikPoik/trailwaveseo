@@ -333,7 +333,7 @@ async function analyzeContentQualityScores(pages: Array<any>, openai: OpenAI) {
       'titles',
       openai,
       {
-        model: "gpt-5.1-mini",
+        model: "gpt-5.1",
         temperature: 0.2,
         maxTokensPerRequest: 2000,
         batchSize: 6,

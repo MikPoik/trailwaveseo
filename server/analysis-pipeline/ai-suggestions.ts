@@ -504,7 +504,7 @@ ADDITIONAL BUSINESS CONTEXT: ${additionalInfo}
 `
       : "";
 
-    const prompt = `Analyze this webpage and provide 8-12 specific SEO improvements focused on content optimization.
+    const prompt = `Analyze this webpage and provide 8-10 specific SEO improvements focused on content optimization.
 
 PAGE: ${url}
 Title: "${pageData.title || "MISSING"}" (${pageData.title?.length || 0} chars)
@@ -569,7 +569,7 @@ Respond in JSON: {"suggestions": ["suggestion 1", "suggestion 2", ...]}`;
           ],
           response_format: { type: "json_object" },
           temperature: 0.4,
-          max_completion_tokens: 2000,
+          max_completion_tokens: 3500,
         });
 
         // If we get here, the request succeeded
