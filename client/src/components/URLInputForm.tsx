@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { AnalysisState, WebsiteAnalysis } from "@/lib/types";
 import { useAuth } from "../hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
+import { trackAnalysis, trackAnalysisComplete } from "@/lib/analytics";
 
 interface URLInputFormProps {
   onAnalyzeStart: (domain: string, useSitemap: boolean) => void;
@@ -67,6 +68,9 @@ const URLInputForm = ({
       const useSitemap = data.crawlMethod === "sitemap";
 
       onAnalyzeStart(domain, useSitemap);
+      
+      // Track analysis start
+      trackAnalysis(domain);
 
       const source = new EventSource(`/api/analyze/progress?domain=${encodeURIComponent(domain)}`);
 
@@ -108,6 +112,8 @@ const URLInputForm = ({
     },
     onSuccess: (data) => {
       onAnalysisComplete(data);
+      // Track analysis completion
+      trackAnalysisComplete(data.domain, data.pages?.length || 0);
     },
     onError: (error: any) => {
       if (error.status === 403) {

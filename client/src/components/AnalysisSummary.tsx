@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { exportAnalysisCSV } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { trackExport } from "@/lib/analytics";
 
 // Import modular tab components
 import OverviewTab from "./analysis-tabs/OverviewTab";
@@ -91,6 +92,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis, onReanalyzePage }: AnalysisS
         title: "CSV Export",
         description: "Analysis exported as CSV successfully"
       });
+      
+      // Track export
+      trackExport('csv');
     } catch (error) {
       console.error('Error exporting CSV:', error instanceof Error ? error.message : String(error));
       toast({
@@ -142,6 +146,9 @@ const AnalysisSummary = ({ analysis, onNewAnalysis, onReanalyzePage }: AnalysisS
         title: "PDF Export",
         description: "Analysis exported as PDF successfully"
       });
+      
+      // Track export
+      trackExport('pdf');
     } catch (error) {
       toast({
         title: "Export Failed",

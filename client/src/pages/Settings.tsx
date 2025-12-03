@@ -12,9 +12,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Zap, Link2, Gauge, Database } from "lucide-react";
+import { Zap, Link2, Gauge, Database, Cookie } from "lucide-react";
 import type { RouteDefinition } from "@shared/route-metadata";
 import { updateMetadata } from "@/lib/updateMetadata";
+import { initGA, cleanupGA } from "@/lib/analytics";
 
 export const route: RouteDefinition = {
   path: "/settings",
@@ -44,11 +45,14 @@ const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [cookieConsent, setCookieConsent] = useState<string | null>(null);
 
   useEffect(() => {
     if (route.metadata) {
       updateMetadata(route.metadata);
     }
+    // Load cookie consent preference
+    setCookieConsent(localStorage.getItem('cookie-consent'));
   }, []);
 
   const defaultValues: SettingsFormValues = {
@@ -126,6 +130,26 @@ const Settings = () => {
 
   const onSubmit = (data: SettingsFormValues) => {
     updateSettingsMutation.mutate(data);
+  };
+
+  const handleCookiePreference = (accept: boolean) => {
+    const newConsent = accept ? 'accepted' : 'declined';
+    localStorage.setItem('cookie-consent', newConsent);
+    setCookieConsent(newConsent);
+    
+    if (accept) {
+      initGA();
+      toast({
+        title: "Cookies enabled",
+        description: "Analytics cookies have been enabled.",
+      });
+    } else {
+      cleanupGA();
+      toast({
+        title: "Cookies disabled",
+        description: "Analytics cookies have been disabled and removed.",
+      });
+    }
   };
 
   if (isLoadingSettings) {
@@ -363,6 +387,53 @@ const Settings = () => {
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-gradient-to-br from-amber-500/10 to-amber-500/5 dark:from-amber-900/20 dark:to-amber-900/10 backdrop-blur-xl shadow-lg">
+                <CardContent className="pt-6 sm:pt-8">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-amber-600 to-amber-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                      <Cookie className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Cookie Preferences</h3>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-800/50 rounded-lg border border-amber-200/50 dark:border-amber-800/50 p-3 sm:p-4 space-y-4">
+                    <div>
+                      <p className="text-sm text-slate-900 dark:text-white font-semibold mb-2">Analytics Cookies</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                        We use Google Analytics to understand how visitors use our site. This helps us improve your experience.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">
+                          Status: <span className={`font-semibold ${cookieConsent === 'accepted' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {cookieConsent === 'accepted' ? 'Enabled' : cookieConsent === 'declined' ? 'Disabled' : 'Not Set'}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        type="button"
+                        variant={cookieConsent === 'accepted' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleCookiePreference(true)}
+                        className={cookieConsent === 'accepted' ? 'bg-green-600 hover:bg-green-700' : ''}
+                      >
+                        Enable
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={cookieConsent === 'declined' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleCookiePreference(false)}
+                        className={cookieConsent === 'declined' ? 'bg-red-600 hover:bg-red-700' : ''}
+                      >
+                        Disable
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 

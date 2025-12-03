@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { StackProvider, StackHandler, StackTheme } from '@stackframe/react';
 import { stackClientApp } from '@/lib/stack';
 import { ClientOnly } from "@/components/ClientOnly";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
@@ -16,7 +16,9 @@ import Account from "@/pages/Account";
 import ContentEditor from "@/pages/ContentEditor";
 import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
+import { CookieConsent } from "@/components/CookieConsent";
 import { useAuth } from "./hooks/useAuth";
+import { initGA, cleanupGA, trackPageView } from "@/lib/analytics";
 
 function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, login } = useAuth();
@@ -60,6 +62,33 @@ function HandlerRoutes() {
 }
 
 function AppRoutes() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    // Initialize GA on mount if consent exists
+    initGA();
+
+    // Listen for consent changes
+    const handleConsentChange = (event: CustomEvent) => {
+      if (event.detail.consent === 'accepted') {
+        initGA();
+      } else if (event.detail.consent === 'declined') {
+        cleanupGA();
+      }
+    };
+
+    window.addEventListener('cookie-consent-changed', handleConsentChange as EventListener);
+
+    return () => {
+      window.removeEventListener('cookie-consent-changed', handleConsentChange as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Track page views on route change
+    trackPageView(location);
+  }, [location]);
+
   return (
     <div className="min-h-screen">
       <Suspense fallback={<div className="p-8 flex justify-center items-center">Loading...</div>}>
@@ -69,6 +98,7 @@ function AppRoutes() {
         <Route path="/handler/forgot-password" component={HandlerRoutes} />
         <Route path="/handler/account-settings" component={HandlerRoutes} />
         <Route path="/handler/verify-email" component={HandlerRoutes} />
+        <Route path="/handler/oauth-callback" component={HandlerRoutes} />
         <Route path="/" component={Landing} />
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/pricing" component={Pricing} />
@@ -124,6 +154,7 @@ function App() {
     <StackProvider app={stackClientApp}>
       <StackTheme>
         <AppRoutes />
+        <CookieConsent />
         <Toaster />
       </StackTheme>
     </StackProvider>
