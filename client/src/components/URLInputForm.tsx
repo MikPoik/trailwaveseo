@@ -103,10 +103,11 @@ const URLInputForm = ({
           }
         };
 
-        source.onerror = () => {
+        source.onerror = (error) => {
+          console.error("SSE connection error:", error);
           // Network/SSE error; close and reject to surface to UI
           try { source.close(); } catch {}
-          reject(new Error("Connection to progress stream failed"));
+          reject(new Error("Connection to progress stream failed. The analysis may still be running in the background. Please check your analysis history."));
         };
       });
     },

@@ -136,6 +136,7 @@ export function registerAnalysisRoutes(app: Express) {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     // Send initial update
     res.write(`data: ${JSON.stringify({
@@ -147,6 +148,16 @@ export function registerAnalysisRoutes(app: Express) {
       analyzedPages: [],
       percentage: 0
     })}\n\n`);
+
+    // Keepalive to prevent connection timeout (every 15 seconds)
+    const keepaliveInterval = setInterval(() => {
+      try {
+        res.write(`:keepalive\n\n`);
+      } catch (error) {
+        console.log(`[SSE] Keepalive failed for ${domain}, connection likely closed`);
+        clearInterval(keepaliveInterval);
+      }
+    }, 15000);
 
     // Event handler for this specific domain
     const progressHandler = (data: any) => {
@@ -163,6 +174,7 @@ export function registerAnalysisRoutes(app: Express) {
           
           // Small delay to ensure the completion event is sent before closing
           setTimeout(() => {
+            clearInterval(keepaliveInterval);
             analysisEvents.removeListener(domain, progressHandler);
             if (!res.headersSent) {
               res.end();
@@ -171,6 +183,7 @@ export function registerAnalysisRoutes(app: Express) {
         }
       } catch (error) {
         console.error(`[SSE] Error sending progress update for ${domain}:`, error);
+        clearInterval(keepaliveInterval);
         analysisEvents.removeListener(domain, progressHandler);
         if (!res.headersSent) {
           res.end();
@@ -184,12 +197,14 @@ export function registerAnalysisRoutes(app: Express) {
     // Handle client disconnect
     req.on('close', () => {
       console.log(`[SSE] Client disconnected for ${domain}`);
+      clearInterval(keepaliveInterval);
       analysisEvents.removeListener(domain, progressHandler);
     });
 
     // Handle connection errors
-    req.on('error', () => {
-      console.log(`[SSE] Connection error for ${domain}`);
+    req.on('error', (error) => {
+      console.error(`[SSE] Connection error for ${domain}:`, error);
+      clearInterval(keepaliveInterval);
       analysisEvents.removeListener(domain, progressHandler);
     });
   });
