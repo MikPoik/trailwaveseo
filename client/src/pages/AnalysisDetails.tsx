@@ -33,10 +33,12 @@ const AnalysisDetails = () => {
 
   const { data: analysis, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/analysis', id],
-    queryFn: () => fetch(`/api/analysis/${id}`).then(res => {
-      if (!res.ok) throw new Error('Analysis not found');
-      return res.json();
-    }),
+    queryFn: async () => {
+      if (!id) throw new Error('No analysis ID provided');
+      const { getAnalysisById } = await import('@/lib/api');
+      return getAnalysisById(parseInt(id));
+    },
+    enabled: !!id,
   });
 
   useEffect(() => {
