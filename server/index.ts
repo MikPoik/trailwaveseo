@@ -17,7 +17,7 @@ app.use((req, res, next) => {
     if (host && host.includes('.fly.dev')) {
       const appUrl = new URL(process.env.APP_URL);
       const redirectUrl = `${appUrl.protocol}//${appUrl.host}${req.originalUrl}`;
-      
+
       log(`[REDIRECT] fly.dev domain detected: ${host} -> ${appUrl.host}`);
       return res.redirect(301, redirectUrl);
     }

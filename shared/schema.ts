@@ -15,16 +15,7 @@ export const neonAuthUsers = neonAuthSchema.table("users_sync", {
   updatedAt: timestamp("updated_at"),
 });
 
-// Session storage table for Replit Auth
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
+// Sessions table removed - Stack Neon Auth uses cookie-based authentication
 
 // User table for authentication/preferences
 export const users = pgTable("users", {
