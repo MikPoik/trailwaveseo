@@ -1,3 +1,4 @@
+import React from 'react';
 import { useUser } from '@stackframe/react';
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
