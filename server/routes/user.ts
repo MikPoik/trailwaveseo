@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { requireAuth } from "../neonAuth";
+import { db } from "../db";
+import { neonAuthUsers } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export function registerUserRoutes(app: Express) {
   // User usage endpoint - protected by auth
@@ -8,16 +11,23 @@ export function registerUserRoutes(app: Express) {
     try {
       const userId = req.neonUser.id;
       
+      // Get user data from Neon Auth
+      const [neonAuthUser] = await db
+        .select()
+        .from(neonAuthUsers)
+        .where(eq(neonAuthUsers.id, userId))
+        .limit(1);
+      
       // Get or create user
       let usage = await storage.getUserUsage(userId);
       
       if (!usage) {
-        // User doesn't exist yet, create them first
+        // User doesn't exist yet, create them first with Neon Auth data
         console.log(`Creating new user for usage check: ${userId}`);
         await storage.upsertUser({
           id: userId,
-          email: null,
-          first_name: null,
+          email: neonAuthUser?.email || null,
+          first_name: neonAuthUser?.name || null,
           last_name: null,
           profile_image_url: null,
         });
