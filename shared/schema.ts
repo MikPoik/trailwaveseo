@@ -43,10 +43,10 @@ export const upsertUserSchema = createInsertSchema(users);
 // Stored SEO analyses
 export const analyses = pgTable("analyses", {
   id: serial("id").primaryKey(),
+  date: timestamp("date").notNull().defaultNow(),
   userId: varchar("user_id").references(() => users.id),
   domain: text("domain").notNull(),
-  date: timestamp("date").notNull().defaultNow(),
-  pagesCount: integer("pages_count").notNull(),
+  pagesCount: integer("pages_count").notNull().default(0),
   metrics: jsonb("metrics").notNull(),
   pages: jsonb("pages").notNull(),
   contentRepetitionAnalysis: jsonb("content_repetition_analysis"),
@@ -56,6 +56,7 @@ export const analyses = pgTable("analyses", {
   siteOverview: jsonb("site_overview"),
   enhancedInsights: jsonb("enhanced_insights"),
   designAnalysis: jsonb("design_analysis"),
+  siteKeywordCloud: jsonb("site_keyword_cloud"),
   isCompetitorAnalysis: boolean("is_competitor_analysis").notNull().default(false),
 });
 
@@ -73,6 +74,7 @@ export const insertAnalysisSchema = createInsertSchema(analyses).pick({
   siteOverview: true,
   enhancedInsights: true,
   designAnalysis: true,
+  siteKeywordCloud: true,
   isCompetitorAnalysis: true,
 });
 
@@ -285,7 +287,7 @@ export interface ContentQualityAnalysis {
     totalDuplicates: number;
     pagesAnalyzed: number;
   };
-  
+
   // Keyword quality analysis  
   keywordQuality: {
     overOptimization: KeywordIssue[];
@@ -294,7 +296,7 @@ export interface ContentQualityAnalysis {
     readabilityImpact: 'Critical' | 'High' | 'Medium' | 'Low';
     affectedPages: number;
   };
-  
+
   // Content quality scores
   qualityScores: {
     averageScores: {
@@ -341,7 +343,7 @@ export interface ContentQualityAnalysis {
       priority: number;
     }>;
   };
-  
+
   // Strategic recommendations
   strategicRecommendations: {
     priority: 'Critical' | 'High' | 'Medium' | 'Low';
@@ -351,7 +353,7 @@ export interface ContentQualityAnalysis {
     implementation: string;
     expectedImpact: string;
   }[];
-  
+
   // Overall health metrics
   overallHealth: {
     contentScore: number; // 0-100
