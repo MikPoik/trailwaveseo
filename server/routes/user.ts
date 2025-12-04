@@ -11,44 +11,32 @@ export function registerUserRoutes(app: Express) {
     try {
       const userId = req.neonUser.id;
       
-      // Get or create user
-      let usage = await storage.getUserUsage(userId);
-      
-      if (!usage) {
-        // User doesn't exist yet, create them first
-        try {
-          const [neonAuthUser] = await db
-            .select()
-            .from(neonAuthUsers)
-            .where(eq(neonAuthUsers.id, userId))
-            .limit(1);
-          
-          console.log(`Creating new user for usage check: ${userId}`);
-          await storage.upsertUser({
-            id: userId,
-            email: neonAuthUser?.email || null,
-            first_name: neonAuthUser?.name || null,
-            last_name: null,
-            profile_image_url: null,
-          });
-        } catch (error) {
-          console.error('Error syncing from Neon Auth, creating user with defaults:', error);
-          // Create user with defaults if Neon Auth query fails
-          await storage.upsertUser({
-            id: userId,
-            email: null,
-            first_name: null,
-            last_name: null,
-            profile_image_url: null,
-          });
-        }
+      // Always sync user data from Neon Auth to keep it up-to-date
+      try {
+        const [neonAuthUser] = await db
+          .select()
+          .from(neonAuthUsers)
+          .where(eq(neonAuthUsers.id, userId))
+          .limit(1);
         
-        // Now get their usage (should have default values)
-        usage = await storage.getUserUsage(userId);
+        // Upsert will create if doesn't exist, or update if it does
+        await storage.upsertUser({
+          id: userId,
+          email: neonAuthUser?.email || null,
+          first_name: neonAuthUser?.name || null,
+          last_name: null,
+          profile_image_url: null,
+        });
+      } catch (error) {
+        console.error('Error syncing from Neon Auth:', error);
+        // Continue anyway - user might already exist
       }
       
+      // Get their usage
+      const usage = await storage.getUserUsage(userId);
+      
       if (!usage) {
-        res.status(500).json({ message: "Failed to create user" });
+        res.status(500).json({ message: "Failed to fetch user usage" });
         return;
       }
       
