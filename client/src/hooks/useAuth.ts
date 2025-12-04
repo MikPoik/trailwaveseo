@@ -35,6 +35,26 @@ export function useAuth() {
     return true;
   };
 
+  // Sync user data from Neon Auth after login
+  React.useEffect(() => {
+    if (stackUser && !appUser && !isAppUserLoading) {
+      // User is authenticated but not in our database yet - sync them
+      fetch('/api/auth/sync-user', {
+        method: 'POST',
+        headers: {
+          'x-stack-user-id': stackUser.id,
+        },
+      })
+        .then(() => {
+          // Refetch to get the synced user data
+          refetch();
+        })
+        .catch((err) => {
+          console.error('Failed to sync user:', err);
+        });
+    }
+  }, [stackUser, appUser, isAppUserLoading, refetch]);
+
   // Combine Stack user data with app-specific data
   const user = stackUser ? {
     id: stackUser.id,
