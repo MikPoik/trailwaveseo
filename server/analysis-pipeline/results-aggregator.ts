@@ -56,11 +56,28 @@ export async function aggregateAnalysisResults(
       }
     };
 
-    // Save analysis to database
+    // Save analysis to database with timeout protection
     console.log(`Saving analysis for ${context.domain}...`);
-    const savedAnalysis = await storage.saveAnalysis(analysisData as any);
     
-    console.log(`Analysis saved with ID: ${savedAnalysis.id}`);
+    let savedAnalysis;
+    try {
+      // Add 30 second timeout for database save
+      savedAnalysis = await Promise.race([
+        storage.saveAnalysis(analysisData as any),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database save timeout after 30 seconds')), 30000)
+        )
+      ]);
+      
+      console.log(`Analysis saved with ID: ${savedAnalysis.id}`);
+    } catch (error) {
+      console.error(`Error saving analysis for ${context.domain}:`, error);
+      throw new Error(`Failed to save analysis: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    if (!savedAnalysis || !savedAnalysis.id) {
+      throw new Error('Failed to save analysis - no ID returned from database');
+    }
 
     // Update user usage statistics
     await incrementUserUsage(context.userId, analyzedPages.length);

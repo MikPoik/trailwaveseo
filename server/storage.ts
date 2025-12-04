@@ -407,29 +407,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async saveAnalysis(analysis: Analysis): Promise<Analysis> {
-    const { pool } = await import('./db');
+    console.log(`[STORAGE] Starting saveAnalysis for domain: ${analysis.domain}, userId: ${analysis.userId}`);
+    console.log(`[STORAGE] Data size - pages: ${analysis.pages.length}, pagesCount: ${analysis.pagesCount}`);
 
+    const result = await db.insert(analyses).values({
+      userId: analysis.userId,
+      domain: analysis.domain,
+      date: analysis.date,
+      pagesCount: analysis.pagesCount,
+      metrics: JSON.stringify(analysis.metrics),
+      pages: JSON.stringify(analysis.pages),
+      contentRepetitionAnalysis: analysis.contentRepetitionAnalysis ? JSON.stringify(analysis.contentRepetitionAnalysis) : null,
+      keywordRepetitionAnalysis: analysis.keywordRepetitionAnalysis ? JSON.stringify(analysis.keywordRepetitionAnalysis) : null,
+      competitorAnalysis: analysis.competitorAnalysis ? JSON.stringify(analysis.competitorAnalysis) : null,
+      siteOverview: analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null,
+      enhancedInsights: analysis.enhancedInsights ? JSON.stringify(analysis.enhancedInsights) : null,
+      isCompetitorAnalysis: analysis.isCompetitorAnalysis || false,
+      designAnalysis: analysis.designAnalysis ? JSON.stringify(analysis.designAnalysis) : null,
+      siteKeywordCloud: analysis.siteKeywordCloud ? JSON.stringify(analysis.siteKeywordCloud) : null,
+      contentQualityAnalysis: analysis.contentQualityAnalysis ? JSON.stringify(analysis.contentQualityAnalysis) : null
+    }).returning();
 
-    const result = await pool.query(
-      `INSERT INTO analyses (user_id, domain, date, pages_count, metrics, pages, content_repetition_analysis, keyword_repetition_analysis, competitor_analysis, site_overview, enhanced_insights, is_competitor_analysis)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [
-        analysis.userId,
-        analysis.domain,
-        analysis.date,
-        analysis.pagesCount,
-        JSON.stringify(analysis.metrics),
-        JSON.stringify(analysis.pages),
-        analysis.contentRepetitionAnalysis ? JSON.stringify(analysis.contentRepetitionAnalysis) : null,
-        analysis.keywordRepetitionAnalysis ? JSON.stringify(analysis.keywordRepetitionAnalysis) : null,
-        analysis.competitorAnalysis ? JSON.stringify(analysis.competitorAnalysis) : null,
-        analysis.siteOverview ? JSON.stringify(analysis.siteOverview) : null,
-        analysis.enhancedInsights ? JSON.stringify(analysis.enhancedInsights) : null,
-        analysis.isCompetitorAnalysis || false
-      ]
-    );
-
-    const newAnalysis = result.rows[0];
+    console.log(`[STORAGE] Analysis saved successfully with ID: ${result[0]?.id}`);
 
     // Increment user's page usage count if userId is provided
     if (analysis.userId) {
@@ -438,7 +437,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Return the saved analysis object
-    return newAnalysis;
+    return result[0];
   }
 
   async updateCompetitorAnalysis(id: number, competitorData: any): Promise<Analysis | undefined> {
@@ -713,11 +712,11 @@ export class DatabaseStorage implements IStorage {
     try {
       // First get the analysis to extract screenshot URLs for GCS cleanup
       const analysis = await this.getAnalysisById(id);
-      
+
       if (analysis) {
         // Extract screenshot URLs from the analysis for GCS cleanup
         const screenshotUrls: string[] = [];
-        
+
         // Extract from design analysis if present
         if (analysis.designAnalysis && typeof analysis.designAnalysis === 'object') {
           const designAnalysis = analysis.designAnalysis as any;
@@ -725,7 +724,7 @@ export class DatabaseStorage implements IStorage {
             screenshotUrls.push(designAnalysis.screenshotData.screenshotUrl);
           }
         }
-        
+
         // Extract from page-level design analysis if present
         if (analysis.pages && Array.isArray(analysis.pages)) {
           analysis.pages.forEach((page: any) => {
@@ -734,19 +733,19 @@ export class DatabaseStorage implements IStorage {
             }
           });
         }
-        
+
         // Delete screenshots from GCS if any were found
         if (screenshotUrls.length > 0) {
           console.log(`Deleting ${screenshotUrls.length} screenshots from GCS for analysis ${id}`);
           try {
             const { deleteMultipleScreenshots, extractFileNameFromGCSUrl, isGCSUrl } = await import('./storage/gcs-storage');
-            
+
             // Extract filenames from GCS URLs
             const fileNames = screenshotUrls
               .filter(url => isGCSUrl(url))
               .map(url => extractFileNameFromGCSUrl(url))
               .filter((fileName): fileName is string => fileName !== null);
-            
+
             if (fileNames.length > 0) {
               await deleteMultipleScreenshots(fileNames);
               console.log(`Successfully deleted ${fileNames.length} screenshots from GCS`);
